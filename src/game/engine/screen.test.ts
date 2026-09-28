@@ -2,7 +2,13 @@ import { describe, expect, it } from 'vitest';
 import { computeSize } from './screen';
 
 describe('computeSize', () => {
-  it('ride fills a 16:9 desktop at 480x270', () => {
+  it('hd ride renders at real resolution, capped at 2x', () => {
+    expect(computeSize('hd', 1280, 720, 2)).toMatchObject({ W: 2560, H: 1440, cssW: 1280, cssH: 720, dpr: 2 });
+    expect(computeSize('hd', 1280, 720, 3).W).toBe(2560);
+    expect(computeSize('hd', 390, 844, 1).portrait).toBe(true);
+  });
+
+  it('pixel fill mode is 480x270 on a 16:9 desktop', () => {
     const s = computeSize('fill', 1280, 720);
     expect([s.W, s.H, s.portrait]).toEqual([480, 270, false]);
     expect(s.cssW).toBeCloseTo(1280);
