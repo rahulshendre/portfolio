@@ -14,10 +14,20 @@ export const site = {
     x: 'https://x.com/shendreee',
     xHandle: '@shendreee',
     linkedin: 'https://www.linkedin.com/in/rahul-shendre',
+    // TODO(rahul): add the channel URL once it exists. Until then YouTube signs point at /videos.
+    youtube: '',
   },
   stack: ['Go', 'TypeScript', 'React / React Native', 'Kubernetes', 'Docker', 'GitHub Actions', 'Python', 'C / C++'],
   personal: ['Finance nerd', '100 push-ups in one go', 'Good coffee', 'Rides a white Scrambler 400X'],
 } as const;
+
+// Social signs on the road hoardings and the garage wall.
+export const socials = [
+  { id: 'youtube', name: 'YOUTUBE', line: 'VIDEOS FROM OCT', href: site.links.youtube || '/videos' },
+  { id: 'x', name: 'X', line: site.links.xHandle.toUpperCase(), href: site.links.x },
+  { id: 'linkedin', name: 'LINKEDIN', line: 'RAHUL SHENDRE', href: site.links.linkedin },
+  { id: 'github', name: 'GITHUB', line: 'RAHULSHENDRE', href: site.links.github },
+] as const;
 
 export const nav = [
   { href: '/builds', label: 'Builds' },

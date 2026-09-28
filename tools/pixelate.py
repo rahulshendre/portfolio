@@ -31,6 +31,7 @@ def recolor_orange_to_white(im, skip=None):
     """Repaint saturated orange panels as pearl white, keeping the photo's shading.
     `skip` is an (x0, x1) pixel column range left alone (the gold forks)."""
     px = im.load()
+    painted = []
     for y in range(im.height):
         for x in range(im.width):
             r, g, b, a = px[x, y]
@@ -40,7 +41,33 @@ def recolor_orange_to_white(im, skip=None):
             if 0.02 < h < 0.105 and s > 0.55 and v > 0.4:  # orange paint and its yellow-ish edge highlights; brown seat is darker
                 lum = 0.70 + 0.30 * v  # keep highlights and shadows, just desaturated and lifted
                 c = int(255 * lum)
-                px[x, y] = (c, c, min(255, c + 4), a)  # hint of cool pearl
+                px[x, y] = (c, min(255, c + 1), min(255, c + 5), a)  # hint of cool pearl
+                painted.append((x, y))
+    im.info["painted"] = set(painted)
+    im.info["painted_bbox"] = (
+        (min(p[0] for p in painted), min(p[1] for p in painted), max(p[0] for p in painted), max(p[1] for p in painted)) if painted else None
+    )
+    return im
+
+
+def stripe_to_black(im):
+    """Pearl Metallic White / Phantom Black: the tank stripe that is silver on other colours is black.
+    Only touches neutral light pixels inside the repainted tank's bounding box."""
+    box = im.info.get("painted_bbox")
+    if not box:
+        return im
+    px = im.load()
+    painted = im.info["painted"]
+    x0, y0, x1, y1 = box
+    for y in range(y0, y1 + 1):
+        for x in range(x0, x1 + 1):
+            r, g, b, a = px[x, y]
+            if a == 0 or (x, y) in painted:  # skip the fresh pearl paint
+                continue
+            h, s, v = colorsys.rgb_to_hsv(r / 255, g / 255, b / 255)
+            if s < 0.18 and v > 0.5:  # the silver band
+                c = int(22 + 40 * v)
+                px[x, y] = (c, c, c + 3, a)
     return im
 
 
@@ -101,6 +128,7 @@ def main():
     ap.add_argument("--colors", type=int, default=20)
     ap.add_argument("--key-bg", action="store_true", help="drop a plain background colour")
     ap.add_argument("--recolor-orange-white", action="store_true")
+    ap.add_argument("--stripe-black", action="store_true", help="with --recolor-orange-white: silver tank stripe becomes black")
     ap.add_argument("--outline", action="store_true")
     ap.add_argument("--flip", action="store_true", help="mirror horizontally")
     ap.add_argument("--keep-hue", help="hue range to keep vivid, e.g. 0.088:0.16 for gold forks")
@@ -115,6 +143,8 @@ def main():
     cols = (int(k0 * im.width), int(k1 * im.width))
     if a.recolor_orange_white:
         im = recolor_orange_to_white(im, cols if a.keep_hue else None)
+        if a.stripe_black:
+            im = stripe_to_black(im)
     out = pixelate(im, a.width, a.colors)
     if a.keep_hue:
         lo, hi = (float(v) for v in a.keep_hue.split(":"))
