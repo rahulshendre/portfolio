@@ -11,20 +11,25 @@ export interface Hotspot {
   external?: boolean;
 }
 
+const yt = site.links.youtube;
+
 export const HOTSPOTS: Hotspot[] = [
   { id: 'pipecd', label: 'PIPECD SIGN · OPEN SOURCE', tag: 'OPEN SOURCE', href: '/open-source', rect: [186, 22, 108, 130] },
   { id: 'bike', label: 'THE SCRAMBLER 400X', tag: 'THE BIKE', href: '/garage', rect: [164, 172, 152, 78] },
-  { id: 'tv', label: 'CRT TV · VIDEOS', tag: 'VIDEOS', href: '/videos', rect: [18, 92, 66, 68] },
-  { id: 'polaroids', label: 'POLAROID WALL · VIDEOS', tag: 'VIDEOS', href: '/videos', rect: [12, 26, 140, 62] },
-  { id: 'binders', label: 'BINDERS · WRITING AND DOCS', tag: 'WRITING', href: '/writing', rect: [90, 124, 64, 36] },
-  { id: 'shelf', label: 'PARTS SHELF · BUILDS', tag: 'BUILDS', href: '/builds', rect: [390, 86, 86, 112] },
-  { id: 'toolbox', label: 'TOOLBOX STICKERS · PROJECTS', tag: 'PROJECTS', href: '/open-source#projects', rect: [316, 146, 68, 88] },
+  // enamel signs: the socials
+  { id: 'youtube', label: yt ? 'YOUTUBE · MY CHANNEL' : 'YOUTUBE · VIDEOS FROM OCT', tag: 'YOUTUBE', href: yt || '/videos', rect: [12, 24, 78, 28], external: !!yt },
+  { id: 'x', label: `TWITTER · ${site.links.xHandle.toUpperCase()}`, tag: 'X', href: site.links.x, rect: [96, 24, 78, 28], external: true },
+  { id: 'linkedin', label: 'LINKEDIN · RAHUL SHENDRE', tag: 'LINKEDIN', href: site.links.linkedin, rect: [12, 58, 78, 28], external: true },
+  { id: 'github', label: 'GITHUB · RAHULSHENDRE', tag: 'GITHUB', href: site.links.github, rect: [96, 58, 78, 28], external: true },
+  { id: 'tv', label: 'CRT TV · VIDEOS', tag: 'VIDEOS', href: '/videos', rect: [18, 96, 66, 64] },
+  { id: 'binders', label: 'BINDERS · WRITING AND DOCS', tag: 'WRITING', href: '/writing', rect: [90, 128, 58, 32] },
+  { id: 'coffee', label: 'COFFEE · ABOUT ME', tag: 'COFFEE', href: '/about', rect: [152, 140, 20, 20] },
+  { id: 'pegboard', label: 'PEGBOARD · THE STACK', tag: 'STACK', href: '/about#stack', rect: [300, 22, 88, 52] },
   { id: 'whiteboard', label: 'WHITEBOARD · ABOUT ME', tag: 'ABOUT', href: '/about', rect: [392, 22, 84, 62] },
-  { id: 'pegboard', label: 'PEGBOARD · THE STACK', tag: 'STACK', href: '/about#stack', rect: [300, 26, 88, 50] },
-  { id: 'radio', label: `RADIO · ON X ${site.links.xHandle.toUpperCase()}`, tag: 'X', href: site.links.x, rect: [304, 76, 44, 26], external: true },
-  { id: 'calendar', label: 'CALENDAR · PR LOG', tag: 'PR LOG', href: '/open-source#log', rect: [154, 36, 30, 42] },
-  { id: 'clipboard', label: 'CLIPBOARD · RESUME', tag: 'RESUME', href: '/resume', rect: [156, 82, 26, 36] },
-  { id: 'coffee', label: 'COFFEE · ABOUT ME', tag: 'COFFEE', href: '/about', rect: [156, 138, 18, 22] },
+  { id: 'calendar', label: 'CALENDAR · PR LOG', tag: 'PR LOG', href: '/open-source#log', rect: [304, 82, 30, 42] },
+  { id: 'clipboard', label: 'CLIPBOARD · RESUME', tag: 'RESUME', href: '/resume', rect: [348, 82, 26, 36] },
+  { id: 'toolbox', label: 'TOOLBOX STICKERS · PROJECTS', tag: 'PROJECTS', href: '/open-source#projects', rect: [316, 146, 68, 88] },
+  { id: 'shelf', label: 'PARTS SHELF · BUILDS', tag: 'BUILDS', href: '/builds', rect: [390, 86, 86, 112] },
 ];
 
 // Bottom bar buttons, also real links.
