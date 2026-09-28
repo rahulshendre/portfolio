@@ -1,7 +1,7 @@
 // Outside the garage at dusk: the bike pulls up, the tagged roller door rattles and rolls up.
 import { C } from '../art/palette';
 import { graffitiTag } from '../art/sprites';
-import { bind, bayer, disc, ellipse, line, rect } from '../engine/pixel';
+import { bind, bayer, disc, ellipse, line, poly, rect } from '../engine/pixel';
 import { text, textC } from '../engine/font';
 import { input } from '../engine/input';
 import type { Scene } from '../engine/scene';
@@ -11,6 +11,22 @@ import { blit, paint, type Sprite } from '../engine/sprites';
 const DOOR = { x: 110, y: 70, w: 260, h: 176 };
 const T_ARRIVE = 1.6, T_OPEN = 2.0, T_UP = 1.5, T_END = 4.4;
 const ease = (p: number) => 1 - Math.pow(1 - Math.min(1, Math.max(0, p)), 3);
+
+/** Rahul on the bike, side view, facing right. (x, y) is the bike sprite's top-left. */
+function riderSide(x: number, y: number) {
+  poly([[x + 50, y + 20], [x + 62, y + 18], [x + 81, y + 28], [x + 76, y + 33]], C.jeans);   // thigh over the tank
+  poly([[x + 76, y + 28], [x + 82, y + 31], [x + 75, y + 46], [x + 69, y + 44]], C.jeans);   // shin down to the peg
+  rect(x + 66, y + 44, 11, 4, C.black);                                                       // boot
+  poly([[x + 44, y + 24], [x + 63, y + 24], [x + 80, y + 2], [x + 63, y - 6]], C.jacket);    // back, leaning in
+  line(x + 47, y + 22, x + 64, y - 4, C.jacketLight);
+  poly([[x + 66, y + 1], [x + 76, y - 4], [x + 98, y + 11], [x + 92, y + 17]], C.jacket);    // arm to the bar
+  line(x + 70, y + 1, x + 93, y + 14, '#23252c');
+  rect(x + 92, y + 11, 6, 4, C.black);                                                        // glove
+  rect(x + 70, y - 4, 6, 3, '#23252c');                                                       // collar
+  disc(x + 75, y - 10, 7, C.ink); disc(x + 75, y - 10, 6, C.white);                           // white helmet
+  rect(x + 77, y - 12, 5, 4, '#2a2c33'); rect(x + 78, y - 12, 2, 1, '#6f8fa8');              // visor
+  rect(x + 70, y - 14, 3, 2, '#ffffff'); rect(x + 69, y - 7, 8, 1, C.whiteShade);
+}
 
 export class DoorScene implements Scene {
   mode = 'world' as const;
@@ -75,6 +91,12 @@ export class DoorScene implements Scene {
     const bx = -170 + ease(this.t / T_ARRIVE) * 320;
     if (this.t < T_ARRIVE) for (let k = 0; k < 3; k++) { const p = (this.t * 3 + k / 3) % 1; disc(bx + 6 - p * 26, 244 - p * 6, 2 + p * 3, '#b8ad98'); }
     blit(this.bike, bx, 251 - this.bike.height);
+    riderSide(bx, 251 - this.bike.height + (this.t < T_ARRIVE ? Math.round(Math.sin(this.t * 30) * 0.6) : 0));
+    // the street dog wakes up a little when you pull in
+    const wag = this.t > T_ARRIVE ? Math.round(Math.sin(this.t * 14) * 2) : 0;
+    ellipse(346, 244, 12, 4, '#9c6d45'); disc(357, 240, 4, '#9c6d45'); rect(358, 236, 2, 3, '#7a5234');
+    rect(359, 240, 1, 1, this.t > T_ARRIVE ? C.ink : '#7a5234');
+    line(334, 243, 330, 240 + wag, '#9c6d45');
     text('SKIP >', 6, 258, C.hud, 1, C.ink);
     const fade = Math.min(1, Math.max(0, (this.t - (T_END - 0.6)) / 0.6));
     if (fade > 0) { g.globalAlpha = fade; rect(0, 0, 480, 270, '#f4e6c8'); g.globalAlpha = 1; }
@@ -82,15 +104,22 @@ export class DoorScene implements Scene {
 
   private facade() {
     // whole backdrop first, so nothing ever shows through (the bike would leave trails)
-    const sky = ['#6f8fb0', '#8ea5bb', '#b9bcbc', '#e0c9a6', '#f2c38b'];
+    // same dusk the ride ends in
+    const sky = ['#58739b', '#7888a8', '#a495ab', '#d6a58c', '#eca676', '#f2985e'];
     for (let y = 0; y < 200; y++) for (let x = 0; x < 480; x++) {
       const t = (y / 190) * (sky.length - 1), i = Math.min(sky.length - 2, Math.floor(t));
       rect(x, y, 1, 1, t - i > bayer(x, y) ? sky[i + 1] : sky[i]);
     }
+    disc(400, 176, 18, '#f6b27a'); disc(400, 176, 12, '#ffd49a');
+    // flat-topped Sahyadri mesas behind the building
+    const mesa = (x: number, list: number[][]) =>
+      Math.max(10, ...list.map(([a, b, h]) => h * Math.min(1, Math.max(0, (Math.min(x - a, b - x) + 16) / 16))));
+    const far = [[-20, 120, 74], [150, 270, 58], [300, 430, 70], [440, 520, 52]], near = [[20, 90, 40], [210, 330, 34], [370, 470, 44]];
     for (let x = 0; x < 480; x++) {
-      const h1 = Math.round(34 + 10 * Math.sin(x * 0.021) + 6 * Math.sin(x * 0.057));
-      const h2 = Math.round(18 + 6 * Math.sin(x * 0.043 + 1) + 3 * Math.sin(x * 0.11));
-      rect(x, 200 - h1, 1, h1, '#8b9a9c'); rect(x, 200 - h2, 1, h2, '#6b7f70');
+      const h1 = Math.round(mesa(x, far)), h2 = Math.round(mesa(x, near));
+      rect(x, 200 - h1, 1, h1, '#737596');
+      for (let y = 8; y < h1 - 2; y += 7) rect(x, 200 - y, 1, 1, '#66688a');
+      rect(x, 200 - h2, 1, h2, '#586379');
     }
     rect(0, 200, 480, 48, '#7c8a52');
     for (let x = 0; x < 480; x += 3) if (bayer(x, 210) > 0.5) rect(x, 200 + (x % 7), 1, 2, '#6f7d48');
@@ -99,6 +128,12 @@ export class DoorScene implements Scene {
     disc(34, 70, 34, '#3c5a33'); disc(12, 88, 20, '#3c5a33'); disc(56, 86, 20, '#3c5a33'); disc(30, 60, 18, '#4f7040');
     rect(448, 20, 5, 230, '#4a4038'); rect(430, 26, 40, 3, '#4a4038');
     line(0, 34, 430, 28, '#2e2a26'); line(0, 40, 432, 30, '#2e2a26');
+    // streetlight on the pole, already on at dusk, with a dithered glow
+    rect(440, 60, 10, 3, '#4a4038'); rect(430, 60, 12, 5, '#2e2a26'); rect(432, 65, 8, 2, '#fff1c4');
+    for (let y = 60; y < 110; y++) for (let x = 400; x < 472; x++) {
+      const d = Math.hypot((x - 436) / 34, (y - 72) / 36);
+      if (d < 1 && (1 - d) * 0.45 > bayer(x, y)) rect(x, y, 1, 1, '#f3d9a6');
+    }
     // building
     rect(64, 34, 352, 8, '#b9a88c'); rect(70, 42, 340, 206, '#d9cbb2');
     for (let y = 46; y < 246; y += 3) for (let x = 72 + (y % 7); x < 408; x += 11) if (bayer(x, y) > 0.8) rect(x, y, 1, 1, '#cbbc9f');
