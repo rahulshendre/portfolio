@@ -1,6 +1,43 @@
 ---
+import Page from '../layouts/Page.astro';
+import { site, nav } from '../data/site';
 ---
-<html lang="en">
-  <head><meta charset="utf-8" /><title>Rahul Shendre</title></head>
-  <body><h1>Rahul Shendre</h1></body>
-</html>
+<Page bare description={site.description}>
+  <a class="skip-plain" href="/list">Skip the game: plain version</a>
+  <h1 class="sr-only">{site.name}: {site.tagline}</h1>
+  <div class="viewport" id="viewport">
+    <div class="stage" id="stage">
+      <canvas id="game" aria-label="Pixel-art game: ride a white Scrambler down an Indian highway to Rahul's garage. Every object in the garage links to a section of the site."></canvas>
+      <nav class="hotspots" id="hotspots" aria-label="Garage"></nav>
+    </div>
+  </div>
+  <nav class="sr-only" aria-label="Sections">
+    <ul>{nav.map((n) => <li><a href={n.href}>{n.label}</a></li>)}<li><a href="/list">Everything on one page</a></li></ul>
+  </nav>
+  <noscript>
+    <div class="noscript">
+      <h2>{site.name}</h2>
+      <p>{site.description}</p>
+      <ul>{nav.map((n) => <li><a href={n.href}>{n.label}</a></li>)}</ul>
+      <p><a href="/list">Everything on one page</a></p>
+    </div>
+  </noscript>
+  <style is:global>
+    html, body { height: 100%; overflow: hidden; background: #1b1712; }
+    .viewport { position: fixed; inset: 0; display: grid; place-items: center; overflow: hidden; }
+    .viewport:has(.stage[data-mode='world']) { overflow-x: auto; overflow-y: hidden; justify-items: safe center; overscroll-behavior-x: contain; }
+    .stage { position: relative; flex: none; }
+    .stage canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; touch-action: none; }
+    .stage[data-mode='world'] canvas { touch-action: pan-x; }
+    .hotspots { position: absolute; inset: 0; pointer-events: none; }
+    .hotspots a { position: absolute; pointer-events: auto; display: block; cursor: pointer; border-radius: 2px; }
+    .hotspots a:focus-visible { outline: 3px solid #e8b923; outline-offset: 2px; }
+    .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+    .skip-plain { position: fixed; left: 8px; top: 8px; z-index: 10; transform: translateY(-200%); background: #e8b923; color: #1b1712; padding: 8px 12px; font: 600 14px/1 system-ui; }
+    .skip-plain:focus { transform: none; }
+    .noscript { position: fixed; inset: 0; overflow: auto; background: #f4efe6; color: #1b1712; padding: 2rem; font: 18px/1.6 system-ui; z-index: 20; }
+  </style>
+  <script>
+    import '../game/main.ts';
+  </script>
+</Page>
