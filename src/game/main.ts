@@ -33,7 +33,7 @@ screen.onResize(() => { if (director.current instanceof GarageScene) requestAnim
 
 async function door() {
   const img = await images;
-  director.go(new DoorScene(screen, img.bike, garage));
+  director.go(new DoorScene(screen, img.bike, () => new GarageScene(screen, img).roomSprite(false), garage));
 }
 
 function mountHotspots(scene: GarageScene) {

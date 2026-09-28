@@ -19,11 +19,14 @@ export class DoorScene implements Scene {
   private doorArt!: Sprite;
   private finished = false;
 
-  constructor(private screen: Screen, private bike: HTMLImageElement, private onDone: () => void) {}
+  private room!: Sprite;
+
+  constructor(private screen: Screen, private bike: HTMLImageElement, private makeRoom: () => Sprite, private onDone: () => void) {}
 
   enter() {
     this.t = 0;
     this.bg = paint(480, 270, () => this.facade());
+    this.room = this.makeRoom();
     this.doorArt = paint(DOOR.w, DOOR.h, () => {
       for (let y = 0; y < DOOR.h; y += 6) { rect(0, y, DOOR.w, 5, '#8b8f94'); rect(0, y + 5, DOOR.w, 1, '#6f7378'); rect(0, y, DOOR.w, 1, '#a3a7ab'); }
       text('GIT PUSH >', 14, 16, '#f4f2ea');
@@ -50,11 +53,11 @@ export class DoorScene implements Scene {
     g.drawImage(this.bg, 0, 0);
     const up = ease((this.t - T_OPEN) / T_UP) * DOOR.h;
     const shake = this.t > T_ARRIVE && this.t < T_OPEN ? Math.round(Math.sin(this.t * 90)) : 0;
-    // inside: dark room, the lamp, the PipeCD board glowing on the back wall
-    rect(DOOR.x, DOOR.y, DOOR.w, DOOR.h, '#2a2219');
-    ellipse(240, 238, 110, 10, '#4a3d2c');
-    rect(222, 96, 36, 42, '#e9e4d8'); rect(232, 104, 16, 18, '#293878'); rect(240, 112, 8, 8, '#29bdeb');
-    line(240, DOOR.y, 240, 84, '#111'); rect(232, 84, 16, 5, '#2e4a3a'); disc(240, 90, 2, '#fff4c2');
+    // inside: the real garage through the doorway, lighting up as the door rises
+    g.drawImage(this.room, DOOR.x, 20, DOOR.w, DOOR.h, DOOR.x, DOOR.y, DOOR.w, DOOR.h);
+    g.globalAlpha = 0.72 * (1 - Math.min(1, up / DOOR.h));
+    rect(DOOR.x, DOOR.y, DOOR.w, DOOR.h, '#140f0a');
+    g.globalAlpha = 1;
     // the door itself, rolling up into its housing
     g.save(); g.beginPath(); g.rect(DOOR.x, DOOR.y, DOOR.w, DOOR.h); g.clip();
     g.drawImage(this.doorArt, DOOR.x, DOOR.y - up + shake);

@@ -161,7 +161,7 @@ export class RideScene implements Scene {
       const p = matchMedia('(pointer: coarse)').matches ? 'TAP TO RIDE' : 'PRESS ANY KEY TO RIDE';
       textC(p, W / 2, y + 9 * s + 24, C.accent, 2, C.ink);
     }
-    textC('QUICK RIDE · SKIP ANYTIME', W / 2, H - 13, C.hud, 1, C.ink);
+    textC('QUICK RIDE · SKIP ANYTIME', W / 2, W < 400 ? H - 28 : H - 13, C.hud, 1, C.ink);
     text('SKIP >', 6, H - 13, C.hud, 1, C.ink);
   }
 }

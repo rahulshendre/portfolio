@@ -24,9 +24,12 @@ export class GarageScene implements Scene {
   constructor(private screen: Screen, private img: GarageImages) {}
 
   enter() {
-    this.bg = paint(480, 270, () => this.paintRoom());
+    this.bg = this.roomSprite();
     this.t = 0;
   }
+
+  /** The static room. The door scene borrows it (without the bike) to show what's inside. */
+  roomSprite(withBike = true): Sprite { return paint(480, 270, () => this.paintRoom(withBike)); }
 
   update(dt: number) { this.t += dt; input.endFrame(); }
 
@@ -43,7 +46,7 @@ export class GarageScene implements Scene {
   }
 
   // ---------------------------------------------------------------- static room, painted once
-  private paintRoom() {
+  private paintRoom(withBike = true) {
     // wall: painted concrete blocks
     rect(0, 0, 480, 198, WALL);
     for (let y = 10; y < 150; y += 12) {
@@ -76,6 +79,7 @@ export class GarageScene implements Scene {
     this.tyres();
 
     // the bike, kickstand down, with the black helmet on the seat
+    if (!withBike) return;
     ellipse(240, 249, 70, 3, '#6e675b');
     blit(this.img.bike, 164, 249 - this.img.bike.height);
     disc(236, 198, 7, C.black); rect(231, 194, 4, 2, '#4a4d57'); rect(239, 199, 4, 3, '#2a2c33');
