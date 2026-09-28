@@ -15,6 +15,7 @@ import { autopilotLane, capBehind, LEFT, spawnTraffic, type Car } from '../ride/
 import { milestones, site } from '../../data/site';
 
 const MAX_S = SEG_L * 46;
+const OG = typeof location !== 'undefined' && new URLSearchParams(location.search).has('og');
 const CAM_ICON = ['..###....', '#########', '##...####', '##.#.####', '##...####', '#########'];
 
 export class RideScene implements Scene {
@@ -155,11 +156,12 @@ export class RideScene implements Scene {
     const s = W >= 400 ? 4 : 3, y = Math.round(H * 0.2);
     textC(site.name.toUpperCase(), W / 2, y, C.hud, s, C.ink);
     textC(site.tagline.toUpperCase(), W / 2, y + 9 * s + 6, C.ink);
+    if (OG) { textC('LFX 2026 MENTEE · PIPECD · CNCF', W / 2, y + 9 * s + 24, C.accent, 2, C.ink); return; } // share image
     if (Math.floor(this.t * 2) % 2 === 0) {
       const p = matchMedia('(pointer: coarse)').matches ? 'TAP TO RIDE' : 'PRESS ANY KEY TO RIDE';
       textC(p, W / 2, y + 9 * s + 24, C.accent, 2, C.ink);
     }
-    textC('30 SECOND RIDE · SKIP ANYTIME', W / 2, H - 13, C.hud, 1, C.ink);
+    textC('QUICK RIDE · SKIP ANYTIME', W / 2, H - 13, C.hud, 1, C.ink);
     text('SKIP >', 6, H - 13, C.hud, 1, C.ink);
   }
 }
