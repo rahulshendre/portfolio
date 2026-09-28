@@ -22,6 +22,9 @@ import { site, pipecd, planetread } from '../data/site';
 
     <p>From October 2026 I'm making videos about Kubernetes, DevOps and whatever I'm learning, and posting on <a href={site.links.x}>X {site.links.xHandle}</a>.</p>
 
+    <h2 id="stack">What I work with</h2>
+    <ul>{site.stack.map((s) => <li>{s}</li>)}</ul>
+
     <h2>Off the keyboard</h2>
     <ul>{site.personal.map((p) => <li>{p}</li>)}</ul>
 
