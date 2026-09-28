@@ -65,6 +65,7 @@ export class RideScene implements Scene {
     input.endFrame();
     // ?at=700 starts the ride at a segment (handy for checking later chapters).
     const at = Number(new URLSearchParams(location.search).get('at'));
+    if (OG) { this.pos = 395 * SEG_L; return; } // share image: title over the open highway, clean sky
     if (at > 0) {
       this.phase = 'ride'; this.pos = at * SEG_L; this.speed = MAX_S * 0.8;
       MILESTONE_SEGS.filter((m) => m < at).forEach((m) => this.shown.add(m));
@@ -208,8 +209,7 @@ export class RideScene implements Scene {
   }
 
   private title(W: number, H: number) {
-    const s = W >= 400 ? 4 : 3, y = Math.round(H * 0.18), g = this.screen.ctx;
-    g.globalAlpha = 0.28; rect(0, y - 10, W, 9 * s + 62, C.ink); g.globalAlpha = 1;
+    const s = W >= 400 ? 4 : 3, y = Math.round(H * 0.18);
     textC(site.name.toUpperCase(), W / 2, y, C.hud, s, C.ink);
     textC(site.tagline.toUpperCase(), W / 2, y + 9 * s + 6, C.hud, 1, C.ink);
     if (OG) { textC('LFX 2026 MENTEE · PIPECD · CNCF', W / 2, y + 9 * s + 26, C.accent, 2, C.ink); return; } // share image
@@ -217,7 +217,7 @@ export class RideScene implements Scene {
       const p = matchMedia('(pointer: coarse)').matches ? 'TAP TO RIDE' : 'PRESS ANY KEY TO RIDE';
       textC(p, W / 2, y + 9 * s + 26, C.accent, 2, C.ink);
     }
-    const hint = W < 400 ? 'PUNE TO THE GARAGE · M: SOUND' : 'PUNE TO THE GARAGE · 20 SECONDS · M FOR SOUND';
+    const hint = W < 400 ? 'PUNE TO THE GARAGE · M: SOUND' : 'PUNE TO THE GARAGE · 30 SECONDS · M FOR SOUND';
     textC(hint, W / 2, W < 400 ? H - 30 : H - 13, C.hud, 1, C.ink);
     this.pill('SKIP >', 4, H - 15);
   }

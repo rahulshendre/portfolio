@@ -8,6 +8,30 @@ pnpm install && pnpm dev     # http://localhost:4321
 
 Screenshots of every scene and a few pages are in `docs/screenshots/`.
 
+## Refinement pass (29 Sep, later)
+
+Focus was the landing page (the game). What changed and why:
+
+- **Bike**: sprite now matches the real Pearl Metallic White / Phantom Black colourway (pearl tank, black diagonal stripe, gold forks, brown seat), made from Triumph's studio shot with `--stripe-black`.
+- **Rider**: white helmet everywhere, and Rahul now rides the bike into the door scene.
+- **Road as a story, in chapters**:
+  - Pune outskirts: pastel houses with black rooftop water tanks, MEDICAL / KIRANA / XEROX shops, a chai stall.
+  - Open highway: cows on the verge, wind farm, a vada pav stall.
+  - Sahyadri ghats: stepped basalt cliffs, waterfalls, mist, black-yellow parapets, a monkey, a "GHAT SECTION" sign.
+  - Tunnel: portal in the hillside, dark walls, ceiling lights, bright exit.
+  - Plateau: the garage at the end.
+- **Hoardings**: PipeCD, GitHub, YouTube, X and LinkedIn billboards along the way, with pixel logos made from the official shapes.
+- **Traffic**: auto-rickshaws, a painted truck, an MSRTC ST bus and a hatchback. All keep left; the autopilot overtakes.
+- **Light and sky**: afternoon slides into dusk, so you arrive at sunset, matching the door scene. Flat-topped mesas sit in hazy layers, and hills grow taller on phones.
+- **HUD**: a progress bar with milestones, the tunnel stretch and the garage, plus the current chapter's name. Name and odometer sit in pills.
+- **Sound**: optional synthesised single-cylinder engine (`M`), off by default.
+- **Garage**:
+  - Dithered lighting from two tube lights, spots on the PipeCD sign, a floor pool and a vignette.
+  - A floor with perspective, shadows, and a neon RAHUL'S GARAGE sign.
+  - Enamel signs for YouTube, Twitter, LinkedIn and GitHub, all links. YouTube points to /videos until the channel URL is added in `src/data/site.ts`.
+  - Radio and polaroids removed to declutter.
+- **Door**: dusk mesas, a streetlight, a street dog whose tail wags when you arrive, and the real lit garage showing through as the door rises.
+
 ## What you get
 
 1. **Title card**: your name and tagline over the highway. Press any key or tap to ride.

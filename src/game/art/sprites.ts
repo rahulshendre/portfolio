@@ -275,7 +275,7 @@ export function monkey(): Sprite {
     ellipse(9, 11, 5, 6, '#8a6d52'); disc(9, 4, 4, '#8a6d52'); rect(7, 4, 5, 3, '#d9b8a0');
     rect(7, 4, 1, 1, C.ink); rect(10, 4, 1, 1, C.ink);
     line(13, 14, 17, 9, '#7a5f47'); rect(5, 16, 3, 2, '#7a5f47'); rect(10, 16, 3, 2, '#7a5f47');
-  }, 260);
+  }, 150);
 }
 
 export type Icons = Record<'github' | 'x' | 'linkedin' | 'youtube', HTMLImageElement> & { pipecd: HTMLImageElement };

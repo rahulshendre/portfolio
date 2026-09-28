@@ -1,17 +1,17 @@
 # Rahul Shendre
 
-Personal site. A pixel-art ride down an Indian highway on a white Scrambler 400X that ends in a garage where every object links to real work.
+Personal site. A pixel-art ride on a Pearl White Scrambler 400X from the Pune outskirts, over the open highway and up through the Sahyadri ghats and a tunnel, to a garage where every object links to real work.
 
-![Garage](docs/screenshots/08-garage.png)
+![Garage](docs/screenshots/10-garage.png)
 
-More screenshots in `docs/screenshots/`. Overnight build notes in `docs/MORNING-REPORT.md`.
+More screenshots in `docs/screenshots/`. Build notes in `docs/MORNING-REPORT.md`.
 
 ## Controls
 
 - Any key or tap: start the ride. `S` / Esc or SKIP: straight to the garage.
-- Arrow keys, A/D or tapping screen halves: steer (or let the autopilot ride).
-- `V`, `1` `2` `3` or the camera icon: behind, rider POV, top-down.
-- `/?ride` forces the ride, `/?garage` skips it, `/?door` shows only the door, `/?ride&og` is the share-image title.
+- Arrow keys, A/D or tapping screen halves: steer (or let the autopilot ride and overtake).
+- `V`, `1` `2` `3` or the camera icon: behind, rider POV, top-down. `M` or the speaker icon: engine sound.
+- `/?ride` forces the ride, `/?garage` skips it, `/?door` shows only the door, `/?ride&at=700` starts at a road segment, `/?ride&og` is the share-image title.
 
 ## Run it
 

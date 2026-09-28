@@ -100,7 +100,7 @@ export function drawBackground(g: CanvasRenderingContext2D, W: number, H: number
   LAYERS.forEach((L, k) => {
     const col = mix(HILL_DAY[k], HILL_DUSK[k], env.tod);
     const band = mix(col, '#1b1712', 0.12);
-    const amp = L.amp * (L.ampG[0] + L.ampG[1] * env.ghat);
+    const amp = L.amp * (L.ampG[0] + L.ampG[1] * env.ghat) * Math.max(1, H / 300); // taller screens, taller hills
     const hAt = (i: number) => {
       const u = Math.floor(((i + off * L.par) % PERIOD + PERIOD) % PERIOD);
       return Math.round(L.prof[u] * amp);
