@@ -1,0 +1,20 @@
+---
+interface Props {
+  title: string;
+  summary: string;
+  meta?: string;
+  stack?: string[];
+  links?: { label: string; url: string }[];
+  metric?: string;
+}
+const { title, summary, meta, stack = [], links = [], metric } = Astro.props;
+---
+<article class="card">
+  {meta && <div class="meta">{meta}</div>}
+  <h3>{title}</h3>
+  <p>{summary}</p>
+  {metric && <p class="mono">→ {metric}</p>}
+  <slot />
+  {stack.length > 0 && <ul class="tags">{stack.map((s) => <li class="tag">{s}</li>)}</ul>}
+  {links.length > 0 && <div class="links">{links.map((l) => <a href={l.url}>{l.label} ↗</a>)}</div>}
+</article>

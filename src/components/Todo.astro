@@ -1,0 +1,6 @@
+---
+// Visible marker for facts Rahul still needs to fill in.
+interface Props { label?: string }
+const { label = 'TODO' } = Astro.props;
+---
+<span class="todo" title="Rahul: fill this in">{label}</span> <slot />

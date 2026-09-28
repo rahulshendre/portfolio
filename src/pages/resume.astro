@@ -1,0 +1,65 @@
+---
+import Page from '../layouts/Page.astro';
+import Todo from '../components/Todo.astro';
+import { site, pipecd, planetread } from '../data/site';
+import { countByState, externalPrs, prsFor } from '../lib/github';
+
+const pipe = countByState(prsFor('pipe-cd'));
+const all = countByState(externalPrs());
+---
+<Page title="Resume" description="Resume of Rahul Shendre: LFX 2026 mentee on PipeCD (CNCF), PlanetRead, Go, TypeScript, Kubernetes.">
+  <style>
+    .cv { max-width: 46rem; }
+    .cv h2 { font-size: 1.3rem; margin: 2rem 0 0.6rem; padding-bottom: 0.3rem; border-bottom: 1px solid var(--line); }
+    .cv .role { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-top: 1rem; }
+    .cv .role b { font-weight: 600; }
+    .cv ul { margin: 0.4rem 0 0; padding-left: 1.2rem; }
+    .cv li { margin-bottom: 0.25rem; }
+    .actions { display: flex; gap: 1rem; margin-bottom: 2rem; }
+    @media print {
+      .site-header, .site-footer, .actions, .todo { display: none !important; }
+      body { background: #fff; color: #000; font-size: 10.5pt; }
+      main { padding: 0 !important; }
+      .cv h2 { margin-top: 1rem; }
+      a { text-decoration: none; }
+    }
+  </style>
+  <div class="cv">
+    <div class="actions"><a class="garage-link" href="/resume.pdf">DOWNLOAD PDF</a></div>
+    <h1 style="font-size:2.6rem;margin-bottom:.2rem">{site.name}</h1>
+    <p class="mono" style="margin:0">{site.location} · <a href={`mailto:${site.email}`}>{site.email}</a> · <a href={site.links.github}>github.com/rahulshendre</a> · <a href={site.links.linkedin}>linkedin.com/in/rahul-shendre</a></p>
+
+    <h2>Summary</h2>
+    <p>Computer science student and open source contributor. LFX 2026 mentee on PipeCD (CNCF), focused on plugin development, documentation and developer experience. {all.merged} merged pull requests to open source projects, {pipe.merged} of them across PipeCD.</p>
+
+    <h2>Open source</h2>
+    <div class="role"><b>PipeCD (CNCF) · {pipecd.role}</b><span class="mono">2026</span></div>
+    <ul>{pipecd.highlights.map((h) => <li>{h}</li>)}<li>Staffed the PipeCD booth at KubeCon India 2026</li></ul>
+    <div class="role"><b>Other contributions</b><span class="mono">2025 to 2026</span></div>
+    <ul><li>KubeStellar (core, UI, docs), Sugarizer, Meshery, Gumroad, first-contributions</li></ul>
+
+    <h2>Experience</h2>
+    <div class="role"><b>{planetread.org}</b><span class="mono"><Todo label="DATES" /></span></div>
+    <ul>
+      <li>Built two Adobe Premiere Pro plugins for Same Language Subtitling, live on Adobe Creative Cloud (Click and Align, Slide and Align)</li>
+      <li>Migrated the BookBox app completely to React Native (10k+ downloads on Google Play)</li>
+      <li>Prototyped a burn-in subtitle checker (OCR plus speech transcription) for C4GT DMP 2026</li>
+    </ul>
+    <div class="role"><b>Cricmaths (BIRD initiative)</b><span class="mono"><Todo label="DATES" /></span></div>
+    <ul><li>Built an API normalisation layer and a practice mode for a site with 1,000+ daily active users</li></ul>
+
+    <h2>Projects</h2>
+    <ul>
+      <li><b>cloudrun-mvp</b> (Go): PipeCD CLOUDRUN_SYNC flow against real Cloud Run, proof of work for a GSoC 2026 proposal</li>
+      <li><b>saytask</b> (Python, macOS): voice and terminal capture into Google Tasks</li>
+      <li><b>EduLite</b> (PWA, Supabase): offline-first learning app with regional language translation</li>
+      <li><b>Suspicious activity detector</b> (Python, YOLO): real-time video analytics</li>
+    </ul>
+
+    <h2>Skills</h2>
+    <p>{site.stack.join(' · ')}</p>
+
+    <h2>Education</h2>
+    <p><Todo /> Degree, college, expected graduation year.</p>
+  </div>
+</Page>

@@ -1,0 +1,31 @@
+---
+import Page from '../layouts/Page.astro';
+import { site, pipecd, planetread } from '../data/site';
+---
+<Page title="About" description="Rahul Shendre: CS student in Pune, LFX 2026 mentee on PipeCD, open source contributor and Scrambler 400X rider.">
+  <header class="page-head">
+    <span class="kicker">Whiteboard · the story</span>
+    <h1>Hi, I'm <em>Rahul</em>.</h1>
+    <p class="lede">{site.description}</p>
+  </header>
+
+  <div class="prose">
+    <p class="draft-banner"><span class="todo">DRAFT</span> Written from public facts (GitHub, pipecd.dev, my profile README). Rahul: rewrite this in your own words.</p>
+
+    <p>I'm a computer science student in Pune. My first GitHub repo went up in September 2023 with the commit message energy of someone who had just discovered Git. Through 2024 I learned the web by building small things: shopping page layouts, a to-do app in React, a real estate site with Tailwind.</p>
+
+    <p>In 2025 I found open source. It started with a first contribution to <a href="https://github.com/firstcontributions/first-contributions">first-contributions</a>, then Sugar Labs and <a href="https://github.com/llaske/sugarizer">Sugarizer</a>, then <a href="https://github.com/kubestellar/kubestellar">KubeStellar</a> and <a href="https://github.com/meshery/meshery">Meshery</a> in the cloud native world.</p>
+
+    <p>Alongside that I worked with <a href={planetread.url}>PlanetRead</a>, a non-profit that teaches reading through <a href={planetread.sls}>Same Language Subtitling</a>. I built two Premiere Pro plugins for them that are now live on Adobe Creative Cloud, and moved their BookBox app to React Native (10k+ downloads on Google Play). I also built a practice mode for <a href="https://cricmaths.com/">Cricmaths</a>, which has over a thousand daily users.</p>
+
+    <p>In 2026 I became an <b>LFX mentee on <a href={pipecd.repo}>PipeCD</a></b>, a CNCF project for GitOps-style continuous delivery. I wrote the nine-chapter v1 plugin tutorial, a lot of the v1 plugin docs and the v1 examples, and spent KubeCon India 2026 at the PipeCD booth.</p>
+
+    <p>From October 2026 I'm making videos about Kubernetes, DevOps and whatever I'm learning, and posting on <a href={site.links.x}>X {site.links.xHandle}</a>.</p>
+
+    <h2>Off the keyboard</h2>
+    <ul>{site.personal.map((p) => <li>{p}</li>)}</ul>
+
+    <h2>Say hi</h2>
+    <p><a href={`mailto:${site.email}`}>{site.email}</a> · <a href={site.links.x}>X</a> · <a href={site.links.github}>GitHub</a> · <a href={site.links.linkedin}>LinkedIn</a></p>
+  </div>
+</Page>

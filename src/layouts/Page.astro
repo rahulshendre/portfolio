@@ -1,0 +1,75 @@
+---
+import '../styles/global.css';
+import { site, nav } from '../data/site';
+import github from '../data/github.json';
+
+interface Props {
+  title?: string;
+  description?: string;
+  /** Pages without the editorial chrome (the game) pass bare. */
+  bare?: boolean;
+}
+const { title, description = site.description, bare = false } = Astro.props;
+const fullTitle = title ? `${title} · ${site.name}` : `${site.name}: ${site.tagline}`;
+const canonical = new URL(Astro.url.pathname, Astro.site);
+const ogImage = new URL('/og.png', Astro.site);
+const path = Astro.url.pathname.replace(/\/$/, '') || '/';
+const snapshot = new Date(github.generatedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <meta name="theme-color" content="#1c1a17" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={site.name} />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImage} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content={site.links.xHandle} />
+    <meta name="twitter:creator" content={site.links.xHandle} />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;1,9..144,400&family=IBM+Plex+Mono:wght@400&family=IBM+Plex+Sans:ital,wght@0,400;0,600;1,400&family=Silkscreen&display=swap"
+    />
+    <slot name="head" />
+  </head>
+  <body>
+    {bare ? <slot /> : (
+      <>
+        <header class="site-header">
+          <div class="wrap">
+            <a class="garage-link" href="/?garage">← GARAGE</a>
+            <a class="site-name" href="/list">{site.name}</a>
+            <nav class="site-nav" aria-label="Sections">
+              {nav.map((n) => <a href={n.href} aria-current={path === n.href ? 'page' : undefined}>{n.label}</a>)}
+            </nav>
+          </div>
+        </header>
+        <main class="wrap"><slot /></main>
+        <footer class="site-footer">
+          <div class="wrap">
+            <span>{site.name} · {site.location}</span>
+            <ul>
+              <li><a href={site.links.github}>GitHub</a></li>
+              <li><a href={site.links.x}>X {site.links.xHandle}</a></li>
+              <li><a href={site.links.linkedin}>LinkedIn</a></li>
+              <li><a href={`mailto:${site.email}`}>Email</a></li>
+              <li><a href="/list">Everything</a></li>
+            </ul>
+            <span class="mono">GitHub data as of {snapshot}</span>
+          </div>
+        </footer>
+      </>
+    )}
+  </body>
+</html>

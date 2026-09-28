@@ -1,0 +1,40 @@
+---
+import Page from '../layouts/Page.astro';
+import Todo from '../components/Todo.astro';
+import { bike } from '../data/site';
+---
+<Page title="Garage" description="Rahul's bike: a white Triumph Scrambler 400 X. Specs, rides and gear.">
+  <header class="page-head">
+    <span class="kicker">The garage · kickstand down</span>
+    <h1>The <em>Scrambler</em>.</h1>
+    <p class="lede">My bike: a {bike.colour.toLowerCase()} {bike.name}. Click it in the garage and you end up here.</p>
+  </header>
+
+  <figure style="margin:0 0 2.5rem;background:var(--paper-2);padding:2rem 1rem;border:1px solid var(--line)">
+    <img class="pixel" src="/sprites/bike-side-lg.png" width="242" height="114" alt="Pixel art of a white Triumph Scrambler 400 X with gold forks and a brown seat, side view" style="width:min(100%,726px);height:auto;margin:auto" />
+    <figcaption class="mono" style="text-align:center;margin-top:1rem;color:var(--muted);font-size:.8rem">Pixel sprite made from Triumph's studio shot, repainted white. <Todo /> swap in a photo of my own bike.</figcaption>
+  </figure>
+
+  <section class="two-col">
+    <div>
+      <h2 style="margin-top:0">Spec sheet</h2>
+      <table class="spec">
+        <tbody>
+          <tr><th>Model</th><td>{bike.name}</td></tr>
+          <tr><th>Colour</th><td>{bike.colour}</td></tr>
+          {bike.specs.map(([k, v]) => <tr><th>{k}</th><td>{v}</td></tr>)}
+        </tbody>
+      </table>
+      <p class="mono" style="font-size:.8rem;color:var(--muted)">Sources: {bike.sources.map((s, i) => <>{i > 0 && ', '}<a href={s.url}>{s.label}</a></>)}</p>
+    </div>
+    <div>
+      <h2 style="margin-top:0">Ride log</h2>
+      <p><Todo /> Routes, dates and photos go here.</p>
+      <h3>Gear</h3>
+      <ul class="prose">
+        <li>Black helmet, dark jacket <Todo label="CONFIRM" /></li>
+        {bike.todo.filter((t) => !t.startsWith('Ride log')).map((t) => <li><Todo /> {t}</li>)}
+      </ul>
+    </div>
+  </section>
+</Page>

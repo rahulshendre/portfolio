@@ -1,0 +1,45 @@
+---
+import { getCollection, render } from 'astro:content';
+import Page from '../layouts/Page.astro';
+import ProjectCard from '../components/ProjectCard.astro';
+import { ownRepos } from '../lib/github';
+
+const builds = (await getCollection('builds')).sort((a, b) => a.data.order - b.data.order);
+const featuredRepos = builds.flatMap((b) => b.data.links.map((l) => l.url.split('github.com/rahulshendre/')[1]).filter(Boolean));
+const rest = ownRepos(featuredRepos as string[]).filter((r) => r.description || r.language);
+const rendered = await Promise.all(builds.map(async (b) => ({ b, Content: (await render(b)).Content })));
+---
+<Page title="Builds" description="Things Rahul Shendre has built: Premiere Pro plugins for PlanetRead, a React Native app with 10k+ downloads, Go tooling for PipeCD, and more.">
+  <header class="page-head">
+    <span class="kicker">Parts shelf · {builds.length} featured</span>
+    <h1>Things I've <em>built</em>.</h1>
+    <p class="lede">Plugins people use in Premiere Pro, an app with 10k+ downloads, Go tooling for PipeCD, and a lot of weekend projects.</p>
+  </header>
+
+  <div class="card-grid">
+    {rendered.map(({ b, Content }) => (
+      <ProjectCard
+        title={b.data.title}
+        summary={b.data.summary}
+        meta={[b.data.for, b.data.year].filter(Boolean).join(' · ') || undefined}
+        stack={b.data.stack}
+        links={b.data.links}
+        metric={b.data.metric}
+      >
+        <Content />
+      </ProjectCard>
+    ))}
+  </div>
+
+  <h2 id="more">More from the <em>workbench</em></h2>
+  <p class="read">Smaller projects, course work and experiments, straight from GitHub.</p>
+  <ul class="log">
+    {rest.map((r) => (
+      <li>
+        <time datetime={r.pushedAt}>{new Date(r.pushedAt).getFullYear()}</time>
+        <span><a href={r.url}>{r.name.replace(/[-_]+/g, ' ').trim()}</a>{r.description ? ` · ${r.description}` : ''}</span>
+        <span class="state">{r.language ?? ''}</span>
+      </li>
+    ))}
+  </ul>
+</Page>

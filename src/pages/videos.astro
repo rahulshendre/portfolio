@@ -1,0 +1,28 @@
+---
+import Page from '../layouts/Page.astro';
+import { site } from '../data/site';
+---
+<Page title="Videos" description="Videos on Kubernetes, DevOps and PipeCD by Rahul Shendre. Starting October 2026.">
+  <header class="page-head">
+    <span class="kicker">Polaroid wall · the TV</span>
+    <h1>Videos, <em>soon</em>.</h1>
+    <p class="lede">Starting October 2026: Kubernetes, DevOps, PipeCD, and whatever I'm learning that week, explained the way I wish someone had explained it to me.</p>
+  </header>
+
+  <div class="stat-row">
+    <div class="stat"><b>0</b><span>videos so far</span></div>
+    <div class="stat"><b>Oct</b><span>first one lands</span></div>
+    <div class="stat"><b>{site.links.xHandle}</b><span>where they get posted first</span></div>
+  </div>
+
+  <div class="read">
+    <h2>What they'll cover</h2>
+    <ul class="prose">
+      <li><b>Kubernetes</b>, from the parts that confused me first.</li>
+      <li><b>DevOps</b> and continuous delivery, with PipeCD as the running example.</li>
+      <li><b>Things I'm learning</b>, in public, mistakes included.</li>
+    </ul>
+    <p>Follow along on <a href={site.links.x}>X {site.links.xHandle}</a>.</p>
+    <p><span class="todo">TODO</span> Add each video to this page (title, date, link) as they go live.</p>
+  </div>
+</Page>

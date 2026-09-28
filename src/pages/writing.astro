@@ -1,0 +1,43 @@
+---
+import { getCollection } from 'astro:content';
+import Page from '../layouts/Page.astro';
+import { fmtDate, prsFor } from '../lib/github';
+
+const notes = (await getCollection('notes', (n) => !n.data.draft)).sort((a, b) => +b.data.date - +a.data.date);
+const docs = prsFor('pipe-cd').filter((p) => p.state === 'merged' && /^docs/i.test(p.title));
+const tutorial = docs.filter((p) => /plugin tutorial/i.test(p.title)).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+const otherDocs = docs.filter((p) => !tutorial.includes(p));
+---
+<Page title="Writing" description="Technical writing by Rahul Shendre: the PipeCD v1 plugin tutorial, PipeCD docs, and notes on Kubernetes and DevOps.">
+  <header class="page-head">
+    <span class="kicker">Workbench · binders</span>
+    <h1>Things I've <em>figured out</em>.</h1>
+    <p class="lede">Most of my writing so far lives in the PipeCD docs. Notes of my own start here.</p>
+  </header>
+
+  <h2 style="margin-top:0">Notes</h2>
+  {notes.length === 0 ? (
+    <p class="read">Nothing here yet. The first notes land alongside the videos in October 2026.</p>
+  ) : (
+    <ul class="log">
+      {notes.map((n) => (
+        <li><time datetime={n.data.date.toISOString()}>{fmtDate(n.data.date.toISOString())}</time><span><b>{n.data.title}</b> · {n.data.summary}</span><span class="state">{n.data.tags.join(', ')}</span></li>
+      ))}
+    </ul>
+  )}
+
+  <h2>The PipeCD v1 plugin tutorial</h2>
+  <p class="read">Nine chapters that take you from an empty folder to a plugin running inside Piped. Each link is the pull request that added the chapter.</p>
+  <ol class="log">
+    {tutorial.map((p) => (
+      <li><time datetime={p.createdAt}>{fmtDate(p.createdAt)}</time><a href={p.url}>{p.title.replace(/^Docs\s*V1:\s*/i, '')}</a><span class="state" data-state="merged">merged</span></li>
+    ))}
+  </ol>
+
+  <h2>Other docs I wrote for PipeCD</h2>
+  <ul class="log">
+    {otherDocs.map((p) => (
+      <li><time datetime={p.createdAt}>{fmtDate(p.createdAt)}</time><a href={p.url}>{p.title}</a><span class="state" data-state="merged">merged</span></li>
+    ))}
+  </ul>
+</Page>

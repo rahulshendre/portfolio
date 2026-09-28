@@ -1,0 +1,81 @@
+---
+import Page from '../layouts/Page.astro';
+import ProjectCard from '../components/ProjectCard.astro';
+import { pipecd, otherProjects } from '../data/site';
+import { countByState, externalPrs, firstPrDate, fmtDate, prsFor } from '../lib/github';
+
+const pipeOrg = prsFor('pipe-cd');
+const pipe = countByState(pipeOrg);
+const all = countByState(externalPrs());
+const orgs = new Set(externalPrs().filter((p) => p.state === 'merged').map((p) => p.repo.split('/')[0])).size;
+const log = pipeOrg.filter((p) => p.state !== 'closed');
+
+const others = otherProjects.map((o) => ({ ...o, ...countByState(prsFor(o.repo)), first: firstPrDate(o.repo) }));
+const timeline = [
+  ...others.filter((o) => o.first).map((o) => ({ date: o.first!, text: `First PR to ${o.name}` })),
+  { date: firstPrDate('pipe-cd/pipecd')!, text: 'First PR to PipeCD' },
+].sort((a, b) => a.date.localeCompare(b.date));
+---
+<Page title="Open Source" description={`LFX 2026 mentee on PipeCD (CNCF). ${pipe.merged} merged PRs across PipeCD: the v1 plugin tutorial, v1 plugin docs and examples.`}>
+  <header class="page-head">
+    <span class="kicker">Back wall · the big one</span>
+    <h1>Open road,<br /><em>open source</em>.</h1>
+    <p class="lede">I'm an LFX mentee on <a href={pipecd.repo}>PipeCD</a>, a <a href={pipecd.cncf}>CNCF</a> project for GitOps-style continuous delivery. My lane: {pipecd.focus.toLowerCase()}.</p>
+  </header>
+
+  <div class="stat-row">
+    <div class="stat"><b>{pipe.merged}</b><span>merged PRs across PipeCD</span></div>
+    <div class="stat"><b>9</b><span>chapters of the v1 plugin tutorial</span></div>
+    <div class="stat"><b>{all.merged}</b><span>merged PRs to open source</span></div>
+    <div class="stat"><b>{orgs}</b><span>orgs with merged work</span></div>
+  </div>
+
+  <section class="two-col">
+    <div>
+      <h2 style="margin-top:0">PipeCD</h2>
+      <p><b>{pipecd.role}.</b> Most of my work is making PipeCD v1 easy to pick up. If you're writing a PipeCD plugin, the tutorial in the docs is mine.</p>
+      <ul class="prose">{pipecd.highlights.map((h) => <li>{h}</li>)}</ul>
+    </div>
+    <div>
+      <h3 style="margin-top:0.4rem">Also</h3>
+      <ul class="prose">
+        <li><a href={pipecd.kubecon.url}>{pipecd.kubecon.title}</a>, talking to people about PipeCD all day.</li>
+        <li><a href={pipecd.gsoc.url}>{pipecd.gsoc.title}</a> (<a href={pipecd.gsoc.issue}>issue</a>).</li>
+        <li>Docs live at <a href={pipecd.site}>pipecd.dev</a>.</li>
+      </ul>
+    </div>
+  </section>
+
+  <h2 id="log">The PR log</h2>
+  <p class="read">Every PipeCD pull request I've opened, newest first. {pipe.open} still open.</p>
+  <ul class="log">
+    {log.map((p) => (
+      <li>
+        <time datetime={p.createdAt}>{fmtDate(p.createdAt)}</time>
+        <a href={p.url}>{p.title}</a>
+        <span class="state" data-state={p.state}>{p.state}</span>
+      </li>
+    ))}
+  </ul>
+
+  <h2 id="projects">Other <em>projects</em></h2>
+  <p class="read">Before PipeCD I learned the ropes on these. The stickers on the toolbox.</p>
+  <div class="card-grid">
+    {others.map((o) => (
+      <ProjectCard
+        title={o.name}
+        summary={o.blurb}
+        meta={o.repo}
+        metric={o.merged ? `${o.merged} merged${o.total > o.merged ? ` of ${o.total}` : ''}` : `${o.total} PR${o.total > 1 ? 's' : ''} opened`}
+        links={[{ label: 'My PRs', url: `https://github.com/${o.repo}/pulls?q=is%3Apr+author%3Arahulshendre` }]}
+      />
+    ))}
+  </div>
+
+  <h2 id="timeline">How I got <em>here</em></h2>
+  <ul class="log">
+    {timeline.map((t) => (
+      <li><time datetime={t.date}>{fmtDate(t.date)}</time><span>{t.text}</span><span class="state"></span></li>
+    ))}
+  </ul>
+</Page>

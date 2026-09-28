@@ -1,0 +1,37 @@
+---
+// The plain page: everything on one screen, no JavaScript. Also the no-JS fallback for the game.
+import { getCollection } from 'astro:content';
+import Page from '../layouts/Page.astro';
+import { site, nav, pipecd } from '../data/site';
+import { countByState, prsFor } from '../lib/github';
+
+const builds = (await getCollection('builds')).sort((a, b) => a.data.order - b.data.order);
+const pipe = countByState(prsFor('pipe-cd'));
+---
+<Page title="Everything" description={`${site.name}: everything on one page. Builds, open source, videos, the bike, writing, about and resume.`}>
+  <header class="page-head">
+    <span class="kicker">The plain version</span>
+    <h1>{site.name}</h1>
+    <p class="lede">{site.description}</p>
+    <p><a href="/?ride">Take the ride instead →</a></p>
+  </header>
+  <div class="two-col">
+    <section>
+      <h2 style="margin-top:0">Sections</h2>
+      <ul class="prose">{nav.map((n) => <li><a href={n.href}>{n.label}</a></li>)}</ul>
+      <h2>Open source</h2>
+      <p>{pipecd.role} on <a href={pipecd.repo}>PipeCD</a> (CNCF). {pipe.merged} merged PRs across PipeCD, including the nine-chapter v1 plugin tutorial. <a href="/open-source">More →</a></p>
+      <h2>Contact</h2>
+      <ul class="prose">
+        <li><a href={`mailto:${site.email}`}>{site.email}</a></li>
+        <li><a href={site.links.x}>X {site.links.xHandle}</a></li>
+        <li><a href={site.links.github}>GitHub</a></li>
+        <li><a href={site.links.linkedin}>LinkedIn</a></li>
+      </ul>
+    </section>
+    <section>
+      <h2 style="margin-top:0">Builds</h2>
+      <ul class="prose">{builds.map((b) => <li><b>{b.data.title}</b>: {b.data.summary}</li>)}</ul>
+    </section>
+  </div>
+</Page>
