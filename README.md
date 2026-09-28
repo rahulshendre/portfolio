@@ -1,6 +1,17 @@
-# rahulshendre.dev (working title)
+# Rahul Shendre
 
-Personal site of Rahul Shendre. A pixel-art ride down an Indian highway that ends in a garage full of work.
+Personal site. A pixel-art ride down an Indian highway on a white Scrambler 400X that ends in a garage where every object links to real work.
+
+![Garage](docs/screenshots/08-garage.png)
+
+More screenshots in `docs/screenshots/`. Overnight build notes in `docs/MORNING-REPORT.md`.
+
+## Controls
+
+- Any key or tap: start the ride. `S` / Esc or SKIP: straight to the garage.
+- Arrow keys, A/D or tapping screen halves: steer (or let the autopilot ride).
+- `V`, `1` `2` `3` or the camera icon: behind, rider POV, top-down.
+- `/?ride` forces the ride, `/?garage` skips it, `/?door` shows only the door, `/?ride&og` is the share-image title.
 
 ## Run it
 

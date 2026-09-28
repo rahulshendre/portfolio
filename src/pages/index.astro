@@ -11,6 +11,10 @@ import { site, nav } from '../data/site';
       <nav class="hotspots" id="hotspots" aria-label="Garage"></nav>
     </div>
   </div>
+  <div class="phone-bar" aria-hidden="true">
+    <a href="/list" tabindex="-1">LIST</a>
+    <a href="/?ride" tabindex="-1">RIDE AGAIN</a>
+  </div>
   <nav class="sr-only" aria-label="Sections">
     <ul>{nav.map((n) => <li><a href={n.href}>{n.label}</a></li>)}<li><a href="/list">Everything on one page</a></li></ul>
   </nav>
@@ -35,6 +39,10 @@ import { site, nav } from '../data/site';
     .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
     .skip-plain { position: fixed; left: 8px; top: 8px; z-index: 10; transform: translateY(-200%); background: #e8b923; color: #1b1712; padding: 8px 12px; font: 600 14px/1 system-ui; }
     .skip-plain:focus { transform: none; }
+    /* In the garage on a portrait phone the in-world bar buttons sit off-screen: mirror them here. */
+    .phone-bar { display: none; position: fixed; left: 8px; right: 8px; bottom: 8px; justify-content: space-between; pointer-events: none; z-index: 5; }
+    .phone-bar a { pointer-events: auto; font: 400 12px/1 'Silkscreen', monospace; background: #1b1712; color: #fff6e0; padding: 10px 12px; text-decoration: none; box-shadow: 3px 3px 0 #e8b923; }
+    @media (orientation: portrait) { body:has(.stage[data-mode='world']) .phone-bar { display: flex; } }
     .noscript { position: fixed; inset: 0; overflow: auto; background: #f4efe6; color: #1b1712; padding: 2rem; font: 18px/1.6 system-ui; z-index: 20; }
   </style>
   <script>

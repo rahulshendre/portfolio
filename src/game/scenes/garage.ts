@@ -250,7 +250,11 @@ export class GarageScene implements Scene {
     rect(0, 256, 480, 14, C.ink);
     text('LIST VIEW', 6, 260, this.hover === 'list' ? C.accent : C.hud);
     text('RIDE AGAIN >', 474 - textW('RIDE AGAIN >'), 260, this.hover === 'ride' ? C.accent : C.hud);
-    const msg = hot ? (HOTSPOTS.includes(hot) ? `LOOK AT: ${hot.label}` : hot.label) : this.touch ? 'TAP ANYTHING · SWIPE TO LOOK AROUND' : 'POINT AT ANYTHING';
+    // Portrait phones only see ~130px of the bar, so keep it short there.
+    const narrow = this.screen.size.portrait;
+    const msg = hot
+      ? narrow ? hot.tag || hot.label : HOTSPOTS.includes(hot) ? `LOOK AT: ${hot.label}` : hot.label
+      : narrow ? '< SWIPE >' : this.touch ? 'TAP ANYTHING · SWIPE TO LOOK AROUND' : 'POINT AT ANYTHING';
     textC(msg, 240, 260, hot ? C.accent : '#a89d8b');
   }
 }

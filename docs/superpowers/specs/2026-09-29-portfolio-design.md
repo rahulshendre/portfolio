@@ -36,7 +36,7 @@ A personal site that builds Rahul's name in the dev and open source community (n
 | Clipboard on a nail | `/resume` |
 | Radio | X profile (`@shendreee`) |
 
-Returning visitors (localStorage flag) skip straight to the garage. `prefers-reduced-motion` skips the ride and door animation. Without JavaScript the page shows the plain index.
+Returning visitors (localStorage flag) skip straight to the garage. `prefers-reduced-motion` skips the ride and door animation. Without JavaScript the page shows the plain list.
 
 ## Content pages
 
@@ -49,7 +49,7 @@ Editorial style: warm paper background, serif headlines, mono for technical deta
 - `/writing`: docs he wrote (PipeCD plugin tutorial and others, linked to pipecd.dev) plus "notes" collection, empty with a clear note until he posts.
 - `/about`: story drafted from real facts, marked DRAFT.
 - `/resume`: HTML resume from known facts plus TODOs (education, dates); `resume.pdf` generated from it.
-- `/index`: plain list of everything, no JavaScript, doubles as the future "professional page".
+- `/list`: plain list of everything, no JavaScript, doubles as the future "professional page". (Planned as `/index`, renamed because it clashes with the home page.)
 - `404`: pixel "wrong turn" page.
 
 ## Architecture
