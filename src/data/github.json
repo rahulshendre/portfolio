@@ -1,0 +1,1307 @@
+{
+  "generatedAt": "2026-09-28T20:48:01.534Z",
+  "profile": {
+    "login": "rahulshendre",
+    "name": "Rahul Shendre",
+    "bio": "docs @pipe-cd : D",
+    "location": "Pune, INDIA",
+    "followers": 22,
+    "publicRepos": 72,
+    "createdAt": "2023-09-06T10:57:29Z",
+    "twitter": "shendreee"
+  },
+  "repos": [
+    {
+      "name": "undark",
+      "description": null,
+      "language": "TypeScript",
+      "fork": false,
+      "stars": 0,
+      "pushedAt": "2026-09-28T14:52:34Z",
+      "url": "https://github.com/rahulshendre/undark"
+    },
+    {
+      "name": "pipecd",
+      "description": "The One CD for All {applications, platforms, operations}",
+      "language": "Go",
+      "fork": true,
+      "stars": 0,
+      "pushedAt": "2026-09-26T02:53:21Z",
+      "url": "https://github.com/rahulshendre/pipecd"
+    },
+    {
+      "name": "Burn-in-subtitle-checker",
+      "description": null,
+      "language": null,
+      "fork": true,
+      "stars": 0,
+      "pushedAt": "2026-09-24T12:18:12Z",
+      "url": "https://github.com/rahulshendre/Burn-in-subtitle-checker"
+    },
+    {
+      "name": "saytask",
+      "description": "Save tasks to Google Tasks by voice, terminal, or menubar - Mac app",
+      "language": "Python",
+      "fork": false,
+      "stars": 0,
+      "pushedAt": "2026-09-07T16:20:17Z",
+      "url": "https://github.com/rahulshendre/saytask"
+    },
+    {
+      "name": "argo-cd",
+      "description": "Declarative Continuous Deployment for Kubernetes",
+      "language": null,
+      "fork": true,
+      "stars": 0,
+      "pushedAt": "2026-09-03T03:14:12Z",
+      "url": "https://github.com/rahulshendre/argo-cd"
+    },
+    {
+      "name": "ew-demo",
+      "description": null,
+      "language": null,
+      "fork": false,
+      "stars": 0,
+      "pushedAt": "2026-08-28T21:00:00Z",
+      "url": "https://github.com/rahulshendre/ew-demo"
+    },
+    {
+      "name": "examples",
+      "description": "Examples to demonstrate how to use PipeCD",
+      "language": "HCL",
+      "fork": true,
+      "stars": 0,
+      "pushedAt": "2026-08-22T17:14:24Z",
+      "url": "https://github.com/rahulshendre/examples"
+    },
+    {
+      "name": "Network_threat_detection-",
+      "description": null,
+      "language": "Jupyter Notebook",
+      "fork": false,
+      "stars": 0,
+      "pushedAt": "2026-07-25T09:32:59Z",
+      "url": "https://github.com/rahulshendre/Network_threat_detection-"
+    },
+    {
+      "name": "undark_build",
+      "description": null,
+      "language": "HTML",
+      "fork": false,
+      "stars": 0,
+      "pushedAt": "2026-06-28T19:40:55Z",
+      "url": "https://github.com/rahulshendre/undark_build"
+    },
+    {
+      "name": "subtitle_mismatch_mvp",
+      "description": null,
+      "language": "Python",
+      "fork": false,
+      "stars": 0,
+      "pushedAt": "2026-06-27T09:27:25Z",
+      "url": "https://github.com/rahulshendre/subtitle_mismatch_mvp"
+    },
+    {
+      "name": "rahulshendre",
+      "description": "Hello all, this is my profile ",
+      "language": null,
+      "fork": false,
+      "stars": 0,
+      "pushedAt": "2026-06-21T09:42:14Z",
+      "url": "https://github.com/rahulshendre/rahulshendre"
+    },
+    {
+      "name": "pipecd-v1-examples",
+      "description": null,
+      "language": null,
+      "fork": false,
+      "stars": 0,
+      "pushedAt": "2026-06-10T07:48:07Z",
+      "url": "https://github.com/rahulshendre/pipecd-v1-examples"
+    },
+    {
+      "name": "chat",
+      "description": "BharatCode Chat open-source app",
+      "language": null,
+      "fork": true,
+      "stars": 0,
+      "pushedAt": "2026-06-05T22:16:50Z",
+      "url": "https://github.com/rahulshendre/chat"
+    },
+    {
+      "name": "nursery_app_mobile",
+      "description": null,
+      "language": "TypeScript",
+      "fork": false,
+      "stars": 0,
+      "pushedAt": "2026-05-17T05:03:38Z",
+      "url": "https://github.com/rahulshendre/nursery_app_mobile"
+    },
+    {
+      "name": "convex_hull_visualizer",
+      "description": "DAA course project ",
+      "language": "JavaScript",
+      "fork": false,
+      "stars": 0,
+      "pushedAt": "2026-05-05T03:36:19Z",
+      "url": "https://github.com/rahulshendre/convex_hull_visualizer"
+    },
+    {
+      "name": "ai_game_hub",
+      "description": null,
+      "language": "JavaScript",
+      "fork": false,
+      "stars": 0,
+      "pushedAt": "2026-04-27T14:41:57Z",
+      "url": "https://github.com/rahulshendre/ai_game_hub"
+    },
+    {
+      "name": "GreenGrow.Nursery-Management-and-Plant-Tracking-System",
+      "description": "A Smart Nursery Management System built using Node.js, Express, and MySQL with growth tracking and analytics.",
+      "language": "EJS",
+      "fork": true,
+      "stars": 0,
+      "pushedAt": "2026-04-27T06:01:59Z",
+      "url": "https://github.com/rahulshendre/GreenGrow.Nursery-Management-and-Plant-Tracking-System"
+    },
+    {
+      "name": "Deepfake_detector",
+      "description": "Deepfake detection for images, audio and videos ",
+      "language": "HTML",
+      "fork": false,
+      "stars": 0,
+      "pushedAt": "2026-04-25T19:19:24Z",
+      "url": "https://github.com/rahulshendre/Deepfake_detector"
+    },
+    {
+      "name": "Click_and_Align_Subtitle_tool",
+      "description": "PlanetRead, Click and Align Subtitle tool",
+      "language": "JavaScript",
+      "fork": false,
+      "stars": 0,
+      "pushedAt": "2026-04-09T05:34:48Z",
+      "url": "https://github.com/rahulshendre/Click_and_Align_Subtitle_tool"
+    },
+    {
+      "name": "console",
+      "description": "World's first fully integrated and fully Automated Kubernetes management and orchestration solution",
+      "language": null,
+      "fork": true,
+      "stars": 0,
+      "pushedAt": "2026-04-04T05:48:10Z",
+      "url": "https://github.com/rahulshendre/console"
+    },
+    {
+      "name": "Mechanic-app",
+      "description": null,
+      "language": null,
+      "fork": true,
+      "stars": 0,
+      "pushedAt": "2026-03-30T14:45:29Z",
+      "url": "https://github.com/rahulshendre/Mechanic-app"
+    },
+    {
+      "name": "cloudrun-mvp",
+      "description": null,
+      "language": "Go",
+      "fork": false,
+      "stars": 0,
+      "pushedAt": "2026-03-26T17:33:05Z",
+      "url": "https://github.com/rahulshendre/cloudrun-mvp"
+    },
+    {
+      "name": "Slide_and_align_subtitle_tool",
+      "description": null,
+      "language": "JavaScript",
+      "fork": false,
+      "stars": 0,
+      "pushedAt": "2026-03-22T06:38:49Z",
+      "url": "https://github.com/rahulshendre/Slide_and_align_subtitle_tool"
+    },
+    {
+      "name": "protein_tracker",
+      "description": "built using react native cli, for me : ) ",
+      "language": "TypeScript",
+      "fork": false,
+      "stars": 0,
+      "pushedAt": "2026-03-15T17:58:10Z",
+      "url": "https://github.com/rahulshendre/protein_tracker"
+    },
+    {
+      "name": "merged_subtitle_tool",
+      "description": null,
+      "language": "JavaScript",
+      "fork": false,
+      "stars": 0,
+      "pushedAt": "2026-03-11T12:32:26Z",
+      "url": "https://github.com/rahulshendre/merged_subtitle_tool"
+    },
+    {
+      "name": "seerr",
+      "description": "Open-source media request and discovery manager for Jellyfin, Plex, and Emby.",
+      "language": null,
+      "fork": true,
+      "stars": 0,
+      "pushedAt": "2026-03-10T01:49:08Z",
+      "url": "https://github.com/rahulshendre/seerr"
+    },
+    {
+      "name": "AI-Recruitment-Salesforce-Project",
+      "description": "Salesforce-based AI Recruitment & Candidate Management System",
+      "language": null,
+      "fork": true,
+      "stars": 0,
+      "pushedAt": "2026-03-08T09:02:41Z",
+      "url": "https://github.com/rahulshendre/AI-Recruitment-Salesforce-Project"
+    },
+    {
+      "name": "crickmaths_BIRD",
+      "description": "Source code for Crickmaths website, under the BIRD initiative ",
+      "language": "JavaScript",
+      "fork": false,
+      "stars": 0,
+      "pushedAt": "2026-02-24T11:24:17Z",
+      "url": "https://github.com/rahulshendre/crickmaths_BIRD"
+    },
+    {
+      "name": "Edulite",
+      "description": "project",
+      "language": "JavaScript",
+      "fork": false,
+      "stars": 0,
+      "pushedAt": "2026-02-22T06:35:39Z",
+      "url": "https://github.com/rahulshendre/Edulite"
+    },
+    {
+      "name": "github_actions_kubernetes",
+      "description": null,
+      "language": "JavaScript",
+      "fork": false,
+      "stars": 0,
+      "pushedAt": "2026-01-13T07:29:48Z",
+      "url": "https://github.com/rahulshendre/github_actions_kubernetes"
+    },
+    {
+      "name": "flexile",
+      "description": "Contractor payments",
+      "language": null,
+      "fork": true,
+      "stars": 0,
+      "pushedAt": "2026-01-13T03:49:19Z",
+      "url": "https://github.com/rahulshendre/flexile"
+    },
+    {
+      "name": "Suspicious-Activity-Detector---Video-Analytics",
+      "description": "A real-time web-based application for detecting suspicious activities in video streams using YOLO deep learning models. The system processes video files or live webcam feeds, identifies suspicious behaviors, and provides real-time analytics with visual feedback.",
+      "language": "Python",
+      "fork": false,
+      "stars": 0,
+      "pushedAt": "2026-01-03T18:27:47Z",
+      "url": "https://github.com/rahulshendre/Suspicious-Activity-Detector---Video-Analytics"
+    },
+    {
+      "name": "gumroad",
+      "description": "Sell stuff and see what sticks",
+      "language": null,
+      "fork": true,
+      "stars": 0,
+      "pushedAt": "2026-01-02T07:37:38Z",
+      "url": "https://github.com/rahulshendre/gumroad"
+    },
+    {
+      "name": "docs",
+      "description": "New home for Kubestellar documentations and supporting platform",
+      "language": "TypeScript",
+      "fork": true,
+      "stars": 0,
+      "pushedAt": "2025-12-31T06:30:32Z",
+      "url": "https://github.com/rahulshendre/docs"
+    },
+    {
+      "name": "kubestellar",
+      "description": "KubeStellar - a flexible solution for multi-cluster configuration management for edge, multi-cloud, and hybrid cloud",
+      "language": "Go",
+      "fork": true,
+      "stars": 0,
+      "pushedAt": "2025-12-28T11:33:28Z",
+      "url": "https://github.com/rahulshendre/kubestellar"
+    },
+    {
+      "name": "sugarizer",
+      "description": "Sugarizer is a web implementation of the Sugar platform to run on any device or browser",
+      "language": "JavaScript",
+      "fork": true,
+      "stars": 0,
+      "pushedAt": "2025-12-27T18:01:55Z",
+      "url": "https://github.com/rahulshendre/sugarizer"
+    },
+    {
+      "name": "ui",
+      "description": "KubeStellar's User Interface",
+      "language": "TypeScript",
+      "fork": true,
+      "stars": 0,
+      "pushedAt": "2025-12-10T14:23:04Z",
+      "url": "https://github.com/rahulshendre/ui"
+    },
+    {
+      "name": "DSA",
+      "description": "DSA question which i practise",
+      "language": "C++",
+      "fork": false,
+      "stars": 0,
+      "pushedAt": "2025-11-24T17:01:43Z",
+      "url": "https://github.com/rahulshendre/DSA"
+    },
+    {
+      "name": "flappy_bird",
+      "description": "recreating the legendary flappy bird, back to basics : ) ",
+      "language": "JavaScript",
+      "fork": false,
+      "stars": 0,
+      "pushedAt": "2025-11-13T10:24:07Z",
+      "url": "https://github.com/rahulshendre/flappy_bird"
+    },
+    {
+      "name": "secure-logchain",
+      "description": "Decentralized system log storage using blockchain (Ganache + Node.js + Solidity)",
+      "language": "HTML",
+      "fork": false,
+      "stars": 0,
+      "pushedAt": "2025-11-09T05:02:44Z",
+      "url": "https://github.com/rahulshendre/secure-logchain"
+    },
+    {
+      "name": "bookbox_mvp",
+      "description": "a simple react app, plays the video in the app itself using the Youtube api data v3",
+      "language": "TypeScript",
+      "fork": false,
+      "stars": 0,
+      "pushedAt": "2025-11-06T04:20:10Z",
+      "url": "https://github.com/rahulshendre/bookbox_mvp"
+    },
+    {
+      "name": "meshery",
+      "description": "Meshery, the cloud native manager",
+      "language": null,
+      "fork": true,
+      "stars": 0,
+      "pushedAt": "2025-10-31T10:20:16Z",
+      "url": "https://github.com/rahulshendre/meshery"
+    },
+    {
+      "name": "hyperswitch",
+      "description": "An open source payments switch written in Rust to make payments fast, reliable and affordable",
+      "language": null,
+      "fork": true,
+      "stars": 0,
+      "pushedAt": "2025-10-01T12:03:08Z",
+      "url": "https://github.com/rahulshendre/hyperswitch"
+    },
+    {
+      "name": "blockchain_based_supply_chain",
+      "description": "Blockchain-Based Supply Chain Transparency for Agricultural Produce",
+      "language": "JavaScript",
+      "fork": false,
+      "stars": 1,
+      "pushedAt": "2025-09-25T20:47:18Z",
+      "url": "https://github.com/rahulshendre/blockchain_based_supply_chain"
+    },
+    {
+      "name": "nabha_native_app",
+      "description": null,
+      "language": "TypeScript",
+      "fork": false,
+      "stars": 0,
+      "pushedAt": "2025-09-24T15:23:38Z",
+      "url": "https://github.com/rahulshendre/nabha_native_app"
+    },
+    {
+      "name": "PlanetRead---Plugin-F1",
+      "description": "Feature 1 Adobe premiere pro plugin for PlanetRead",
+      "language": "JavaScript",
+      "fork": false,
+      "stars": 0,
+      "pushedAt": "2025-09-17T06:44:19Z",
+      "url": "https://github.com/rahulshendre/PlanetRead---Plugin-F1"
+    },
+    {
+      "name": "os_phase_1",
+      "description": null,
+      "language": "C++",
+      "fork": false,
+      "stars": 0,
+      "pushedAt": "2025-09-16T15:26:42Z",
+      "url": "https://github.com/rahulshendre/os_phase_1"
+    },
+    {
+      "name": "devops-directive-docker-course",
+      "description": "Companion repo for complete Docker course",
+      "language": null,
+      "fork": true,
+      "stars": 0,
+      "pushedAt": "2025-08-13T15:04:13Z",
+      "url": "https://github.com/rahulshendre/devops-directive-docker-course"
+    },
+    {
+      "name": "Sail-to-Cgen--Coding_Challenge",
+      "description": "SAIL to CGEN - Coding Challenge",
+      "language": "Python",
+      "fork": false,
+      "stars": 0,
+      "pushedAt": "2025-07-28T20:44:39Z",
+      "url": "https://github.com/rahulshendre/Sail-to-Cgen--Coding_Challenge"
+    },
+    {
+      "name": "Code-Gen---Coding-challenge",
+      "description": "Code Gen: From UDB to Implementations - Coding Challenge",
+      "language": "Python",
+      "fork": false,
+      "stars": 0,
+      "pushedAt": "2025-07-24T08:21:42Z",
+      "url": "https://github.com/rahulshendre/Code-Gen---Coding-challenge"
+    },
+    {
+      "name": "LFX-Mentorship",
+      "description": "LFX Mentorship: Projects and Coding Challenges",
+      "language": null,
+      "fork": true,
+      "stars": 0,
+      "pushedAt": "2025-07-16T03:44:09Z",
+      "url": "https://github.com/rahulshendre/LFX-Mentorship"
+    },
+    {
+      "name": "UI-for-plugin",
+      "description": "ui for PlanetRead subtitle plugin",
+      "language": "JavaScript",
+      "fork": false,
+      "stars": 0,
+      "pushedAt": "2025-06-16T05:17:30Z",
+      "url": "https://github.com/rahulshendre/UI-for-plugin"
+    },
+    {
+      "name": "Nursery_Management",
+      "description": "DBMS Project for DOME ",
+      "language": "JavaScript",
+      "fork": false,
+      "stars": 0,
+      "pushedAt": "2025-04-22T10:22:11Z",
+      "url": "https://github.com/rahulshendre/Nursery_Management"
+    },
+    {
+      "name": "sugar-toolkit-gtk3",
+      "description": "Sugar Learning Environment, Activity Toolkit, GTK 3.",
+      "language": null,
+      "fork": true,
+      "stars": 0,
+      "pushedAt": "2025-04-21T17:15:12Z",
+      "url": "https://github.com/rahulshendre/sugar-toolkit-gtk3"
+    },
+    {
+      "name": "Posture-detection",
+      "description": "Posture detection using IOT ",
+      "language": "JavaScript",
+      "fork": false,
+      "stars": 0,
+      "pushedAt": "2025-04-20T05:17:52Z",
+      "url": "https://github.com/rahulshendre/Posture-detection"
+    },
+    {
+      "name": "sugarizer_rahul",
+      "description": "i am working on this human activity pack of sugarizer, this repo holds my code of the project, nothing here is final ",
+      "language": null,
+      "fork": false,
+      "stars": 0,
+      "pushedAt": "2025-04-06T11:50:05Z",
+      "url": "https://github.com/rahulshendre/sugarizer_rahul"
+    },
+    {
+      "name": "Metadata",
+      "description": "COEP hackathon",
+      "language": null,
+      "fork": false,
+      "stars": 0,
+      "pushedAt": "2025-03-29T04:02:52Z",
+      "url": "https://github.com/rahulshendre/Metadata"
+    },
+    {
+      "name": "Metadata-viewer",
+      "description": null,
+      "language": "JavaScript",
+      "fork": false,
+      "stars": 0,
+      "pushedAt": "2025-03-07T12:40:03Z",
+      "url": "https://github.com/rahulshendre/Metadata-viewer"
+    },
+    {
+      "name": "first-contributions",
+      "description": "🚀✨ Help beginners to contribute to open source projects",
+      "language": null,
+      "fork": true,
+      "stars": 0,
+      "pushedAt": "2025-02-03T08:44:00Z",
+      "url": "https://github.com/rahulshendre/first-contributions"
+    },
+    {
+      "name": "Real-estate-using-react",
+      "description": "I have made a simple and minimal Real estate website using React and Tailwind css",
+      "language": "JavaScript",
+      "fork": false,
+      "stars": 0,
+      "pushedAt": "2024-11-22T16:53:43Z",
+      "url": "https://github.com/rahulshendre/Real-estate-using-react"
+    },
+    {
+      "name": "Contact-Manager-App",
+      "description": null,
+      "language": null,
+      "fork": false,
+      "stars": 0,
+      "pushedAt": "2024-10-26T14:24:32Z",
+      "url": "https://github.com/rahulshendre/Contact-Manager-App"
+    },
+    {
+      "name": "Fake_news_predictor",
+      "description": null,
+      "language": "Jupyter Notebook",
+      "fork": false,
+      "stars": 0,
+      "pushedAt": "2024-10-25T16:04:30Z",
+      "url": "https://github.com/rahulshendre/Fake_news_predictor"
+    },
+    {
+      "name": "Document-verification-using-IPFS",
+      "description": "This project is a document verification system using IPFS and Pinata for decentralized storage. Users can upload files and verify them by comparing file hashes stored in MongoDB. Built with Node.js and Express.js, it includes user roles (admin and verifier) to ensure only authenticated users can upload or verify documents.",
+      "language": "CSS",
+      "fork": false,
+      "stars": 0,
+      "pushedAt": "2024-10-25T15:50:14Z",
+      "url": "https://github.com/rahulshendre/Document-verification-using-IPFS"
+    },
+    {
+      "name": "how-to-deploy-a-dockerized-fastapi-to-google-cloud-run",
+      "description": "How to deploy a dockerized FastAPI to Google Cloud Run",
+      "language": null,
+      "fork": true,
+      "stars": 0,
+      "pushedAt": "2024-09-25T13:16:30Z",
+      "url": "https://github.com/rahulshendre/how-to-deploy-a-dockerized-fastapi-to-google-cloud-run"
+    },
+    {
+      "name": "To-do-list-using-React",
+      "description": "While learning react, i created a simple to do list website",
+      "language": "JavaScript",
+      "fork": false,
+      "stars": 0,
+      "pushedAt": "2024-08-24T13:36:17Z",
+      "url": "https://github.com/rahulshendre/To-do-list-using-React"
+    },
+    {
+      "name": "Password-Generator",
+      "description": "simple, minimal, strong password generator",
+      "language": "CSS",
+      "fork": false,
+      "stars": 0,
+      "pushedAt": "2024-08-11T06:35:24Z",
+      "url": "https://github.com/rahulshendre/Password-Generator"
+    },
+    {
+      "name": "Grocify_Layout",
+      "description": "I made this layout for a grocery shopping app, using tailwind css",
+      "language": "HTML",
+      "fork": false,
+      "stars": 0,
+      "pushedAt": "2024-08-11T05:34:10Z",
+      "url": "https://github.com/rahulshendre/Grocify_Layout"
+    },
+    {
+      "name": "express",
+      "description": "Fast, unopinionated, minimalist web framework for node.",
+      "language": null,
+      "fork": true,
+      "stars": 0,
+      "pushedAt": "2024-08-10T09:41:43Z",
+      "url": "https://github.com/rahulshendre/express"
+    },
+    {
+      "name": "Simple_Image_scroll",
+      "description": "While learning HTML and CSS and JS, I created this image scrolling.",
+      "language": "HTML",
+      "fork": false,
+      "stars": 0,
+      "pushedAt": "2024-08-08T10:50:52Z",
+      "url": "https://github.com/rahulshendre/Simple_Image_scroll"
+    },
+    {
+      "name": "Online_shopping_layout",
+      "description": "While learning HTML and CSS, so I thought let's create a Layout for an online shopping website",
+      "language": "HTML",
+      "fork": false,
+      "stars": 0,
+      "pushedAt": "2024-07-13T05:23:13Z",
+      "url": "https://github.com/rahulshendre/Online_shopping_layout"
+    },
+    {
+      "name": "devops-directive-terraform-course",
+      "description": "Companion repo for complete Terraform course",
+      "language": null,
+      "fork": true,
+      "stars": 0,
+      "pushedAt": "2024-06-14T18:21:09Z",
+      "url": "https://github.com/rahulshendre/devops-directive-terraform-course"
+    },
+    {
+      "name": "firstrepo",
+      "description": "Ofc this is my first GIT repository :) ",
+      "language": null,
+      "fork": false,
+      "stars": 0,
+      "pushedAt": "2023-09-06T11:21:00Z",
+      "url": "https://github.com/rahulshendre/firstrepo"
+    }
+  ],
+  "prs": [
+    {
+      "repo": "pipe-cd/pipecd",
+      "number": 7415,
+      "title": "Docs: use ghcr images instead of gcr",
+      "url": "https://github.com/pipe-cd/pipecd/pull/7415",
+      "createdAt": "2026-09-25T09:24:41Z",
+      "state": "merged"
+    },
+    {
+      "repo": "pipe-cd/pipecd",
+      "number": 7414,
+      "title": "Examples: use ghcr helloworld image instead of gcr",
+      "url": "https://github.com/pipe-cd/pipecd/pull/7414",
+      "createdAt": "2026-09-25T08:31:08Z",
+      "state": "merged"
+    },
+    {
+      "repo": "pipe-cd/pipecd",
+      "number": 7329,
+      "title": "Docs: v1 add FILE_ROLLBACK stage to plugin tutorial introduction",
+      "url": "https://github.com/pipe-cd/pipecd/pull/7329",
+      "createdAt": "2026-09-07T13:24:02Z",
+      "state": "merged"
+    },
+    {
+      "repo": "pipe-cd/pipecd",
+      "number": 7282,
+      "title": "Examples: Add v1 deployment-chain example",
+      "url": "https://github.com/pipe-cd/pipecd/pull/7282",
+      "createdAt": "2026-08-31T14:46:47Z",
+      "state": "open"
+    },
+    {
+      "repo": "pipe-cd/pipecd",
+      "number": 7281,
+      "title": "Examples: Add v1 Terraform simple example",
+      "url": "https://github.com/pipe-cd/pipecd/pull/7281",
+      "createdAt": "2026-08-31T14:21:49Z",
+      "state": "open"
+    },
+    {
+      "repo": "pipe-cd/pipecd",
+      "number": 7280,
+      "title": "Examples: Add v1 Kubernetes helm-local-chart example",
+      "url": "https://github.com/pipe-cd/pipecd/pull/7280",
+      "createdAt": "2026-08-31T13:52:02Z",
+      "state": "merged"
+    },
+    {
+      "repo": "pipe-cd/pipecd",
+      "number": 7279,
+      "title": "Examples: Add v1 kubernetes kustomize-local-base example",
+      "url": "https://github.com/pipe-cd/pipecd/pull/7279",
+      "createdAt": "2026-08-31T13:32:54Z",
+      "state": "open"
+    },
+    {
+      "repo": "pipe-cd/pipecd",
+      "number": 7238,
+      "title": "Examples: Add v1 Kubernetes canary example",
+      "url": "https://github.com/pipe-cd/pipecd/pull/7238",
+      "createdAt": "2026-08-25T13:43:46Z",
+      "state": "closed"
+    },
+    {
+      "repo": "pipe-cd/pipecd",
+      "number": 7237,
+      "title": "Examples: Add v1 Kubernetes wait-approval example",
+      "url": "https://github.com/pipe-cd/pipecd/pull/7237",
+      "createdAt": "2026-08-25T13:26:11Z",
+      "state": "merged"
+    },
+    {
+      "repo": "pipe-cd/pipecd",
+      "number": 7236,
+      "title": "Examples: Add v1 Kubernetes bluegreen example",
+      "url": "https://github.com/pipe-cd/pipecd/pull/7236",
+      "createdAt": "2026-08-25T12:50:24Z",
+      "state": "merged"
+    },
+    {
+      "repo": "pipe-cd/pipecd",
+      "number": 7235,
+      "title": "Docs: Fix remaining stale examples links after v0/v1 restructure",
+      "url": "https://github.com/pipe-cd/pipecd/pull/7235",
+      "createdAt": "2026-08-25T07:07:34Z",
+      "state": "merged"
+    },
+    {
+      "repo": "pipe-cd/pipecd",
+      "number": 7233,
+      "title": "Docs: Fix broken examples links after v0/v1 restructure",
+      "url": "https://github.com/pipe-cd/pipecd/pull/7233",
+      "createdAt": "2026-08-24T14:35:51Z",
+      "state": "merged"
+    },
+    {
+      "repo": "pipe-cd/pipecd",
+      "number": 7232,
+      "title": "Examples: Add v1 Kubernetes simple example",
+      "url": "https://github.com/pipe-cd/pipecd/pull/7232",
+      "createdAt": "2026-08-24T13:09:15Z",
+      "state": "merged"
+    },
+    {
+      "repo": "pipe-cd/examples",
+      "number": 140,
+      "title": "Fix: Sync examples from v0/ and v1/ after repo restructure",
+      "url": "https://github.com/pipe-cd/examples/pull/140",
+      "createdAt": "2026-08-22T17:19:24Z",
+      "state": "merged"
+    },
+    {
+      "repo": "pranshu2004/hyperion-mvp",
+      "number": 14,
+      "title": "feat(adapters): add LGTM-stack adapters (Prometheus, Loki, Tempo)",
+      "url": "https://github.com/pranshu2004/hyperion-mvp/pull/14",
+      "createdAt": "2026-08-16T09:45:55Z",
+      "state": "open"
+    },
+    {
+      "repo": "pipe-cd/pipecd",
+      "number": 7173,
+      "title": "Split examples into v0 and v1",
+      "url": "https://github.com/pipe-cd/pipecd/pull/7173",
+      "createdAt": "2026-08-13T08:29:43Z",
+      "state": "merged"
+    },
+    {
+      "repo": "pipe-cd/pipecd",
+      "number": 7158,
+      "title": "Docs V1: Add plugin tutorial Chapter 9 - Next steps",
+      "url": "https://github.com/pipe-cd/pipecd/pull/7158",
+      "createdAt": "2026-08-11T21:22:26Z",
+      "state": "merged"
+    },
+    {
+      "repo": "pipe-cd/pipecd",
+      "number": 7157,
+      "title": "Docs V1: Add plugin tutorial Chapter 8 - Wiring main.go and running with Piped",
+      "url": "https://github.com/pipe-cd/pipecd/pull/7157",
+      "createdAt": "2026-08-11T20:07:45Z",
+      "state": "merged"
+    },
+    {
+      "repo": "pipe-cd/pipecd",
+      "number": 7156,
+      "title": "Docs V1: Add plugin tutorial Chapter 7 - SYNC and ROLLBACK stages",
+      "url": "https://github.com/pipe-cd/pipecd/pull/7156",
+      "createdAt": "2026-08-11T18:37:24Z",
+      "state": "merged"
+    },
+    {
+      "repo": "pipe-cd/pipecd",
+      "number": 7155,
+      "title": "Docs V1: Add plugin tutorial Chapter 6 - ExecuteStage and the DIFF stage",
+      "url": "https://github.com/pipe-cd/pipecd/pull/7155",
+      "createdAt": "2026-08-11T17:20:32Z",
+      "state": "merged"
+    },
+    {
+      "repo": "pipe-cd/pipecd",
+      "number": 7154,
+      "title": "Docs V1: Add plugin tutorial Chapter 5 - Building sync stages",
+      "url": "https://github.com/pipe-cd/pipecd/pull/7154",
+      "createdAt": "2026-08-11T14:33:32Z",
+      "state": "merged"
+    },
+    {
+      "repo": "pipe-cd/pipecd",
+      "number": 7153,
+      "title": "Docs V1: Add plugin tutorial Chapter 4 - Lifecycle methods",
+      "url": "https://github.com/pipe-cd/pipecd/pull/7153",
+      "createdAt": "2026-08-11T14:18:19Z",
+      "state": "merged"
+    },
+    {
+      "repo": "pipe-cd/pipecd",
+      "number": 7152,
+      "title": "Docs V1: Add plugin tutorial Chapter 3 - Config types and empty implementation",
+      "url": "https://github.com/pipe-cd/pipecd/pull/7152",
+      "createdAt": "2026-08-11T14:10:53Z",
+      "state": "merged"
+    },
+    {
+      "repo": "pipe-cd/pipecd",
+      "number": 7151,
+      "title": "Docs V1: Add plugin tutorial Chapter 2 - Setup, plugin types, and project scaffold",
+      "url": "https://github.com/pipe-cd/pipecd/pull/7151",
+      "createdAt": "2026-08-11T14:02:41Z",
+      "state": "merged"
+    },
+    {
+      "repo": "pranshu2004/hyperion-mvp",
+      "number": 12,
+      "title": "docs: add beginner's guide, reasoning engine analysis, and engineering handbook",
+      "url": "https://github.com/pranshu2004/hyperion-mvp/pull/12",
+      "createdAt": "2026-08-09T15:33:07Z",
+      "state": "open"
+    },
+    {
+      "repo": "pipe-cd/pipecd",
+      "number": 7139,
+      "title": "Docs V1: Add plugin tutorial section and Chapter 1 Introduction",
+      "url": "https://github.com/pipe-cd/pipecd/pull/7139",
+      "createdAt": "2026-08-05T17:43:09Z",
+      "state": "merged"
+    },
+    {
+      "repo": "pipe-cd/pipecd",
+      "number": 7122,
+      "title": "Docs V1: Reorganize the plugins section",
+      "url": "https://github.com/pipe-cd/pipecd/pull/7122",
+      "createdAt": "2026-08-04T10:37:29Z",
+      "state": "merged"
+    },
+    {
+      "repo": "pranshu2004/hyperion-mvp",
+      "number": 10,
+      "title": "docs(research): scaffold learning-branch template",
+      "url": "https://github.com/pranshu2004/hyperion-mvp/pull/10",
+      "createdAt": "2026-07-25T17:05:27Z",
+      "state": "open"
+    },
+    {
+      "repo": "pipe-cd/pipecd",
+      "number": 7082,
+      "title": "Docs V1: Expand the Analysis plugin",
+      "url": "https://github.com/pipe-cd/pipecd/pull/7082",
+      "createdAt": "2026-07-23T21:42:48Z",
+      "state": "merged"
+    },
+    {
+      "repo": "pipe-cd/pipecd",
+      "number": 7081,
+      "title": "Docs V1: Expand the Terraform plugin",
+      "url": "https://github.com/pipe-cd/pipecd/pull/7081",
+      "createdAt": "2026-07-23T20:42:34Z",
+      "state": "merged"
+    },
+    {
+      "repo": "pipe-cd/pipecd",
+      "number": 7079,
+      "title": "Docs V1: Expand the Kubernetes plugin page",
+      "url": "https://github.com/pipe-cd/pipecd/pull/7079",
+      "createdAt": "2026-07-23T15:26:27Z",
+      "state": "merged"
+    },
+    {
+      "repo": "pipe-cd/pipecd",
+      "number": 7078,
+      "title": "Docs V1: Add v1 stage plugin pages - wait, wait-approval, script-run",
+      "url": "https://github.com/pipe-cd/pipecd/pull/7078",
+      "createdAt": "2026-07-23T13:43:56Z",
+      "state": "merged"
+    },
+    {
+      "repo": "pipe-cd/pipecd",
+      "number": 7033,
+      "title": "Docs V1: fix copy-paste issue and minor wording changes",
+      "url": "https://github.com/pipe-cd/pipecd/pull/7033",
+      "createdAt": "2026-07-14T19:21:14Z",
+      "state": "merged"
+    },
+    {
+      "repo": "pipe-cd/pipecd",
+      "number": 7022,
+      "title": "Docs V1: Add Application Configuration Reference",
+      "url": "https://github.com/pipe-cd/pipecd/pull/7022",
+      "createdAt": "2026-07-12T17:14:41Z",
+      "state": "merged"
+    },
+    {
+      "repo": "pipe-cd/pipecd",
+      "number": 6984,
+      "title": "Docs v1: add plugins overview page",
+      "url": "https://github.com/pipe-cd/pipecd/pull/6984",
+      "createdAt": "2026-07-07T12:02:02Z",
+      "state": "merged"
+    },
+    {
+      "repo": "pipe-cd/pipecd",
+      "number": 6982,
+      "title": "Docs v0: improve quickstart wording",
+      "url": "https://github.com/pipe-cd/pipecd/pull/6982",
+      "createdAt": "2026-07-05T18:46:04Z",
+      "state": "merged"
+    },
+    {
+      "repo": "pipe-cd/pipecd",
+      "number": 6976,
+      "title": "Docs v0: fix broken links in feature-status, metrics and config reference",
+      "url": "https://github.com/pipe-cd/pipecd/pull/6976",
+      "createdAt": "2026-07-02T18:19:25Z",
+      "state": "merged"
+    },
+    {
+      "repo": "rahulshendre/undark",
+      "number": 1,
+      "title": "Practitioner reposition",
+      "url": "https://github.com/rahulshendre/undark/pull/1",
+      "createdAt": "2026-06-28T19:41:11Z",
+      "state": "merged"
+    },
+    {
+      "repo": "rahulshendre/undark_build",
+      "number": 1,
+      "title": "Case workspace UI",
+      "url": "https://github.com/rahulshendre/undark_build/pull/1",
+      "createdAt": "2026-06-28T19:40:47Z",
+      "state": "merged"
+    },
+    {
+      "repo": "HeyCloutly/Cloutly",
+      "number": 41,
+      "title": "feat: Security, async embeddings, hybrid search, and incremental DNA re-analysis",
+      "url": "https://github.com/HeyCloutly/Cloutly/pull/41",
+      "createdAt": "2026-06-21T13:16:02Z",
+      "state": "merged"
+    },
+    {
+      "repo": "pipe-cd/pipecd",
+      "number": 6925,
+      "title": "docs: add version selector to mobile sidebar",
+      "url": "https://github.com/pipe-cd/pipecd/pull/6925",
+      "createdAt": "2026-06-21T09:00:02Z",
+      "state": "merged"
+    },
+    {
+      "repo": "PlanetRead/Burn-in-subtitle-checker",
+      "number": 12,
+      "title": "[DMP 2026] Rahul Shendre - Audio Subtitle Mismatch Flagging Tool",
+      "url": "https://github.com/PlanetRead/Burn-in-subtitle-checker/pull/12",
+      "createdAt": "2026-05-07T06:56:19Z",
+      "state": "open"
+    },
+    {
+      "repo": "rahulshendre/pipecd",
+      "number": 2,
+      "title": "test: maintainer skip workflow behavior",
+      "url": "https://github.com/rahulshendre/pipecd/pull/2",
+      "createdAt": "2026-04-21T11:44:21Z",
+      "state": "merged"
+    },
+    {
+      "repo": "rahulshendre/pipecd",
+      "number": 1,
+      "title": "Feat/automated thank you",
+      "url": "https://github.com/rahulshendre/pipecd/pull/1",
+      "createdAt": "2026-04-21T11:40:56Z",
+      "state": "merged"
+    },
+    {
+      "repo": "pipe-cd/pipecd",
+      "number": 6703,
+      "title": "Feat/automated thank you",
+      "url": "https://github.com/pipe-cd/pipecd/pull/6703",
+      "createdAt": "2026-04-21T11:38:07Z",
+      "state": "closed"
+    },
+    {
+      "repo": "pipe-cd/pipecd",
+      "number": 6643,
+      "title": "Docs v1: added plugin development resources",
+      "url": "https://github.com/pipe-cd/pipecd/pull/6643",
+      "createdAt": "2026-04-03T10:28:30Z",
+      "state": "merged"
+    },
+    {
+      "repo": "pipe-cd/pipecd",
+      "number": 6595,
+      "title": "Docs: add more piped installation options",
+      "url": "https://github.com/pipe-cd/pipecd/pull/6595",
+      "createdAt": "2026-03-16T19:24:06Z",
+      "state": "open"
+    },
+    {
+      "repo": "pipe-cd/pipecd",
+      "number": 6554,
+      "title": "Docs: Remove version selector from community and blog sections",
+      "url": "https://github.com/pipe-cd/pipecd/pull/6554",
+      "createdAt": "2026-03-03T14:33:05Z",
+      "state": "merged"
+    },
+    {
+      "repo": "pipe-cd/pipecd",
+      "number": 6543,
+      "title": "V1-Docs (UserGuide): fix discrepancies in managing piped",
+      "url": "https://github.com/pipe-cd/pipecd/pull/6543",
+      "createdAt": "2026-02-23T09:16:45Z",
+      "state": "merged"
+    },
+    {
+      "repo": "pipe-cd/pipecd",
+      "number": 6480,
+      "title": "Fix: Hide version selector on Home page and make v1 default",
+      "url": "https://github.com/pipe-cd/pipecd/pull/6480",
+      "createdAt": "2026-01-29T14:27:38Z",
+      "state": "merged"
+    },
+    {
+      "repo": "pipe-cd/pipecd",
+      "number": 6463,
+      "title": "Docs: v1 fix grammar and inconsistencies",
+      "url": "https://github.com/pipe-cd/pipecd/pull/6463",
+      "createdAt": "2026-01-26T19:27:53Z",
+      "state": "merged"
+    },
+    {
+      "repo": "pipe-cd/pipecd",
+      "number": 6457,
+      "title": "Docs: fix version naming and typos in migration guide",
+      "url": "https://github.com/pipe-cd/pipecd/pull/6457",
+      "createdAt": "2026-01-24T17:02:56Z",
+      "state": "merged"
+    },
+    {
+      "repo": "pipe-cd/pipecd",
+      "number": 6438,
+      "title": "ADD userguide/managingApp/customizing-deployment",
+      "url": "https://github.com/pipe-cd/pipecd/pull/6438",
+      "createdAt": "2026-01-16T08:53:17Z",
+      "state": "closed"
+    },
+    {
+      "repo": "pipe-cd/pipecd",
+      "number": 6437,
+      "title": "V1 Fixing image path in Adding an application",
+      "url": "https://github.com/pipe-cd/pipecd/pull/6437",
+      "createdAt": "2026-01-15T18:25:29Z",
+      "state": "merged"
+    },
+    {
+      "repo": "pipe-cd/pipecd",
+      "number": 6433,
+      "title": "V1 merge Architectural overview into Concepts section",
+      "url": "https://github.com/pipe-cd/pipecd/pull/6433",
+      "createdAt": "2026-01-15T04:53:04Z",
+      "state": "merged"
+    },
+    {
+      "repo": "pipe-cd/pipecd",
+      "number": 6413,
+      "title": "ADD userguide/managingApp/deployment-trace",
+      "url": "https://github.com/pipe-cd/pipecd/pull/6413",
+      "createdAt": "2026-01-08T14:17:03Z",
+      "state": "merged"
+    },
+    {
+      "repo": "pipe-cd/pipecd",
+      "number": 6412,
+      "title": "ADD userguide/managingApp/secret-management",
+      "url": "https://github.com/pipe-cd/pipecd/pull/6412",
+      "createdAt": "2026-01-08T14:03:31Z",
+      "state": "merged"
+    },
+    {
+      "repo": "pipe-cd/pipecd",
+      "number": 6411,
+      "title": "ADD userguide/managingApp/configuration-drift-detection",
+      "url": "https://github.com/pipe-cd/pipecd/pull/6411",
+      "createdAt": "2026-01-08T13:52:40Z",
+      "state": "merged"
+    },
+    {
+      "repo": "pipe-cd/pipecd",
+      "number": 6410,
+      "title": "ADD userguide/managingApp/rolling-back-a-deployment",
+      "url": "https://github.com/pipe-cd/pipecd/pull/6410",
+      "createdAt": "2026-01-08T13:26:59Z",
+      "state": "merged"
+    },
+    {
+      "repo": "pipe-cd/pipecd",
+      "number": 6400,
+      "title": "ADD userguide/managingApp/triggering-a-deployment",
+      "url": "https://github.com/pipe-cd/pipecd/pull/6400",
+      "createdAt": "2026-01-04T09:42:44Z",
+      "state": "merged"
+    },
+    {
+      "repo": "pipe-cd/pipecd",
+      "number": 6394,
+      "title": "Fix typo: enviroment → environment",
+      "url": "https://github.com/pipe-cd/pipecd/pull/6394",
+      "createdAt": "2026-01-02T14:25:26Z",
+      "state": "merged"
+    },
+    {
+      "repo": "antiwork/gumroad",
+      "number": 2626,
+      "title": "fix(profile): Display all selected products in profile sections",
+      "url": "https://github.com/antiwork/gumroad/pull/2626",
+      "createdAt": "2026-01-02T09:28:24Z",
+      "state": "closed"
+    },
+    {
+      "repo": "kubestellar/docs",
+      "number": 470,
+      "title": "fix: typo in network error message",
+      "url": "https://github.com/kubestellar/docs/pull/470",
+      "createdAt": "2025-12-31T06:36:19Z",
+      "state": "merged"
+    },
+    {
+      "repo": "kubestellar/ui",
+      "number": 2277,
+      "title": "📖 Fix WECS panel size inconsistency",
+      "url": "https://github.com/kubestellar/ui/pull/2277",
+      "createdAt": "2025-12-10T04:03:46Z",
+      "state": "merged"
+    },
+    {
+      "repo": "kubestellar/kubestellar",
+      "number": 3550,
+      "title": "📖 Fix dark mode visibility for docs images",
+      "url": "https://github.com/kubestellar/kubestellar/pull/3550",
+      "createdAt": "2025-12-07T04:01:17Z",
+      "state": "merged"
+    },
+    {
+      "repo": "meshery/meshery",
+      "number": 16320,
+      "title": "Attendance for the week of 10-27-2025",
+      "url": "https://github.com/meshery/meshery/pull/16320",
+      "createdAt": "2025-10-30T13:17:18Z",
+      "state": "closed"
+    },
+    {
+      "repo": "llaske/sugarizer",
+      "number": 1787,
+      "title": "fixed dice subtraction issue after shaking",
+      "url": "https://github.com/llaske/sugarizer/pull/1787",
+      "createdAt": "2025-04-29T09:41:55Z",
+      "state": "merged"
+    },
+    {
+      "repo": "sugarlabs/sugar-toolkit-gtk3",
+      "number": 488,
+      "title": "Improve README with detailed setup and usage instructions",
+      "url": "https://github.com/sugarlabs/sugar-toolkit-gtk3/pull/488",
+      "createdAt": "2025-04-21T09:04:41Z",
+      "state": "closed"
+    },
+    {
+      "repo": "firstcontributions/first-contributions",
+      "number": 93864,
+      "title": "Add Rahul to contributors list",
+      "url": "https://github.com/firstcontributions/first-contributions/pull/93864",
+      "createdAt": "2025-02-03T06:44:04Z",
+      "state": "merged"
+    },
+    {
+      "repo": "firstcontributions/first-contributions",
+      "number": 93863,
+      "title": "added my name in the contributors",
+      "url": "https://github.com/firstcontributions/first-contributions/pull/93863",
+      "createdAt": "2025-02-03T06:22:44Z",
+      "state": "closed"
+    }
+  ],
+  "prCounts": {
+    "pipe-cd/pipecd": {
+      "total": 51,
+      "merged": 44,
+      "open": 4
+    },
+    "pipe-cd/examples": {
+      "total": 1,
+      "merged": 1,
+      "open": 0
+    },
+    "pranshu2004/hyperion-mvp": {
+      "total": 3,
+      "merged": 0,
+      "open": 3
+    },
+    "rahulshendre/undark": {
+      "total": 1,
+      "merged": 1,
+      "open": 0
+    },
+    "rahulshendre/undark_build": {
+      "total": 1,
+      "merged": 1,
+      "open": 0
+    },
+    "HeyCloutly/Cloutly": {
+      "total": 1,
+      "merged": 1,
+      "open": 0
+    },
+    "PlanetRead/Burn-in-subtitle-checker": {
+      "total": 1,
+      "merged": 0,
+      "open": 1
+    },
+    "rahulshendre/pipecd": {
+      "total": 2,
+      "merged": 2,
+      "open": 0
+    },
+    "antiwork/gumroad": {
+      "total": 1,
+      "merged": 0,
+      "open": 0
+    },
+    "kubestellar/docs": {
+      "total": 1,
+      "merged": 1,
+      "open": 0
+    },
+    "kubestellar/ui": {
+      "total": 1,
+      "merged": 1,
+      "open": 0
+    },
+    "kubestellar/kubestellar": {
+      "total": 1,
+      "merged": 1,
+      "open": 0
+    },
+    "meshery/meshery": {
+      "total": 1,
+      "merged": 0,
+      "open": 0
+    },
+    "llaske/sugarizer": {
+      "total": 1,
+      "merged": 1,
+      "open": 0
+    },
+    "sugarlabs/sugar-toolkit-gtk3": {
+      "total": 1,
+      "merged": 0,
+      "open": 0
+    },
+    "firstcontributions/first-contributions": {
+      "total": 2,
+      "merged": 1,
+      "open": 0
+    }
+  }
+}
