@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildTrack, FINISH, MILESTONE_SEGS, N, calm } from './track';
+import { buildTrack, FINISH, HOARDINGS, MILESTONE_SEGS, N, TUNNEL, calm, zoneAt } from './track';
 import { project, CAM_DEPTH } from './project';
 import { autopilotLane, capBehind, carAhead, LEFT, RIGHT, type Car } from './traffic';
 import { milestones } from '../../data/site';
@@ -12,6 +12,18 @@ describe('track', () => {
   it('places milestones in story order', () => {
     const labels = MILESTONE_SEGS.map((i) => segs[i].props.find((p) => p.type === 'ms')?.label);
     expect(labels).toEqual(milestones.map((m) => m.top));
+  });
+  it('has a straight, flat tunnel with nothing growing inside it', () => {
+    for (let i = TUNNEL[0]; i < TUNNEL[1]; i++) {
+      expect(segs[i].tunnel).toBe(true);
+      expect(Math.abs(segs[i].curve)).toBeLessThan(0.01);
+      expect(segs[i].props.every((p) => p.type === 'cateye')).toBe(true);
+    }
+  });
+  it('tells the story in chapters, with a hoarding for every social', () => {
+    expect([0, 300, 700, 1100].map(zoneAt)).toEqual(['town', 'plains', 'ghat', 'plateau']);
+    expect(HOARDINGS.map((h) => h.id).sort()).toEqual(['github', 'linkedin', 'pipecd', 'x', 'youtube']);
+    for (const h of HOARDINGS) expect(segs[h.i].props.some((p) => p.type === 'hoarding' && p.label === h.id)).toBe(true);
   });
   it('ends flat and straight at the garage', () => {
     expect(calm(FINISH)).toBe(0);

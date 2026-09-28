@@ -82,13 +82,24 @@ export function drawTop(g: CanvasRenderingContext2D, segs: Segment[], cars: Car[
       else if (p.type === 'ms') { rect(sx - 4, y - 5, 8, 10, '#f2f0ea'); rect(sx - 4, y - 5, 8, 4, C.accent); }
       else if (p.type === 'stall') { rect(sx - 16, y - 10, 32, 20, C.white); for (let k = 0; k < 32; k += 6) rect(sx - 16 + k, y - 10, 3, 20, C.red); }
       else if (p.type === 'garage') { rect(sx - 60, y - 40, 120, 80, '#7a4a32'); rect(sx - 60, y - 2, 120, 4, '#5e3826'); rect(sx + 58, y - 22, 14, 44, '#3a3833'); }
+      else if (p.type === 'house') { // flat roofs from above, each with its black water tank
+        const c = ['#e8b4a0', '#e9d38a', '#9cc3cf', '#c9d9a6'][(p.v ?? 0) % 4];
+        rect(sx - 22, y - 18, 44, 36, '#f1ece0'); rect(sx - 20, y - 16, 40, 32, c); disc(sx + 10, y - 6, 5, '#1d1d1d');
+      }
+      else if (p.type === 'rock') { disc(sx - 6, y, 16, '#5d5147'); disc(sx - 10, y - 4, 9, '#4a4038'); }
+      else if (p.type === 'rail') { rect(r + half + 6, y - 5, 3, 10, Math.floor(i / 2) % 2 ? '#222' : C.accent); }
+      else if (p.type === 'cow') { rect(sx - 4, y - 7, 8, 14, '#ecebe6'); rect(sx - 2, y - 10, 4, 3, '#d9d7cf'); }
+      else if (p.type === 'hoarding') { rect(sx - 26, y - 2, 52, 4, '#3a3d42'); }
     }
+    if (segs[i].tunnel) { rect(r - half - 18, y - 4, (half + 18) * 2, 8, '#5d5147'); rect(r - half - 18, y - 4, (half + 18) * 2, 1, '#4a4038'); }
   }
   for (const c of cars) {
     const y = bottom - (c.z - pos) / U;
     if (y < -40 || y > H + 40) continue;
     const x = rc(c.z) + c.o * half * 1.1;
     if (c.kind === 'auto') { rect(x - 6, y - 9, 12, 18, C.black); rect(x - 6, y - 9, 12, 11, C.accent); }
+    else if (c.kind === 'car') { rect(x - 7, y - 12, 14, 24, '#f1efe9'); rect(x - 5, y - 6, 10, 8, '#3a4150'); }
+    else if (c.kind === 'bus') { rect(x - 10, y - 30, 20, 60, '#c8312b'); rect(x - 10, y - 30, 20, 4, '#f1e4c8'); }
     else { rect(x - 9, y - 22, 18, 12, '#e86a1f'); rect(x - 10, y - 9, 20, 30, '#2c5aa0'); rect(x - 10, y - 9, 20, 3, C.accent); }
   }
   blit(rider, Math.round(rc(pos) + px * half * 1.1 - rider.width / 2), bottom - rider.height / 2);

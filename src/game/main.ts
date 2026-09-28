@@ -16,7 +16,10 @@ const screen = new Screen(canvas);
 const director = new Director((m) => screen.setMode(m));
 input.attach(screen);
 
-const images = Promise.all([loadImage('/sprites/bike-side.png'), loadImage('/sprites/pipecd.png')]).then(([bike, pipecd]) => ({ bike, pipecd }));
+const SPRITES = ['bike-side', 'pipecd', 'pipecd-sm', 'icon-github', 'icon-x', 'icon-linkedin', 'icon-youtube'] as const;
+const images = Promise.all(SPRITES.map((n) => loadImage(`/sprites/${n}.png`))).then(([bike, pipecd, pipecdSm, github, x, linkedin, youtube]) => ({
+  bike, pipecd, icons: { pipecd: pipecdSm, github, x, linkedin, youtube },
+}));
 
 async function garage() {
   const img = await images;
@@ -53,8 +56,13 @@ function mountHotspots(scene: GarageScene) {
 }
 
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+async function ride() {
+  const img = await images;
+  director.go(new RideScene(screen, img.icons, door, garage));
+}
+
 if (new URLSearchParams(location.search).has('door')) door(); // handy for testing the door on its own
-else if (pickStart(location.search, hasVisited(), reduced) === 'ride') director.go(new RideScene(screen, door, garage));
+else if (pickStart(location.search, hasVisited(), reduced) === 'ride') ride();
 else garage();
 
 let last = performance.now();

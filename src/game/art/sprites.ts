@@ -2,10 +2,10 @@
 // Sizes are in pixels at the 480x270 resolution; `ww` is the width in road units for scaling.
 import { C } from './palette';
 import { paint, type Sprite } from '../engine/sprites';
-import { rect, disc, ellipse, line, poly } from '../engine/pixel';
+import { rect, disc, ellipse, line, poly, ctx as paintTarget } from '../engine/pixel';
 import { text, textC, textW } from '../engine/font';
 
-/** Rahul on the white Scrambler 400 X, seen from behind. Black helmet, dark jacket. */
+/** Rahul on the white Scrambler 400 X, seen from behind. White helmet, dark jacket. */
 export function riderRear(): Sprite {
   return paint(56, 64, () => {
     // rear tyre, knobby, with the hugger above it
@@ -46,10 +46,13 @@ export function riderRear(): Sprite {
     line(5, 19, 4, 11, C.black); line(50, 19, 51, 11, C.black);
     disc(4, 8, 3, C.black); disc(51, 8, 3, C.black);
     rect(3, 7, 2, 2, '#8fb3bf'); rect(50, 7, 2, 2, '#8fb3bf');
-    // collar and black helmet with a highlight
+    // collar and white helmet, outlined in ink so it holds up against a bright sky
     rect(22, 11, 12, 3, '#23252c');
-    disc(28, 7, 7, C.black);
-    rect(23, 2, 4, 2, '#4a4d57'); rect(22, 4, 2, 3, '#4a4d57');
+    disc(28, 7, 7, C.ink);
+    disc(28, 7, 6, C.white);
+    rect(30, 8, 3, 4, C.whiteShade); rect(26, 11, 6, 1, C.whiteShade);
+    rect(22, 7, 13, 1, '#b9b6ad');
+    rect(24, 2, 3, 2, '#ffffff');
     rect(26, 12, 4, 1, C.reflector);
   }, 233);
 }
@@ -68,7 +71,7 @@ export function riderTop(): Sprite {
     line(4, 22, 3, 12, C.jacket); line(5, 22, 4, 12, C.jacket);
     line(18, 22, 19, 12, C.jacket); line(17, 22, 18, 12, C.jacket);
     rect(9, 26, 5, 6, C.jacket);
-    disc(11, 20, 4, C.black); rect(9, 17, 2, 2, '#4a4d57');
+    disc(11, 20, 4, C.ink); disc(11, 20, 3, C.white); rect(10, 18, 1, 1, '#ffffff');
     rect(10, 34, 2, 2, C.red);
   }, 233);
 }
@@ -135,7 +138,8 @@ export function eucalyptus(): Sprite {
 
 export function chaiStall(label: string): Sprite {
   return paint(72, 56, () => {
-    rect(18, 0, 36, 11, C.ink); textC(label, 36, 2, C.accent);
+    const bw = textW(label) + 10;
+    rect(36 - bw / 2, 0, bw, 11, C.ink); textC(label, 36, 2, C.accent);
     rect(0, 11, 72, 10, C.white);
     for (let x = 0; x < 72; x += 8) rect(x, 11, 4, 10, C.red);
     for (let x = 2; x < 72; x += 8) disc(x, 21, 2, C.red);
@@ -180,4 +184,129 @@ export function graffitiTag(x: number, y: number, s: number) {
   for (const [ox, oy] of [[-s, 0], [s, 0], [0, -s], [0, s], [s, s], [2 * s, 2 * s]]) text(word, x + ox, y + oy, C.ink, 2 * s);
   text(word, x, y, C.reflector, 2 * s);
   for (const [dx, len] of [[4, 5], [23, 8], [41, 4], [60, 7], [76, 5]]) if (dx * s < w) rect(x + dx * s, y + 14 * s, s, len * s, C.reflector);
+}
+
+/** Pune-outskirts house: flat roof, black rooftop water tank, grilled windows, a shop below. */
+export function house(v: number, shop: string): Sprite {
+  const body = ['#e8b4a0', '#e9d38a', '#9cc3cf', '#c9d9a6'][v % 4], shade = ['#d49c88', '#d4bd72', '#86adb9', '#b2c48f'][v % 4];
+  return paint(96, 92, () => {
+    // water tank and its stand on the roof
+    rect(58, 0, 18, 14, '#1d1d1d'); rect(58, 0, 18, 2, '#3a3a3a'); rect(60, 3, 2, 9, '#2c2c2c'); rect(56, 14, 22, 2, '#4a4a4a');
+    rect(14, 6, 2, 10, '#6b6b6b'); line(10, 6, 20, 6, '#6b6b6b');
+    rect(4, 16, 88, 76, body); rect(84, 16, 8, 76, shade); rect(2, 14, 92, 3, '#f1ece0');
+    for (const wx of [12, 40]) {
+      rect(wx, 26, 20, 16, '#3b4250'); rect(wx, 26, 20, 2, '#f1ece0');
+      for (let x = wx + 3; x < wx + 20; x += 4) rect(x, 28, 1, 14, '#d9d4c6');
+    }
+    rect(8, 46, 80, 3, '#f1ece0'); for (let x = 10; x < 88; x += 5) rect(x, 49, 1, 5, '#8a8577');
+    // shop: signboard and a half-open shutter
+    rect(8, 56, 80, 11, shop === 'MEDICAL' ? '#1f7a4a' : C.ink);
+    if (shop === 'MEDICAL') { rect(13, 58, 6, 2, '#fff'); rect(15, 56, 2, 6, '#fff'); }
+    textC(shop, shop === 'MEDICAL' ? 52 : 48, 58, shop === 'MEDICAL' ? '#fff' : C.accent);
+    rect(10, 68, 76, 24, '#2c2622');
+    for (let y = 68; y < 80; y += 2) rect(10, y, 76, 1, '#8b8f94');
+    rect(10, 80, 76, 1, '#5c5f63');
+    rect(0, 90, 96, 2, '#7a7060');
+  }, 1700);
+}
+
+/** A white Indian cow grazing on the verge, hump and horns. */
+export function cow(): Sprite {
+  return paint(34, 22, () => {
+    ellipse(17, 10, 11, 6, '#ecebe6'); rect(9, 3, 7, 5, '#ecebe6');
+    ellipse(20, 12, 7, 3, '#d9d7cf');
+    rect(26, 9, 7, 5, '#ecebe6'); rect(31, 11, 3, 3, '#caa7a0'); rect(27, 6, 1, 3, '#cdb68a'); rect(31, 6, 1, 3, '#cdb68a');
+    for (const x of [8, 12, 21, 25]) { rect(x, 15, 2, 6, '#dcdad2'); rect(x, 20, 2, 1, '#3a3a3a'); }
+    line(6, 8, 3, 15, '#bdbab1'); rect(2, 15, 2, 2, '#3a3a3a');
+  }, 520);
+}
+
+/** MSRTC "Lal Pari" ST bus from behind. */
+export function busRear(): Sprite {
+  return paint(56, 60, () => {
+    rect(2, 2, 52, 50, '#c8312b'); rect(2, 2, 52, 3, '#e05a4c');
+    rect(4, 7, 48, 5, C.accent); textC('PUNE', 28, 6, C.ink);
+    rect(6, 14, 44, 16, '#2a2d33'); rect(6, 14, 44, 2, '#4a4f58'); rect(27, 14, 2, 16, '#c8312b');
+    rect(2, 32, 52, 4, '#f1e4c8');
+    textC('ST', 28, 38, '#f1e4c8');
+    rect(5, 45, 6, 4, C.accent); rect(45, 45, 6, 4, C.accent);
+    rect(21, 46, 14, 5, C.accent); for (const x of [23, 26, 30, 32]) rect(x, 48, 1, 2, C.ink);
+    rect(0, 52, 56, 3, '#1f1f1f');
+    rect(3, 54, 12, 6, C.tyre); rect(41, 54, 12, 6, C.tyre);
+  }, 640);
+}
+
+/** A white hatchback from behind. */
+export function carRear(): Sprite {
+  return paint(44, 32, () => {
+    poly([[8, 2], [36, 2], [41, 12], [3, 12]], '#e9e7e1');
+    rect(10, 4, 24, 7, '#3a4150'); rect(11, 4, 8, 2, '#5c6678');
+    rect(2, 12, 40, 12, '#f1efe9'); rect(2, 12, 40, 1, '#ffffff'); rect(38, 12, 4, 12, '#d6d3cb');
+    rect(3, 15, 6, 3, C.red); rect(35, 15, 6, 3, C.red);
+    rect(15, 17, 14, 5, '#f4f2ea'); rect(15, 17, 14, 5, '#f4f2ea'); for (const x of [17, 20, 24, 26]) rect(x, 19, 1, 2, C.ink);
+    rect(1, 24, 42, 3, '#2a2a2e');
+    rect(3, 26, 8, 6, C.tyre); rect(33, 26, 8, 6, C.tyre);
+  }, 420);
+}
+
+/** Basalt cliff face for the ghat section: layered strata, green ledges, sometimes a waterfall. */
+export function rockFace(waterfall: boolean): Sprite {
+  return paint(96, 80, () => {
+    // Deccan basalt breaks in flat steps, not spikes.
+    const top = (x: number) => [6, 10, 8, 14, 9, 7][Math.floor(x / 16) % 6] + (x % 16 === 0 ? 1 : 0);
+    for (let x = 0; x < 96; x++) {
+      const t = top(x);
+      rect(x, t, 1, 80 - t, '#62564b');
+      for (let y = t + 3; y < 80; y += 7) rect(x, y + ((x >> 3) % 2), 1, 1, '#4d433a');
+      if (x % 9 === 0) rect(x, t + 2, 1, 78 - t, '#584d43');
+      rect(x, t, 1, 2, '#4f7d3f');
+    }
+    for (const [x, y, w] of [[8, 30, 18], [50, 46, 22], [20, 62, 16], [66, 24, 14]]) { rect(x, y, w, 2, '#4f7d3f'); rect(x + 2, y - 2, w - 6, 2, '#6b9a4f'); }
+    if (waterfall) {
+      for (let y = top(46); y < 76; y++) { rect(44, y, 5, 1, y % 3 ? '#e8f0f2' : '#c9dde2'); if (y % 2) rect(43, y, 1, 1, '#a9c4cc'); }
+      ellipse(46, 77, 8, 2, '#c9dde2');
+    }
+  }, 1400);
+}
+
+/** Bonnet macaque sitting on the parapet, the ghat's toll collectors. */
+export function monkey(): Sprite {
+  return paint(18, 18, () => {
+    ellipse(9, 11, 5, 6, '#8a6d52'); disc(9, 4, 4, '#8a6d52'); rect(7, 4, 5, 3, '#d9b8a0');
+    rect(7, 4, 1, 1, C.ink); rect(10, 4, 1, 1, C.ink);
+    line(13, 14, 17, 9, '#7a5f47'); rect(5, 16, 3, 2, '#7a5f47'); rect(10, 16, 3, 2, '#7a5f47');
+  }, 260);
+}
+
+export type Icons = Record<'github' | 'x' | 'linkedin' | 'youtube', HTMLImageElement> & { pipecd: HTMLImageElement };
+
+/** Colour a white icon image into a small offscreen canvas (icons ship as white masks). */
+export function tint(img: HTMLImageElement, col: string, scale = 1): Sprite {
+  return paint(img.width * scale, img.height * scale, () => {
+    const c = document.createElement('canvas'); c.width = img.width; c.height = img.height;
+    const g = c.getContext('2d')!;
+    g.drawImage(img, 0, 0); g.globalCompositeOperation = 'source-in'; g.fillStyle = col; g.fillRect(0, 0, c.width, c.height);
+    const out = paintTarget(); out.imageSmoothingEnabled = false; out.drawImage(c, 0, 0, c.width * scale, c.height * scale);
+  });
+}
+/** Roadside hoarding on two steel posts with lamps, for PipeCD and the socials. Icon left, words right. */
+export function hoarding(id: string, icons: Icons): Sprite {
+  const spec: Record<string, { bg: string; fg: string; sub: string; a: string; b: string; art: CanvasImageSource & { width: number; height: number } }> = {
+    pipecd: { bg: '#f4f2ea', fg: '#293878', sub: '#1f8fc4', a: 'PIPECD', b: 'THE ONE CD|FOR ALL', art: icons.pipecd },
+    github: { bg: '#24292f', fg: '#f4f2ea', sub: '#9aa4b0', a: 'GITHUB', b: 'RAHULSHENDRE', art: tint(icons.github, '#f4f2ea') },
+    youtube: { bg: '#f4f2ea', fg: '#1b1712', sub: '#c4302b', a: 'VIDEOS', b: 'FROM|OCT 2026', art: tint(icons.youtube, '#ff0000', 2) },
+    x: { bg: '#0f0f10', fg: '#f4f2ea', sub: '#9aa0a6', a: 'SAY HI', b: '@SHENDREEE', art: tint(icons.x, '#f4f2ea', 2) },
+    linkedin: { bg: '#0a66c2', fg: '#ffffff', sub: '#cfe3f7', a: 'RAHUL', b: 'ON LINKEDIN', art: tint(icons.linkedin, '#ffffff', 2) },
+  };
+  const s = spec[id];
+  return paint(132, 96, () => {
+    rect(22, 58, 5, 38, C.steelDark); rect(105, 58, 5, 38, C.steelDark); rect(22, 58, 2, 38, C.steel); rect(105, 58, 2, 38, C.steel);
+    rect(20, 70, 92, 3, C.steelDark);
+    rect(2, 6, 128, 56, '#3a3d42'); rect(4, 8, 124, 52, s.bg);
+    for (const x of [18, 58, 98]) { rect(x, 0, 12, 4, '#2a2a2e'); rect(x + 5, 4, 2, 4, '#2a2a2e'); }
+    paintTarget().drawImage(s.art, 10, Math.round(34 - s.art.height / 2));
+    const tx = 10 + s.art.width + 8;
+    text(s.a, tx, 15, s.fg, 2);
+    s.b.split('|').forEach((ln, k) => text(ln, tx, 36 + k * 9, s.sub));
+  }, 2000);
 }
