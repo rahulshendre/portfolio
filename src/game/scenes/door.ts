@@ -4,15 +4,19 @@ import { graffitiTag } from '../art/sprites';
 import { bind, bayer, ctx, disc, ellipse, line, poly, rect } from '../engine/pixel';
 import { text, textC } from '../engine/font';
 import { input } from '../engine/input';
+import { DoorSound } from '../engine/audio';
 import type { Scene } from '../engine/scene';
 import type { Screen } from '../engine/screen';
 import { blit, paint, type Sprite } from '../engine/sprites';
 
 const DOOR = { x: 110, y: 70, w: 260, h: 176 };
-const T_ARRIVE = 1.6, T_OPEN = 2.0, T_UP = 1.5, T_END = 4.4;
+// Slow enough to enjoy: roll in, the sensor sees the bike, the door wakes, opens, and the bike idles in the doorway.
+const T_SENSE = 1.8, T_ARRIVE = 3.4, T_OPEN = 2.7, T_UP = 2.2, T_END = 6.4;
+const CUES = { sense: T_SENSE, arrive: T_ARRIVE, open: T_OPEN, up: T_UP, end: T_END };
 // Same size as the bike in the garage, so it does not shrink or grow between the two scenes.
 const BIKE_K = 1.4, PAD = { x: 8, y: 24 };
 const ease = (p: number) => 1 - Math.pow(1 - Math.min(1, Math.max(0, p)), 3);
+const glide = (p: number) => 1 - Math.pow(1 - Math.min(1, Math.max(0, p)), 2); // gentler braking for the bike
 
 /** Rahul on the bike, side view, facing right. (x, y) is the bike sprite's top-left. */
 function riderSide(x: number, y: number) {
@@ -37,6 +41,8 @@ export class DoorScene implements Scene {
   private doorArt!: Sprite;
   private rig!: Sprite; // bike and rider drawn together at native size, then scaled as one
   private finished = false;
+  private sfx = new DoorSound();
+  private asked = false; // the first key or tap only unlocks the sound; the next one skips
 
   private room!: Sprite;
 
@@ -44,6 +50,7 @@ export class DoorScene implements Scene {
 
   enter() {
     this.t = 0;
+    this.sfx.start(() => this.t, CUES);
     this.bg = paint(480, 270, () => this.facade());
     this.room = this.makeRoom();
     this.rig = paint(this.bike.width + PAD.x * 2, this.bike.height + PAD.y, () => { blit(this.bike, PAD.x, PAD.y); riderSide(PAD.x, PAD.y); });
@@ -59,11 +66,14 @@ export class DoorScene implements Scene {
     });
   }
 
-  private finish() { if (!this.finished) { this.finished = true; this.onDone(); } }
+  private finish() { if (!this.finished) { this.finished = true; this.sfx.stop(); this.onDone(); } }
 
   update(dt: number) {
     this.t += dt;
-    if (this.t > 0.3 && (input.tap() || input.anyKey())) this.finish();
+    if (this.t > 0.3 && (input.tap() || input.anyKey())) {
+      if (!this.sfx.running && !this.asked) { this.asked = true; this.sfx.start(() => this.t, CUES); }
+      else this.finish();
+    }
     if (this.t > T_END) this.finish();
     input.endFrame();
   }
@@ -73,7 +83,7 @@ export class DoorScene implements Scene {
     bind(g);
     g.drawImage(this.bg, 0, 0);
     const up = ease((this.t - T_OPEN) / T_UP) * DOOR.h;
-    const shake = this.t > T_ARRIVE && this.t < T_OPEN ? Math.round(Math.sin(this.t * 90)) : 0;
+    const shake = this.t > T_SENSE + 0.3 && this.t < T_OPEN ? Math.round(Math.sin(this.t * 90)) : 0;
     // inside: the real garage through the doorway, lighting up as the door rises
     g.drawImage(this.room, DOOR.x, 20, DOOR.w, DOOR.h, DOOR.x, DOOR.y, DOOR.w, DOOR.h);
     g.globalAlpha = 0.72 * (1 - Math.min(1, up / DOOR.h));
@@ -94,16 +104,23 @@ export class DoorScene implements Scene {
     }
     // the bike rolling in from the left, and stopping just inside the doorway
     const k = BIKE_K, rw = Math.round(this.rig.width * k), rh = Math.round(this.rig.height * k);
-    const bx = -280 + ease(this.t / T_ARRIVE) * 400; // left edge of the bike itself
+    const bx = -280 + glide(this.t / T_ARRIVE) * 400; // left edge of the bike itself
     const bob = this.t < T_ARRIVE ? Math.round(Math.sin(this.t * 30) * 0.8) : 0;
     if (this.t < T_ARRIVE) for (let p, i = 0; i < 3; i++) { p = (this.t * 3 + i / 3) % 1; disc(bx + 8 - p * 30, 244 - p * 6, 2 + p * 3, '#b8ad98'); }
     blit(this.rig, Math.round(bx - PAD.x * k), 251 - rh + bob, rw, rh);
+    // the sensor beside the door: red while it waits, green once it sees the bike
+    const seen = this.t > T_SENSE;
+    rect(372, 184, 12, 22, '#2a2a2e'); rect(373, 185, 10, 1, '#4a4a52');
+    const lens = seen ? '#5ff08a' : Math.floor(this.t * 2) % 2 ? '#e0453a' : '#5a2320';
+    if (seen) for (let y = 174; y < 216; y++) for (let x = 362; x < 394; x++) { const dd = Math.hypot(x - 378, y - 195) / 16; if (dd < 1 && (1 - dd) * 0.6 > bayer(x, y)) rect(x, y, 1, 1, '#9dffb8'); }
+    disc(378, 191, 3, lens); rect(376, 200, 5, 2, seen ? '#3fae62' : '#5a4a4a');
     // the street dog wakes up a little when you pull in
     const wag = this.t > T_ARRIVE ? Math.round(Math.sin(this.t * 14) * 2) : 0;
     ellipse(346, 244, 12, 4, '#9c6d45'); disc(357, 240, 4, '#9c6d45'); rect(358, 236, 2, 3, '#7a5234');
     rect(359, 240, 1, 1, this.t > T_ARRIVE ? C.ink : '#7a5234');
     line(334, 243, 330, 240 + wag, '#9c6d45');
     text('SKIP >', 6, 258, C.hud, 1, C.ink);
+    if (!this.sfx.running && this.t > 0.3 && !this.asked) text('TAP FOR SOUND', 388, 258, C.hud, 1, C.ink);
     const fade = Math.min(1, Math.max(0, (this.t - (T_END - 0.6)) / 0.6));
     if (fade > 0) { g.globalAlpha = fade; rect(0, 0, 480, 270, '#f4e6c8'); g.globalAlpha = 1; }
   }

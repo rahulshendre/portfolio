@@ -129,3 +129,98 @@ export class RadioSound {
 }
 
 export const radio = new RadioSound();
+
+// The door scene's soundtrack, all synthesised: wind, a single-cylinder engine coming in and idling, the sensor
+// beeping, then the roller door's relay click, motor, rattle and thunk. Cues follow the scene clock, so it lines up
+// with the pictures. Browsers keep audio locked until a gesture, so start() is safe to call again after a tap.
+export interface DoorCues { sense: number; arrive: number; open: number; up: number; end: number }
+
+export class DoorSound {
+  private ctx?: AudioContext;
+  private master?: GainNode;
+  private dead = false;
+  running = false;
+
+  start(now: () => number, cues: DoorCues) {
+    if (this.running || this.dead) return;
+    try { this.ctx ??= new AudioContext(); } catch { return; }
+    const c = this.ctx;
+    void c.resume().then(() => {
+      if (c.state !== 'running' || this.running || this.dead) return;
+      this.running = true;
+      this.build(now(), cues);
+    });
+  }
+
+  stop() {
+    this.dead = true;
+    const c = this.ctx;
+    if (!c) return;
+    this.master?.gain.setTargetAtTime(0, c.currentTime, 0.08);
+    window.setTimeout(() => void c.close(), 600);
+  }
+
+  private build(t: number, q: DoorCues) {
+    const c = this.ctx!, base = c.currentTime - t;
+    const at = (s: number) => Math.max(c.currentTime, base + s);
+    const master = c.createGain(); master.gain.value = 0.9; master.connect(c.destination); this.master = master;
+    const len = c.sampleRate * 2, buf = c.createBuffer(1, len, c.sampleRate), d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+    const osc = (type: OscillatorType, f: number) => { const o = c.createOscillator(); o.type = type; o.frequency.value = f; o.start(); return o; };
+    const noise = (loop: boolean) => { const s = c.createBufferSource(); s.buffer = buf; s.loop = loop; return s; };
+    const filt = (type: BiquadFilterType, f: number, Q = 1) => { const b = c.createBiquadFilter(); b.type = type; b.frequency.value = f; b.Q.value = Q; return b; };
+    const gain = (v: number) => { const g = c.createGain(); g.gain.value = v; return g; };
+
+    // wind: swells as the bike rushes in, settles to a breeze
+    const wind = noise(true), wf = filt('bandpass', 400, 0.6), wg = gain(0);
+    wind.connect(wf).connect(wg).connect(master); wind.start();
+    wg.gain.setValueAtTime(0.02, at(0)); wg.gain.linearRampToValueAtTime(0.16, at(q.arrive * 0.45));
+    wg.gain.linearRampToValueAtTime(0.03, at(q.arrive + 0.6)); wg.gain.setValueAtTime(0.03, at(q.end));
+    wf.frequency.setValueAtTime(300, at(0)); wf.frequency.linearRampToValueAtTime(900, at(q.arrive * 0.45)); wf.frequency.linearRampToValueAtTime(380, at(q.arrive + 0.6));
+
+    // engine: revving in, dropping to a lazy idle, chugging like a single
+    const lp = filt('lowpass', 1600, 3), eg = gain(0), chug = gain(0.55);
+    const saw = osc('sawtooth', 90), sub = osc('square', 45), lfo = osc('square', 11), lg = gain(0.4);
+    saw.connect(lp); sub.connect(gain(0.4)).connect(lp); lp.connect(chug).connect(eg).connect(master);
+    lfo.connect(lg).connect(chug.gain);
+    const f = (s: number, hz: number) => { saw.frequency.exponentialRampToValueAtTime(hz, at(s)); sub.frequency.exponentialRampToValueAtTime(hz / 2, at(s)); lfo.frequency.exponentialRampToValueAtTime(hz / 8, at(s)); };
+    saw.frequency.setValueAtTime(90, at(0)); sub.frequency.setValueAtTime(45, at(0)); lfo.frequency.setValueAtTime(11, at(0));
+    f(q.arrive * 0.5, 74); f(q.arrive, 36); f(q.end, 34);
+    lp.frequency.setValueAtTime(1600, at(0)); lp.frequency.linearRampToValueAtTime(420, at(q.arrive));
+    eg.gain.setValueAtTime(0, at(0)); eg.gain.linearRampToValueAtTime(0.11, at(0.5));
+    eg.gain.linearRampToValueAtTime(0.06, at(q.arrive)); eg.gain.setValueAtTime(0.06, at(q.end - 0.7)); eg.gain.linearRampToValueAtTime(0, at(q.end));
+
+    const beep = (s: number) => {
+      const o = c.createOscillator(), g = c.createGain();
+      o.type = 'sine'; o.frequency.value = 1760;
+      g.gain.setValueAtTime(0, at(s)); g.gain.linearRampToValueAtTime(0.12, at(s + 0.01)); g.gain.setValueAtTime(0.12, at(s + 0.09)); g.gain.linearRampToValueAtTime(0, at(s + 0.11));
+      o.connect(g).connect(master); o.start(at(s)); o.stop(at(s + 0.15));
+    };
+    const burst = (s: number, dur: number, hz: number, vol: number, kind: BiquadFilterType = 'bandpass') => {
+      const n = noise(false), fl = filt(kind, hz, 1.2), g = gain(vol);
+      g.gain.setValueAtTime(vol, at(s)); g.gain.exponentialRampToValueAtTime(0.0001, at(s + dur));
+      n.connect(fl).connect(g).connect(master); n.start(at(s), Math.random()); n.stop(at(s + dur + 0.02));
+    };
+    const thunk = (s: number, vol: number) => {
+      const o = c.createOscillator(), g = c.createGain();
+      o.type = 'sine'; o.frequency.setValueAtTime(110, at(s)); o.frequency.exponentialRampToValueAtTime(45, at(s + 0.18));
+      g.gain.setValueAtTime(vol, at(s)); g.gain.exponentialRampToValueAtTime(0.0001, at(s + 0.25));
+      o.connect(g).connect(master); o.start(at(s)); o.stop(at(s + 0.3));
+    };
+
+    // sensor sees the bike: two beeps, then the relay clicks and the door wakes up
+    beep(q.sense); beep(q.sense + 0.16);
+    burst(q.sense + 0.35, 0.03, 3000, 0.2, 'highpass');
+    for (let s = q.sense + 0.3; s < q.open; s += 0.06) burst(s, 0.03, 900, 0.03 + Math.random() * 0.03); // shutter jitters
+
+    // motor and rattling slats while it climbs
+    thunk(q.open, 0.35); burst(q.open, 0.05, 2500, 0.18, 'highpass');
+    const motor = osc('sawtooth', 52), mf = filt('lowpass', 320), mg = gain(0);
+    motor.connect(mf).connect(mg).connect(master);
+    motor.frequency.setValueAtTime(52, at(q.open)); motor.frequency.linearRampToValueAtTime(74, at(q.open + q.up));
+    mg.gain.setValueAtTime(0, at(q.open)); mg.gain.linearRampToValueAtTime(0.07, at(q.open + 0.25));
+    mg.gain.setValueAtTime(0.07, at(q.open + q.up - 0.1)); mg.gain.linearRampToValueAtTime(0, at(q.open + q.up + 0.15));
+    for (let s = q.open + 0.1; s < q.open + q.up; s += 0.055) burst(s, 0.035, 1100 + Math.random() * 900, 0.05 + Math.random() * 0.05);
+    thunk(q.open + q.up, 0.3); burst(q.open + q.up, 0.25, 260, 0.2, 'lowpass'); // hits the housing
+  }
+}
