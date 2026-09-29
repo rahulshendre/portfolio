@@ -16,7 +16,7 @@ import { istHMS, istLabel } from '../ist';
 import { tick } from '../engine/audio';
 import { countFound, type Theme, type Weather } from '../state';
 import { stormFlash, windowFall, windowSky } from './weather';
-import { POSTER_AT, SUN, TUBES, benchLamp, benchLampGlow, bikeGrounding, ceilingMech, chai, chaiLive, helmetStand, compressor, compressorPuff, fanLive, fanStatic, foreground, posterFrame, POSTER, incidentBoard, ridesFrame, clockFace, clockHands, conduit, depthShading, floorDetail, floorProps, charger, chargerLive, sunSprite, sunStrength, tubeBeams } from './garageprops';
+import { POSTER_AT, SUN, TUBES, benchLamp, benchLampGlow, bikeGrounding, ceilingMech, chai, chaiLive, helmetStand, compressor, compressorPuff, fanLive, fanStatic, foreground, posterFrame, POSTER, incidentBoard, ridesFrame, clockFace, clockHands, conduit, depthShading, floorDetail, floorProps, charger, chargerLive, mothLive, sunSprite, sunStrength, tubeBeams } from './garageprops';
 import github from '../../data/github.json';
 
 const WALL = '#cbbd9f', MORTAR = '#bcad8f', LOWER = '#7f8a7a', FLOOR = '#958d80', FLOOR_DARK = '#857d71';
@@ -436,6 +436,7 @@ export class GarageScene implements Scene {
     this.mood(t);
     fanLive(t);
     chaiLive(t);
+    if (!this.reduced) mothLive(t);
     compressorPuff(t - this.puffT);
     clockHands(istHMS(new Date()));
     chargerLive(this.hover === 'toolbox' ? t * 3 : t); // it works harder when you look at it
@@ -487,9 +488,13 @@ export class GarageScene implements Scene {
     g0.save(); g0.translate(CAT.dx, CAT.dy); // she sits on top of the stack
     const body = '#3d3d44', shade = '#2c2c33';
     ellipse(22, 208, 8, 5, body); ellipse(22, 211, 8, 2, shade);
-    disc(30, 203, 4, body); rect(27, 198, 2, 3, body); rect(32, 198, 2, 3, body); rect(28, 199, 1, 1, '#c98f8f');
+    const cyc = t % 24, stretch = !this.reduced && cyc > 20.5 && cyc < 23 ? Math.sin(((cyc - 20.5) / 2.5) * Math.PI) : 0; // now and then she stretches: head down, back up
+    const twitch = !this.reduced && t % 9 > 8.75, hy = Math.round(stretch * 2);
+    if (stretch > 0.3) ellipse(22, 207, 8, 5, body); // back arched
+    disc(30, 203 + hy, 4, body);
+    rect(27, twitch ? 199 : 198 + hy, 2, twitch ? 2 : 3, body); rect(32, 198 + hy, 2, 3, body); rect(28, 199 + hy, 1, 1, '#c98f8f');
     const petting = t - this.petT < 2, open = !petting && t % 7 > 6.3; // one slow blink; eyes shut while petted
-    if (open) { rect(29, 203, 1, 1, '#b8f070'); rect(32, 203, 1, 1, '#b8f070'); } else { rect(29, 204, 2, 1, shade); rect(32, 204, 2, 1, shade); }
+    if (open) { rect(29, 203 + hy, 1, 1, '#b8f070'); rect(32, 203 + hy, 1, 1, '#b8f070'); } else { rect(29, 204 + hy, 2, 1, shade); rect(32, 204 + hy, 2, 1, shade); }
     if (petting) for (let k = 0; k < 3; k++) { // hearts drifting up
       const p = ((t - this.petT) * 0.9 + k / 3) % 1, x = 24 + k * 7 + Math.round(Math.sin(p * 6 + k) * 2), y = 196 - p * 22;
       const g = ctx(); g.globalAlpha = 1 - p;

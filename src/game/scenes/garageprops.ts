@@ -165,6 +165,15 @@ export function benchLampGlow() {
   disc(163, 142, 3, '#ffe9a855');
 }
 
+/** A moth circling the bench lamp, now and then bumping the shade. Its wings flap every other frame. */
+export function mothLive(t: number) {
+  const a = t * 1.9, r = 8 + Math.sin(t * 0.7) * 3 + Math.sin(t * 5.3) * 1.2;
+  const x = Math.round(163 + Math.cos(a) * r), y = Math.round(141 + Math.sin(a * 1.3) * r * 0.55);
+  const up = Math.floor(t * 14) % 2 === 0;
+  rect(x, y, 1, 1, '#d8ccb0');
+  rect(x - 1, y + (up ? -1 : 1), 1, 1, '#f2ead4'); rect(x + 1, y + (up ? -1 : 1), 1, 1, '#f2ead4');
+}
+
 /** The door's torsion tube with its big spring and cable drums, running along the top of the wall. */
 export function ceilingMech() {
   rect(4, 19, 290, 3, '#6b6f79'); rect(4, 19, 290, 1, '#a0a5aa'); rect(4, 21, 290, 1, '#3a3d42');
