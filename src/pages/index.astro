@@ -96,7 +96,7 @@ import { site, nav } from '../data/site';
     @keyframes term-on { from { transform: scaleY(.04); opacity: .4; } to { transform: none; opacity: 1; } }
     .panel { position: fixed; inset: 0; z-index: 9; display: grid; place-items: center; background: rgba(10, 8, 5, 0.6); padding: 14px; }
     .panel[hidden] { display: none; }
-    .panel-win { width: min(980px, 100%); height: min(90vh, 880px); display: flex; flex-direction: column; background: #f4efe6; border: 3px solid #cfc8b8; border-radius: 10px; box-shadow: 0 0 0 3px #1b1712, 0 24px 60px #000a; overflow: hidden; }
+    .panel-win { width: min(980px, 100%); height: min(90vh, 880px); display: flex; flex-direction: column; background: #f4efe6; border: 4px solid #1b1712; border-radius: 0; box-shadow: 0 0 0 4px #e8b923, 0 0 0 8px #1b1712, 12px 12px 0 8px #0009; overflow: hidden; /* a hard pixel frame like the garage's own: square corners, a gold rim, a stepped block shadow */ }
     .panel-bar { display: flex; align-items: center; gap: 14px; padding: 8px 12px; background: #1b1712; color: #fff6e0; font: 12px/1 'Silkscreen', monospace; letter-spacing: .06em; }
     .panel-bar span { flex: 1; }
     .panel-full { color: #e8b923; text-decoration: none; }
