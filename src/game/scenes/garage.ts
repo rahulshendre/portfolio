@@ -43,6 +43,7 @@ export class GarageScene implements Scene {
   private pull = 0;
   private glow = 0;           // 0..1, eases in and out as you point at things
   private glowId: string | null = null;
+  private bikeHalo?: Sprite;
   private touch = matchMedia('(pointer: coarse)').matches;
   // dust drifting through the tube-light beams: fixed seeds, so it looks the same every visit
   private motes = Array.from({ length: 28 }, (_, i) => ({ x: TUBES[i % 2] + ((i * 37) % 70) - 35, y: 24 + ((i * 53) % 166), k: i }));
@@ -87,7 +88,7 @@ export class GarageScene implements Scene {
     this.hoverGlow(g);
     const all: (Hotspot | Control)[] = [...HOTSPOTS, ...CONTROLS, BAR.list, BAR.ride];
     const hot = all.find((h) => h.id === this.hover);
-    if (hot && !('href' in hot && (hot === BAR.list || hot === BAR.ride))) this.brackets(hot);
+    if (hot && hot.id !== 'bike' && !('href' in hot && (hot === BAR.list || hot === BAR.ride))) this.brackets(hot);
     if (this.touch || this.t < 3.2) for (const h of [...HOTSPOTS, ...CONTROLS]) if (!['coffee', 'shelf', 'youtube', 'x', 'linkedin', 'github'].includes(h.id)) this.tagFor(h);
     this.bar(hot);
   }
@@ -372,6 +373,7 @@ export class GarageScene implements Scene {
   private hoverGlow(g: CanvasRenderingContext2D) {
     const h = this.glowId && [...HOTSPOTS, ...CONTROLS].find((x) => x.id === this.glowId);
     if (!h || this.glow <= 0) return;
+    if (h.id === 'bike') { this.bikeGlow(g); return; }
     const [x, y, w, hh] = h.rect, pulse = 0.9 + 0.1 * Math.sin(this.t * 5), a = this.glow * pulse * Math.min(1, 9000 / (w * hh)); // big areas (the bike) glow softer
     g.globalCompositeOperation = 'lighter';
     g.globalAlpha = 0.6 * a;
@@ -383,6 +385,36 @@ export class GarageScene implements Scene {
       rect(x - o, y - o + 2, 2, hh + o * 2 - 4, '#ffc94d'); rect(x + w + o - 2, y - o + 2, 2, hh + o * 2 - 4, '#ffc94d');
     }
     g.globalAlpha = 0.07 * a; rect(x, y, w, hh, '#ffd76a'); // a touch of warmth inside
+    g.globalCompositeOperation = 'source-over';
+    g.globalAlpha = 1;
+  }
+
+  /** The bike glows in its own shape: the sprite brightens and a warm halo follows its silhouette. */
+  private bikeGlow(g: CanvasRenderingContext2D) {
+    const k = BIKE.scale, bw = Math.round(this.img.bike.width * k), bh = Math.round(this.img.bike.height * k);
+    const bx = Math.round(BIKE.cx - bw / 2), by = BIKE.floor - bh, R = 10;
+    if (!this.bikeHalo) {
+      const sil = document.createElement('canvas'); sil.width = bw; sil.height = bh;
+      const sg = sil.getContext('2d')!; sg.imageSmoothingEnabled = false;
+      sg.drawImage(this.img.bike, 0, 0, bw, bh);
+      sg.globalCompositeOperation = 'source-in'; sg.fillStyle = '#ffc94d'; sg.fillRect(0, 0, bw, bh); // the bike as a flat warm shape
+      const halo = document.createElement('canvas') as Sprite; halo.width = bw + R * 2; halo.height = bh + R * 2;
+      const hg = halo.getContext('2d')!; hg.imageSmoothingEnabled = false;
+      for (const [r, a] of [[8, 0.05], [6, 0.08], [4, 0.12], [2, 0.18]] as const) { // rings, outermost first
+        hg.globalAlpha = a;
+        for (const [dx, dy] of [[-r, 0], [r, 0], [0, -r], [0, r], [-r, -r], [r, -r], [-r, r], [r, r]]) hg.drawImage(sil, R + dx, R + dy);
+      }
+      hg.globalAlpha = 1; hg.globalCompositeOperation = 'destination-out';
+      hg.drawImage(this.img.bike, R, R, bw, bh);                // keep the glow outside the bike so its detail stays readable
+      this.bikeHalo = halo;
+    }
+    g.globalCompositeOperation = 'lighter';
+    g.globalAlpha = this.glow * (0.9 + 0.1 * Math.sin(this.t * 5));
+    g.drawImage(this.bikeHalo, bx - R, by - R);
+    g.globalAlpha *= 0.3;
+    g.drawImage(this.img.bike, bx, by, bw, bh);                 // the bike itself, brighter
+    const hx = Math.round(bx + 50 * k), hy = Math.round(by + 23 * k), hr = Math.round(6.1 * k) + 1;
+    g.drawImage(this.bg, hx - hr, hy - hr, hr * 2 + 1, hr * 2 + 1, hx - hr, hy - hr, hr * 2 + 1, hr * 2 + 1); // and the helmet on it
     g.globalCompositeOperation = 'source-over';
     g.globalAlpha = 1;
   }
