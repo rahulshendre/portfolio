@@ -11,6 +11,7 @@ import { blit, paint, type Sprite } from '../engine/sprites';
 import { BAR, CONTROLS, HOTSPOTS, type Control, type Hotspot } from '../hotspots';
 import { site } from '../../data/site';
 import { idleMessage } from '../hints';
+import { countFound } from '../state';
 import github from '../../data/github.json';
 
 const WALL = '#cbbd9f', MORTAR = '#bcad8f', LOWER = '#7f8a7a', FLOOR = '#958d80', FLOOR_DARK = '#857d71';
@@ -36,6 +37,10 @@ export class GarageScene implements Scene {
   radioOn = false;
   /** Features the visitor has already used (shared with main, which saves it); their hints stop showing. */
   tried: ReadonlySet<string> = new Set();
+  /** Objects the visitor has used (shared with main). Shown as a counter on the ceiling beam. */
+  found: ReadonlySet<string> = new Set();
+  private petT = -10;
+  private cheerT = -10;
   /** Set when the frame rate drops: the garage keeps its look but drops the extras. */
   lowFx = false;
   private t = 0;
@@ -59,6 +64,10 @@ export class GarageScene implements Scene {
     this.t = 0;
     this.nightT = this.night ? 1 : 0;
   }
+
+  pet() { this.petT = this.t; }
+  /** Everything found: the bar says so for a few seconds. */
+  cheer() { this.cheerT = this.t; }
 
   setNight(on: boolean, instant = false) {
     this.night = on;
@@ -95,6 +104,7 @@ export class GarageScene implements Scene {
     if (hot && hot.id !== 'bike' && !('href' in hot && (hot === BAR.list || hot === BAR.ride))) this.brackets(hot);
     if (this.touch || this.t < 3.2) for (const h of [...HOTSPOTS, ...CONTROLS]) if (!['coffee', 'shelf', 'youtube', 'x', 'linkedin', 'github'].includes(h.id)) this.tagFor(h);
     this.bar(hot);
+    this.counter();
   }
 
   // ---------------------------------------------------------------- the room, painted once
@@ -347,9 +357,15 @@ export class GarageScene implements Scene {
     const body = '#3d3d44', shade = '#2c2c33';
     ellipse(22, 208, 8, 5, body); ellipse(22, 211, 8, 2, shade);
     disc(30, 203, 4, body); rect(27, 198, 2, 3, body); rect(32, 198, 2, 3, body); rect(28, 199, 1, 1, '#c98f8f');
-    const open = t % 7 > 6.3; // one slow blink
+    const petting = t - this.petT < 2, open = !petting && t % 7 > 6.3; // one slow blink; eyes shut while petted
     if (open) { rect(29, 203, 1, 1, '#b8f070'); rect(32, 203, 1, 1, '#b8f070'); } else { rect(29, 204, 2, 1, shade); rect(32, 204, 2, 1, shade); }
-    const sway = Math.round(Math.sin(t * 2.2) * 2);
+    if (petting) for (let k = 0; k < 3; k++) { // hearts drifting up
+      const p = ((t - this.petT) * 0.9 + k / 3) % 1, x = 24 + k * 7 + Math.round(Math.sin(p * 6 + k) * 2), y = 196 - p * 22;
+      const g = ctx(); g.globalAlpha = 1 - p;
+      rect(x, y, 2, 2, '#e0555c'); rect(x + 3, y, 2, 2, '#e0555c'); rect(x, y + 2, 5, 2, '#e0555c'); rect(x + 1, y + 4, 3, 1, '#e0555c'); rect(x + 2, y + 5, 1, 1, '#e0555c');
+      g.globalAlpha = 1;
+    }
+    const sway = Math.round(Math.sin(t * (petting ? 5 : 2.2)) * 2);
     line(15, 209, 11, 208 + sway, body); line(11, 208 + sway, 9, 204 + sway, body);
   }
 
@@ -480,6 +496,12 @@ export class GarageScene implements Scene {
     text(h.tag, tx + 3, ty + 2, C.accent);
   }
 
+  private counter() {
+    const total = HOTSPOTS.length + CONTROLS.length, n = countFound(this.found, [...HOTSPOTS, ...CONTROLS].map((h) => h.id));
+    const s = `FOUND ${n}/${total}`;
+    text(s, 474 - textW(s), 5, n === total ? C.accent : '#a89d8b');
+  }
+
   private bar(hot?: Hotspot | Control) {
     rect(0, 256, 480, 14, C.ink);
     text('LIST VIEW', 6, 260, this.hover === 'list' ? C.accent : C.hud);
@@ -489,6 +511,7 @@ export class GarageScene implements Scene {
     const isLink = hot === BAR.list || hot === BAR.ride;
     const msg = hot
       ? narrow ? hot.tag || hot.label : isLink ? hot.label : `LOOK AT: ${hot.label}`
+      : this.t - this.cheerT < 5 ? 'YOU FOUND EVERYTHING! NICE.'
       : this.t < 5 && !narrow ? site.tagline.toUpperCase()
       : idleMessage(this.t - 5, this.tried, this.touch, narrow);
     textC(msg, 240, 260, hot ? C.accent : '#a89d8b');

@@ -15,7 +15,7 @@ export interface Hotspot {
 
 /** Things you operate rather than open. Buttons, not links. */
 export interface Control {
-  id: 'cord' | 'radio';
+  id: 'cord' | 'radio' | 'cat';
   label: string;
   tag: string;
   rect: [number, number, number, number];
@@ -45,6 +45,7 @@ export const HOTSPOTS: Hotspot[] = [
 export const CONTROLS: Control[] = [
   { id: 'cord', label: 'PULL CORD · LIGHTS', tag: 'LIGHTS', rect: [169, 28, 16, 26] },
   { id: 'radio', label: 'RADIO · LO-FI ON OR OFF', tag: 'RADIO', rect: [96, 108, 44, 22] },
+  { id: 'cat', label: 'THE CAT · PET HER', tag: 'CAT', rect: [6, 196, 38, 20] },
 ];
 
 // Bottom bar buttons, also real links.

@@ -7,7 +7,7 @@ import { RideScene } from './scenes/ride';
 import { DoorScene } from './scenes/door';
 import { GarageScene } from './scenes/garage';
 import { BAR, CONTROLS, HOTSPOTS, toPct } from './hotspots';
-import { hasVisited, isNightHour, loadNight, loadTried, markVisited, pickStart, saveNight, saveTried } from './state';
+import { hasVisited, isNightHour, loadFound, loadNight, loadTried, markVisited, pickStart, saveFound, saveNight, saveTried } from './state';
 import { radio } from './engine/audio';
 import { mountTerminal } from './terminal-ui';
 import { isPanelHref, mountPanel, parsePanelHash, titleFor } from './panel';
@@ -25,6 +25,13 @@ const images = Promise.all(SPRITES.map((n) => loadImage(`/sprites/${n}.png`))).t
 }));
 
 let current: GarageScene | undefined;
+const found = new Set(loadFound());
+function markFound(id: string) {
+  if (found.has(id)) return;
+  found.add(id);
+  saveFound([...found]);
+  if ([...HOTSPOTS, ...CONTROLS].every((h) => found.has(h.id))) current?.cheer();
+}
 const tried = new Set(loadTried());
 const markTried = (f: 'tv' | 'cord' | 'radio') => { if (!tried.has(f)) { tried.add(f); saveTried([...tried]); } };
 
@@ -47,7 +54,7 @@ const panel = mountPanel({
 });
 
 const terminal = mountTerminal({
-  opened: () => markTried('tv'),
+  opened: () => { markTried('tv'); markFound('tv'); },
   go: (href) => {
     if (!isPanelHref(href)) return false;
     terminal.close(true); // the panel takes over the same history entry
@@ -67,6 +74,7 @@ async function garage() {
   const scene = new GarageScene(screen, img);
   scene.night = loadNight() ?? isNightHour(new Date().getHours()); // until they pull the cord, the room follows their clock
   scene.tried = tried;
+  scene.found = found;
   scene.radioOn = radio.on;
   current = scene;
   director.go(scene);
@@ -95,10 +103,13 @@ function mountHotspots(scene: GarageScene) {
     b.type = 'button';
     b.dataset.control = c.id;
     b.setAttribute('aria-label', c.label.replace(' · ', ': ').toLowerCase());
-    b.setAttribute('aria-pressed', String(c.id === 'radio' ? radio.on : scene.night));
+    if (c.id !== 'cat') b.setAttribute('aria-pressed', String(c.id === 'radio' ? radio.on : scene.night));
     Object.assign(b.style, toPct(c.rect));
     b.addEventListener('click', () => {
-      if (c.id === 'cord') { toggleNight(); b.setAttribute('aria-pressed', String(scene.night)); } else toggleRadio();
+      markFound(c.id);
+      if (c.id === 'cord') { toggleNight(); b.setAttribute('aria-pressed', String(scene.night)); }
+      else if (c.id === 'radio') toggleRadio();
+      else scene.pet();
     });
     hoverable(b, c.id, scene);
     layer.append(b);
@@ -116,6 +127,7 @@ function mountHotspots(scene: GarageScene) {
     a.setAttribute('aria-label', h.id === 'list' || h.id === 'ride' ? h.label.toLowerCase() : h.label.replace(' · ', ': ').toLowerCase());
     if (h.external) { a.target = '_blank'; a.rel = 'noopener'; }
     Object.assign(a.style, toPct(h.rect));
+    if (h.id !== 'list' && h.id !== 'ride') { a.addEventListener('click', () => markFound(h.id)); a.addEventListener('auxclick', () => markFound(h.id)); }
     hoverable(a, h.id, scene);
     layer.append(a);
   }

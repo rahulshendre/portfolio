@@ -39,3 +39,14 @@ export function saveTried(list: string[]) {
 export function saveNight(on: boolean) {
   try { localStorage.setItem(NIGHT, on ? '1' : '0'); } catch { /* fine */ }
 }
+
+// Things in the garage the visitor has used. Ids that no longer exist are ignored when counting.
+export function loadFound(): string[] {
+  try { const v = JSON.parse(localStorage.getItem('rs:found') ?? '[]'); return Array.isArray(v) ? v.filter((x) => typeof x === 'string') : []; } catch { return []; }
+}
+
+export function saveFound(list: string[]) {
+  try { localStorage.setItem('rs:found', JSON.stringify(list)); } catch { /* fine */ }
+}
+
+export const countFound = (found: Iterable<string>, valid: readonly string[]) => valid.filter((id) => new Set(found).has(id)).length;
