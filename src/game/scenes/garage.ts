@@ -41,6 +41,8 @@ export class GarageScene implements Scene {
   private nightGlow?: Sprite;
   private nightT = 0;
   private pull = 0;
+  private glow = 0;           // 0..1, eases in and out as you point at things
+  private glowId: string | null = null;
   private touch = matchMedia('(pointer: coarse)').matches;
   // dust drifting through the tube-light beams: fixed seeds, so it looks the same every visit
   private motes = Array.from({ length: 28 }, (_, i) => ({ x: TUBES[i % 2] + ((i * 37) % 70) - 35, y: 24 + ((i * 53) % 166), k: i }));
@@ -66,6 +68,8 @@ export class GarageScene implements Scene {
     this.t += dt;
     this.nightT += Math.sign((this.night ? 1 : 0) - this.nightT) * Math.min(Math.abs((this.night ? 1 : 0) - this.nightT), dt * 3);
     this.pull = Math.max(0, this.pull - dt * 1.6);
+    if (this.hover && this.hover !== 'list' && this.hover !== 'ride') { this.glowId = this.hover; this.glow = Math.min(1, this.glow + dt * 9); }
+    else { this.glow = Math.max(0, this.glow - dt * 6); if (this.glow === 0) this.glowId = null; }
     if (!this.lowFx) for (const m of this.motes) {
       m.y += dt * (3 + (m.k % 3) * 2);
       m.x += Math.sin(this.t * 0.6 + m.k) * dt * 4;
@@ -80,6 +84,7 @@ export class GarageScene implements Scene {
     g.drawImage(this.bg, 0, 0);
     this.animate();
     this.nightPass(g);
+    this.hoverGlow(g);
     const all: (Hotspot | Control)[] = [...HOTSPOTS, ...CONTROLS, BAR.list, BAR.ride];
     const hot = all.find((h) => h.id === this.hover);
     if (hot && !('href' in hot && (hot === BAR.list || hot === BAR.ride))) this.brackets(hot);
@@ -361,6 +366,25 @@ export class GarageScene implements Scene {
     rect(175, 17, 3, 2, '#2a2a2e');
     line(176, 19, 176 + sway, 42 + drop, '#d8d2c4');
     disc(176 + sway, 45 + drop, 2, C.accent); rect(175 + sway, 44 + drop, 1, 1, '#fff4c2');
+  }
+
+  /** Point at something and it lights up: the object brightens and a warm halo spreads round it, like a lamp switched on. */
+  private hoverGlow(g: CanvasRenderingContext2D) {
+    const h = this.glowId && [...HOTSPOTS, ...CONTROLS].find((x) => x.id === this.glowId);
+    if (!h || this.glow <= 0) return;
+    const [x, y, w, hh] = h.rect, pulse = 0.9 + 0.1 * Math.sin(this.t * 5), a = this.glow * pulse * Math.min(1, 9000 / (w * hh)); // big areas (the bike) glow softer
+    g.globalCompositeOperation = 'lighter';
+    g.globalAlpha = 0.6 * a;
+    g.drawImage(this.bg, x, y, w, hh, x, y, w, hh);           // the object itself, brighter
+    for (let i = 1; i <= 5; i++) {                              // warm halo, fading outward in steps
+      g.globalAlpha = (0.32 / i) * a;
+      const o = i * 2;
+      rect(x - o, y - o, w + o * 2, 2, '#ffc94d'); rect(x - o, y + hh + o - 2, w + o * 2, 2, '#ffc94d');
+      rect(x - o, y - o + 2, 2, hh + o * 2 - 4, '#ffc94d'); rect(x + w + o - 2, y - o + 2, 2, hh + o * 2 - 4, '#ffc94d');
+    }
+    g.globalAlpha = 0.07 * a; rect(x, y, w, hh, '#ffd76a'); // a touch of warmth inside
+    g.globalCompositeOperation = 'source-over';
+    g.globalAlpha = 1;
   }
 
   /** Lights off: the dark room fades in, with dithered glows round the neon, TV, radio and the PipeCD sign. */
