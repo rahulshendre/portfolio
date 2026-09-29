@@ -116,7 +116,7 @@ export class DoorScene implements Scene {
     if (this.t < T_ARRIVE) for (let p, i = 0; i < 3; i++) { p = (this.t * 3 + i / 3) % 1; disc(bx + 8 - p * 30, 244 - p * 6, 2 + p * 3, '#b8ad98'); }
     blit(this.rig, Math.round(bx - PAD.x * k), 251 - rh + bob, rw, rh);
     // headlight: a soft cone on the road ahead, a bloom on the lens and a pool where it lands
-    const hx = bx + this.bike.width * k * 0.86, hy = 251 - this.bike.height * k * 0.68, beam = 1 - Math.min(1, Math.max(0, (this.t - (T_END - 1.4)) / 1.0));
+    const hx = bx + 108 * k, hy = 251 - rh + (PAD.y + 22) * k + bob, beam = 1 - Math.min(1, Math.max(0, (this.t - (T_END - 1.4)) / 1.0)); // hx, hy: the lens on the sprite, not its box
     if (beam > 0) {
       g.save(); g.globalCompositeOperation = 'lighter'; g.beginPath(); g.rect(0, 0, 480, 262); g.clip();
       const cone = g.createLinearGradient(hx, 0, hx + 210, 0); cone.addColorStop(0, `rgba(255,236,190,${0.3 * beam})`); cone.addColorStop(1, 'rgba(255,236,190,0)');
