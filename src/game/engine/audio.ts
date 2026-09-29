@@ -1,6 +1,13 @@
 // One switch for all sound: every audio context is created here, so muting suspends them all and nothing can start them again until unmuted.
 const contexts = new Set<AudioContext>();
 let muted = false;
+const limiters = new WeakMap<AudioContext, DynamicsCompressorNode>();
+/** Where a context's sound goes out: through a gentle limiter, so the radio, the door and the cat together never clip. */
+const dest = (c: AudioContext): AudioNode => {
+  let l = limiters.get(c);
+  if (!l) { l = c.createDynamicsCompressor(); l.threshold.value = -8; l.knee.value = 6; l.ratio.value = 12; l.attack.value = 0.003; l.release.value = 0.2; l.connect(c.destination); limiters.set(c, l); }
+  return l;
+};
 const newCtx = () => { const c = new AudioContext(); contexts.add(c); if (muted) void c.suspend(); return c; };
 const wake = (c: AudioContext) => (muted ? Promise.resolve() : c.resume());
 export const isMuted = () => muted;
@@ -36,7 +43,7 @@ export class EngineSound {
       const body = ctx.createOscillator(); body.type = 'sawtooth'; body.frequency.value = 42;
       const thump = ctx.createOscillator(); thump.type = 'square'; thump.frequency.value = 21;
       const thumpGain = ctx.createGain(); thumpGain.gain.value = 0.35;
-      body.connect(filter); thump.connect(thumpGain).connect(filter); filter.connect(gain).connect(ctx.destination);
+      body.connect(filter); thump.connect(thumpGain).connect(filter); filter.connect(gain).connect(dest(ctx));
       body.start(); thump.start();
       Object.assign(this, { ctx, gain, filter, body, thump });
     }
@@ -96,7 +103,7 @@ export class RadioSound {
       this.master = this.ctx.createGain();
       this.master.gain.value = 0;
       const lp = this.ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 1800;
-      this.master.connect(lp).connect(this.ctx.destination);
+      this.master.connect(lp).connect(dest(this.ctx));
       const len = this.ctx.sampleRate * 2, buf = this.ctx.createBuffer(1, len, this.ctx.sampleRate), d = buf.getChannelData(0);
       for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
       this.noise = buf;
@@ -191,7 +198,7 @@ export class DoorSound {
   private build(t: number, q: DoorCues) {
     const c = this.ctx!, base = c.currentTime - t;
     const at = (s: number) => Math.max(c.currentTime, base + s);
-    const master = c.createGain(); master.gain.value = 0.9; master.connect(c.destination); this.master = master;
+    const master = c.createGain(); master.gain.value = 0.9; master.connect(dest(c)); this.master = master;
     const len = c.sampleRate * 2, buf = c.createBuffer(1, len, c.sampleRate), d = buf.getChannelData(0);
     for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
     const osc = (type: OscillatorType, f: number) => { const o = c.createOscillator(); o.type = type; o.frequency.value = f; o.start(); return o; };
@@ -300,7 +307,7 @@ export function meow() {
   if (meowBuf) {
     const src = c.createBufferSource(), g = c.createGain();
     src.buffer = meowBuf; g.gain.value = 0.9;
-    src.connect(g).connect(c.destination); src.start();
+    src.connect(g).connect(dest(c)); src.start();
     return;
   }
   const t = c.currentTime, dur = 0.8;
@@ -310,7 +317,7 @@ export function meow() {
   const vib = c.createOscillator(), vg = c.createGain(); vib.frequency.value = 5.5; vg.gain.setValueAtTime(0, t); vg.gain.linearRampToValueAtTime(10, t + 0.35); vib.connect(vg).connect(buzz.frequency);
   const out = c.createGain();
   out.gain.setValueAtTime(0.0001, t); out.gain.exponentialRampToValueAtTime(0.5, t + 0.07); out.gain.setValueAtTime(0.5, t + 0.45); out.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-  out.connect(c.destination);
+  out.connect(dest(c));
   // three formants (the resonances of the mouth) that move from "ee" to "ah" to "oo"
   const formant = (f0: number, f1: number, f2: number, q: number, vol: number) => {
     const f = c.createBiquadFilter(), g = c.createGain(); f.type = 'bandpass'; f.Q.value = q; g.gain.value = vol;
@@ -336,7 +343,7 @@ export function hiss() {
   for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 1.6);
   const src = c.createBufferSource(), hp = c.createBiquadFilter(), g = c.createGain();
   src.buffer = buf; hp.type = 'highpass'; hp.frequency.value = 2600; g.gain.value = 0.3;
-  src.connect(hp).connect(g).connect(c.destination); src.start();
+  src.connect(hp).connect(g).connect(dest(c)); src.start();
 }
 
 export function tick() {
@@ -347,5 +354,5 @@ export function tick() {
   const o = c.createOscillator(), g = c.createGain(), t = c.currentTime;
   o.type = 'square'; o.frequency.value = 1900;
   g.gain.setValueAtTime(0.05, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.03);
-  o.connect(g).connect(c.destination); o.start(t); o.stop(t + 0.04);
+  o.connect(g).connect(dest(c)); o.start(t); o.stop(t + 0.04);
 }
