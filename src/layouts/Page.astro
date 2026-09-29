@@ -1,4 +1,5 @@
 ---
+import { CARDS } from '../lib/cards';
 import '@fontsource-variable/fraunces/wght.css';
 import '@fontsource-variable/fraunces/wght-italic.css';
 import '@fontsource/ibm-plex-sans/400.css';
@@ -19,8 +20,8 @@ interface Props {
 const { title, description = site.description, bare = false } = Astro.props;
 const fullTitle = title ? `${title} · ${site.name}` : `${site.name}: ${site.tagline}`;
 const canonical = new URL(Astro.url.pathname, Astro.site);
-const ogImage = new URL('/og.png', Astro.site);
 const path = Astro.url.pathname.replace(/\/$/, '') || '/';
+const ogImage = new URL(path in CARDS || path.startsWith('/builds/') ? `/og${path}.png` : '/og.png', Astro.site); // a card per page when one is made at build time
 const snapshot = new Date(github.generatedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 ---
 <!doctype html>
