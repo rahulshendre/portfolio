@@ -1,5 +1,5 @@
 // Boots the home-page game: door (arrival) -> garage, with the ride one click away. The garage's objects are real links.
-import { Screen, WORLD_H, WORLD_W } from './engine/screen';
+import { Screen, WIDE_W, WORLD_H, WORLD_W } from './engine/screen';
 import { input } from './engine/input';
 import { Director } from './engine/scene';
 import { loadImage } from './engine/sprites';
@@ -208,6 +208,10 @@ function frame(now: number) {
   last = now;
   const s = director.current;
   if (s) { s.update(dt); s.draw(); }
+  if (s instanceof DoorScene && viewport.scrollWidth > viewport.clientWidth) { // phone: pan along with the bike
+    const want = (s.focus / WIDE_W) * viewport.scrollWidth - viewport.clientWidth / 2;
+    viewport.scrollLeft += (want - viewport.scrollLeft) * Math.min(1, dt * 5);
+  }
   if (current && !current.lowFx && ++frames > 90) { slow = slow * 0.95 + dt * 0.05; if (slow > 1 / 38) current.lowFx = true; }
   leanStage(dt);
   requestAnimationFrame(frame);

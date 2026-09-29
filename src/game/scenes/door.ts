@@ -73,6 +73,12 @@ export class DoorScene implements Scene {
     });
   }
 
+  /** Where the camera should look, in the 640-wide frame. On a phone the stage scrolls sideways and follows the bike. */
+  get focus() {
+    if (!this.go) return WIDE_W / 2;
+    return Math.min(WIDE_W, Math.max(0, OX + (-340 + glide(this.t / T_ARRIVE) * 460) + 110));
+  }
+
   private finish() { if (!this.finished) { this.finished = true; this.sfx.stop(); this.onDone(); } }
 
   update(dt: number) {
@@ -136,7 +142,7 @@ export class DoorScene implements Scene {
     text('SKIP >', 6, 258, C.hud, 1, C.ink);
     if (!this.go && this.idle > 0.5) {
       g.globalAlpha = 0.45; rect(0, 0, WIDE_W, 270, '#140f0a'); g.globalAlpha = 1;
-      textC('TAP TO START', 320, 172, C.hud, 2, C.ink);
+      textC('TAP TO START', 320, 172, C.hud, this.screen.size.portrait ? 1 : 2, C.ink); // a phone shows only ~130 of the 640 columns
       if (Math.floor(this.idle * 1.6) % 2) textC('SOUND ON', 320, 194, '#f4f2ea', 1, C.ink);
     }
     const fade = Math.min(1, Math.max(0, (this.t - (T_END - 0.6)) / 0.6));

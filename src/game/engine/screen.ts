@@ -72,7 +72,7 @@ export class Screen {
     const stage = this.canvas.parentElement as HTMLElement;
     stage.style.width = cssW + 'px';
     stage.style.height = cssH + 'px';
-    stage.dataset.mode = this.mode === 'wide' ? 'world' : this.mode; // same CSS as the garage
+    stage.dataset.mode = this.mode;
     for (const fn of this.listeners) fn();
   }
 
