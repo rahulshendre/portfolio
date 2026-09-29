@@ -16,7 +16,7 @@ import { istHMS, istLabel } from '../ist';
 import { tick } from '../engine/audio';
 import { countFound, type Theme, type Weather } from '../state';
 import { stormFlash, windowFall, windowSky } from './weather';
-import { POSTER_AT, SUN, TUBES, benchLamp, benchLampGlow, bikeGrounding, ceilingMech, chai, chaiLive, helmetStand, compressor, compressorPuff, fanLive, fanStatic, foreground, posterFrame, POSTER, incidentBoard, ridesFrame, clockFace, clockHands, conduit, depthShading, floorDetail, floorProps, charger, chargerLive, mothLive, sunSprite, sunStrength, tubeBeams } from './garageprops';
+import { POSTER_AT, SUN, TUBES, benchLamp, benchLampGlow, bikeGrounding, ceilingMech, helmetStand, compressor, compressorPuff, fanLive, fanStatic, foreground, posterFrame, POSTER, incidentBoard, ridesFrame, clockFace, clockHands, conduit, depthShading, floorDetail, floorProps, charger, chargerLive, mothLive, sunSprite, sunStrength, tubeBeams } from './garageprops';
 import github from '../../data/github.json';
 
 const WALL = '#cbbd9f', MORTAR = '#bcad8f', LOWER = '#7f8a7a', FLOOR = '#958d80', FLOOR_DARK = '#857d71';
@@ -195,7 +195,7 @@ export class GarageScene implements Scene {
     this.tyres();
     this.radioBox();
     conduit(); clockFace(); charger(); floorProps(); benchLamp();
-    helmetStand(); ceilingMech(); fanStatic(); ridesFrame(); incidentBoard(DAYS_SINCE_PR); compressor(); chai();
+    helmetStand(); ceilingMech(); fanStatic(); ridesFrame(); incidentBoard(DAYS_SINCE_PR); compressor();
 
     if (withBike) {
       // Part of the room's personality, not its focus: mid-size, a little left of centre so the toolbox and PipeCD sign stay clear.
@@ -436,7 +436,6 @@ export class GarageScene implements Scene {
     this.sunlight(t);
     this.mood(t);
     fanLive(t);
-    chaiLive(t);
     if (!this.reduced) mothLive(t);
     compressorPuff(t - this.puffT);
     clockHands(istHMS(new Date()));

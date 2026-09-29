@@ -89,12 +89,6 @@ export function floorProps() {
   ellipse(458, 242, 14, 3, '#1c3050');
   poly([[458, 216], [464, 222], [458, 228], [452, 222]], C.accent); poly([[458, 219], [461, 222], [458, 225], [455, 222]], '#2c2a26');
   streaks(444, 230, 28, 12, '#5a3a22', 5, 142); speckle(444, 208, 28, 34, '#8a3d1c', 0.03, 143); rect(456, 243, 2, 6, '#141210');
-  // bucket and a mop
-  ellipse(396, 246, 11, 2, '#0000003a');
-  poly([[387, 232], [405, 232], [403, 246], [389, 246]], '#6b7075'); rect(387, 232, 18, 1, '#8b9096'); rect(389, 245, 14, 1, '#4a4e53');
-  ellipse(396, 232, 9, 2, '#3a3d42'); ellipse(396, 232, 7, 1, '#2a4a70');
-  line(400, 232, 412, 194, '#a5764a'); line(401, 232, 413, 194, '#8a5a36');
-  for (let k = 0; k < 6; k++) line(394 + k, 231, 392 + k * 2, 236, '#d8d2c4');
 }
 
 /** Conduit along the top of the wall, clipped to the plaster every so often. */
@@ -274,21 +268,6 @@ export function compressorPuff(age: number) {
     const p = age * (1.4 + (i % 4) * 0.35), x = 410 - p * 14 - hash(i, 230) * 4, y = 233 + Math.sin(i * 2.1) * (2 + p * 6) + p * 4;
     g.globalAlpha = Math.max(0, 1 - age / 1.1) * 0.8;
     rect(Math.round(x), Math.round(y), i % 3 ? 1 : 2, 1, '#f4f2ea');
-  }
-  g.globalAlpha = 1;
-}
-
-/** A steel flask of chai and two glasses on the bench's lower shelf. The steam is drawn each frame by chaiLive. */
-export function chai() {
-  rect(100, 171, 9, 15, '#b8bcc2'); bevel(100, 171, 9, 15, '#e6e9ec', '#7c8087'); rect(101, 168, 7, 3, '#b32a1b'); rect(101, 168, 7, 1, '#dc4a3a'); rect(109, 174, 2, 6, '#7c8087');
-  for (const x of [113, 120]) { rect(x, 180, 5, 6, '#e8d9a8'); rect(x, 180, 5, 1, '#f6efd2'); rect(x + 1, 181, 3, 3, '#b8621f'); rect(x, 185, 5, 1, '#8a7a4c'); }
-}
-export function chaiLive(t: number) {
-  const g = ctx();
-  for (const [x0, seed] of [[100, 0], [115, 1], [122, 2]] as const) for (let k = 0; k < 3; k++) {
-    const p = (t * 0.55 + k / 3 + seed * 0.21) % 1;
-    g.globalAlpha = (1 - p) * 0.7;
-    rect(x0 + 3 + Math.round(Math.sin((p + k + seed) * 6) * 1.5), 178 - Math.round(p * 12), 1, 2, '#f4f2ea');
   }
   g.globalAlpha = 1;
 }

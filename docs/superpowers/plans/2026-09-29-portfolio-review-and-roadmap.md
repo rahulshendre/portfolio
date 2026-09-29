@@ -86,16 +86,16 @@ Each phase ships on its own. Ship in order.
 
 - [x] WebGL post-process pass (bloom, vignette, grading, terminal CRT) behind a feature check, with the current canvas as fallback.
 - [ ] Achievements with a save: the ceiling counter already tracks finds, add a small reward at 100 percent (a secret door or a sticker).
-- [ ] More life: cat wanders, dust in the sunbeam, TV static on hover, tyre pressure gauge that moves.
+- [x] More life: moth round the bench lamp, cat stretches and twitches, dust in the sunbeam. (TV static on hover and a moving gauge still open.)
 - [ ] Theme and weather controls inside the garage, not only at the door.
 - [ ] Real phone pass: iOS Safari and Android Chrome, touch targets, landscape lock hint.
-- [ ] Give the panels a pixel frame and CRT treatment so the editorial pages feel like part of the garage.
+- [x] Pixel frame on the panels (CRT treatment still open).
 
 ### Phase 3: polish and reach (about 3 days)
 
-- [ ] Satori build-time OG cards.
+- [x] Satori build-time OG cards.
 - [x] `@view-transition` for the editorial pages.
-- [ ] Performance budget check in CI (Lighthouse CI on `/list` and `/`).
+- [x] Performance budget check in CI (Lighthouse CI on `/list` and `/`, needs a first run on GitHub to confirm).
 - [ ] Upgrade to Astro 6 on Node 22.
 - [ ] Custom domain.
 
