@@ -41,6 +41,7 @@ import { site, nav } from '../data/site';
     .stage canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; touch-action: none; }
     .stage[data-mode='world'] canvas { touch-action: pan-x; }
     .hotspots { position: absolute; inset: 0; pointer-events: none; }
+    .hotspots a:hover, .hotspots a:focus { background: none; } /* the canvas draws the highlight; the site-wide link tint would cover the art */
     .hotspots a { position: absolute; pointer-events: auto; display: block; cursor: pointer; border-radius: 2px; }
     .hotspots a:focus-visible { outline: 3px solid #e8b923; outline-offset: 2px; }
     .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
