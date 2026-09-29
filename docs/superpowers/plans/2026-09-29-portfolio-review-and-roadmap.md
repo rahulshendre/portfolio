@@ -64,19 +64,19 @@ Each phase ships on its own. Ship in order.
 
 ### Phase 0: fix what is broken (about 1 day)
 
-- [ ] Set `site` in `astro.config.mjs` to the live domain (Vercel URL now, custom domain later). Rebuild, confirm canonical, `og:image`, sitemap.
-- [ ] Hide `Todo` chips in production (render only in dev), and replace the videos and writing "soon" pages with something honest and short.
-- [ ] Silence the empty `notes` warning (add one real note, see phase 1).
-- [ ] Loading state for `/`: a static garage screenshot as a CSS background on `.viewport`, fade out when the first frame paints. Reserve stage size in CSS so CLS goes to 0.
-- [ ] Master sound control: a visible speaker toggle, remembered, default follows the radio choice.
-- [ ] Self-host fonts (Fontsource or Astro Fonts API), drop the Google `<link>`.
-- [ ] GitHub Actions: `tsc --noEmit`, `vitest run`, `astro build`, `check:links` on every push and PR.
-- [ ] Vercel Web Analytics and Speed Insights.
+- [x] Set `site` in `astro.config.mjs` to the live domain (Vercel URL now, custom domain later). Rebuild, confirm canonical, `og:image`, sitemap.
+- [x] Hide `Todo` chips in production (render only in dev), and replace the videos and writing "soon" pages with something honest and short.
+- [x] Silence the empty `notes` warning (add one real note, see phase 1).
+- [x] Loading state for `/`: a static garage screenshot as a CSS background on `.viewport`, fade out when the first frame paints. Reserve stage size in CSS so CLS goes to 0.
+- [x] Master sound control: a visible speaker toggle, remembered, default follows the radio choice.
+- [x] Self-host fonts (Fontsource or Astro Fonts API), drop the Google `<link>`.
+- [x] GitHub Actions: `tsc --noEmit`, `vitest run`, `astro build`, `check:links` on every push and PR.
+- [ ] Analytics: skipped until the final host is chosen (Vercel only works on Vercel).
 - Done when: Lighthouse `/` perf above 85, CLS below 0.1, share preview shows the right card.
 
 ### Phase 1: content that convinces (the highest value, about 1 week)
 
-- [ ] Case study template: problem, what I did, key decision and why, result with a number, link to code. Three to four builds first: PlanetRead subtitle plugins, BookBox React Native app (10k+ downloads), PipeCD v1 tutorial, cloudrun-mvp.
+- [x] Case study pages are built (`/builds/<slug>`, appear once a build has problem, decision or result in its frontmatter). Content still needs Rahul:  problem, what I did, key decision and why, result with a number, link to code. Three to four builds first: PlanetRead subtitle plugins, BookBox React Native app (10k+ downloads), PipeCD v1 tutorial, cloudrun-mvp.
 - [ ] PipeCD page: contribution counts and a timeline from `github.json`, plus the KubeCon India booth.
 - [ ] Two real notes in `src/content/notes` (for example "what I learned writing the PipeCD plugin tutorial").
 - [ ] Make the garage objects point at these case studies, not at cards.
@@ -84,7 +84,7 @@ Each phase ships on its own. Ship in order.
 
 ### Phase 2: make the game feel richer (about 1 to 2 weeks)
 
-- [ ] WebGL post-process pass (bloom, vignette, grading, terminal CRT) behind a feature check, with the current canvas as fallback.
+- [x] WebGL post-process pass (bloom, vignette, grading, terminal CRT) behind a feature check, with the current canvas as fallback.
 - [ ] Achievements with a save: the ceiling counter already tracks finds, add a small reward at 100 percent (a secret door or a sticker).
 - [ ] More life: cat wanders, dust in the sunbeam, TV static on hover, tyre pressure gauge that moves.
 - [ ] Theme and weather controls inside the garage, not only at the door.
@@ -94,7 +94,7 @@ Each phase ships on its own. Ship in order.
 ### Phase 3: polish and reach (about 3 days)
 
 - [ ] Satori build-time OG cards.
-- [ ] `@view-transition` for the editorial pages.
+- [x] `@view-transition` for the editorial pages.
 - [ ] Performance budget check in CI (Lighthouse CI on `/list` and `/`).
 - [ ] Upgrade to Astro 6 on Node 22.
 - [ ] Custom domain.

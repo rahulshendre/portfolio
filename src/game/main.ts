@@ -1,6 +1,7 @@
 // Boots the home-page game: door (arrival) -> garage, with the ride one click away. The garage's objects are real links.
 import { Screen, WIDE_W, WORLD_H, WORLD_W } from './engine/screen';
 import { input } from './engine/input';
+import { Fx, fxWanted } from './engine/fx';
 import { Director } from './engine/scene';
 import { loadImage } from './engine/sprites';
 import { RideScene } from './scenes/ride';
@@ -18,6 +19,8 @@ const viewport = document.getElementById('viewport') as HTMLElement;
 const screen = new Screen(canvas);
 const director = new Director((m) => screen.setMode(m));
 input.attach(screen);
+const fx = new Fx(canvas); // glow, vignette and warmth over the pixel scenes
+if (fx.ok) canvas.after(fx.canvas);
 
 const SPRITES = ['mountains', 'bike-side', 'pipecd', 'pipecd-sm', 'planetread', 'icon-github', 'icon-x', 'icon-linkedin', 'icon-youtube'] as const;
 const images = Promise.all(SPRITES.map((n) => loadImage(`/sprites/${n}.png`))).then(([mountains, bike, pipecd, pipecdSm, planetread, github, x, linkedin, youtube]) => ({
@@ -228,7 +231,7 @@ function frame(now: number) {
   const dt = Math.min(0.05, (now - last) / 1000);
   last = now;
   const s = director.current;
-  if (s) { s.update(dt); s.draw(); if (!viewport.classList.contains('ready')) viewport.classList.add('ready'); } // first real frame: the poster steps aside
+  if (s) { s.update(dt); s.draw(); fx.render(fxWanted(screen.mode, !!current?.lowFx, location.search)); if (!viewport.classList.contains('ready')) viewport.classList.add('ready'); } // first real frame: the poster steps aside
   if (s instanceof DoorScene && viewport.scrollWidth > viewport.clientWidth) { // phone: pan along with the bike
     const want = (s.focus / WIDE_W) * viewport.scrollWidth - viewport.clientWidth / 2;
     viewport.scrollLeft += (want - viewport.scrollLeft) * Math.min(1, dt * 5);

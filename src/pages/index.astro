@@ -55,6 +55,7 @@ import { site, nav } from '../data/site';
     .sound:focus-visible { outline: 3px solid #e8b923; outline-offset: 2px; }
     .stage canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; touch-action: none; }
     .stage[data-mode='world'] canvas, .stage[data-mode='wide'] canvas { touch-action: pan-x; }
+    .stage canvas.fx { position: absolute; inset: 0; pointer-events: none; }
     .hotspots { position: absolute; inset: 0; pointer-events: none; }
     .hotspots a:hover, .hotspots a:focus { background: none; } /* the canvas draws the highlight; the site-wide link tint would cover the art */
     .hotspots a { position: absolute; pointer-events: auto; display: block; cursor: pointer; border-radius: 2px; }
