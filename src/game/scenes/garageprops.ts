@@ -123,7 +123,7 @@ export function fuseBox() {
 }
 
 /** A wall clock face; the hands are drawn each frame by clockHands. */
-export const CLOCK = { x: 244, y: 128, r: 9 };
+export const CLOCK = { x: 172, y: 112, r: 9 };
 export function clockFace() {
   const { x, y, r } = CLOCK;
   ellipse(x + 2, y + 2, r + 1, r + 1, '#00000033');
