@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BAR, HOTSPOTS, toPct } from './hotspots';
+import { BAR, CONTROLS, HOTSPOTS, toPct } from './hotspots';
 import { hasGlyph } from './engine/font';
 import { nav } from '../data/site';
 
@@ -10,7 +10,7 @@ describe('hotspots', () => {
   });
 
   it('stays inside the 480x270 world', () => {
-    for (const h of [...HOTSPOTS, BAR.list, BAR.ride]) {
+    for (const h of [...HOTSPOTS, ...CONTROLS, BAR.list, BAR.ride]) {
       const [x, y, w, hh] = h.rect;
       expect(x >= 0 && y >= 0 && x + w <= 480 && y + hh <= 270, h.id).toBe(true);
     }
@@ -22,6 +22,6 @@ describe('hotspots', () => {
   });
 
   it('only uses characters the pixel font can draw', () => {
-    for (const h of HOTSPOTS) for (const ch of 'LOOK AT: ' + h.label + h.tag) expect(hasGlyph(ch), `${h.id} "${ch}"`).toBe(true);
+    for (const h of [...HOTSPOTS, ...CONTROLS]) for (const ch of 'LOOK AT: ' + h.label + h.tag) expect(hasGlyph(ch), `${h.id} "${ch}"`).toBe(true);
   });
 });

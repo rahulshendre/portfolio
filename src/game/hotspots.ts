@@ -9,6 +9,16 @@ export interface Hotspot {
   href: string;
   rect: [number, number, number, number];
   external?: boolean;
+  /** Runs instead of following the link (the href stays as the no-JS and middle-click fallback). */
+  action?: 'terminal';
+}
+
+/** Things you operate rather than open. Buttons, not links. */
+export interface Control {
+  id: 'cord' | 'radio';
+  label: string;
+  tag: string;
+  rect: [number, number, number, number];
 }
 
 const yt = site.links.youtube;
@@ -21,7 +31,7 @@ export const HOTSPOTS: Hotspot[] = [
   { id: 'x', label: `TWITTER · ${site.links.xHandle.toUpperCase()}`, tag: 'X', href: site.links.x, rect: [96, 24, 78, 28], external: true },
   { id: 'linkedin', label: 'LINKEDIN · RAHUL SHENDRE', tag: 'LINKEDIN', href: site.links.linkedin, rect: [12, 58, 78, 28], external: true },
   { id: 'github', label: 'GITHUB · RAHULSHENDRE', tag: 'GITHUB', href: site.links.github, rect: [96, 58, 78, 28], external: true },
-  { id: 'tv', label: 'CRT TV · VIDEOS', tag: 'VIDEOS', href: '/videos', rect: [18, 96, 66, 64] },
+  { id: 'tv', label: 'CRT TV · OPEN THE TERMINAL', tag: 'TERMINAL', href: '/videos', rect: [18, 96, 66, 64], action: 'terminal' },
   { id: 'binders', label: 'BINDERS · WRITING AND DOCS', tag: 'WRITING', href: '/writing', rect: [90, 128, 58, 32] },
   { id: 'coffee', label: 'COFFEE · ABOUT ME', tag: 'COFFEE', href: '/about', rect: [152, 140, 20, 20] },
   { id: 'pegboard', label: 'PEGBOARD · THE STACK', tag: 'STACK', href: '/about#stack', rect: [300, 22, 88, 52] },
@@ -30,6 +40,11 @@ export const HOTSPOTS: Hotspot[] = [
   { id: 'clipboard', label: 'CLIPBOARD · RESUME', tag: 'RESUME', href: '/resume', rect: [348, 82, 26, 36] },
   { id: 'toolbox', label: 'TOOLBOX STICKERS · PROJECTS', tag: 'PROJECTS', href: '/open-source#projects', rect: [316, 146, 68, 88] },
   { id: 'shelf', label: 'PARTS SHELF · BUILDS', tag: 'BUILDS', href: '/builds', rect: [390, 86, 86, 112] },
+];
+
+export const CONTROLS: Control[] = [
+  { id: 'cord', label: 'PULL CORD · LIGHTS', tag: 'LIGHTS', rect: [169, 28, 16, 26] },
+  { id: 'radio', label: 'RADIO · LO-FI ON OR OFF', tag: 'RADIO', rect: [96, 108, 44, 22] },
 ];
 
 // Bottom bar buttons, also real links.

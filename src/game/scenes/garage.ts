@@ -8,43 +8,81 @@ import { input } from '../engine/input';
 import type { Scene } from '../engine/scene';
 import type { Screen } from '../engine/screen';
 import { blit, paint, type Sprite } from '../engine/sprites';
-import { BAR, HOTSPOTS, type Hotspot } from '../hotspots';
+import { BAR, CONTROLS, HOTSPOTS, type Control, type Hotspot } from '../hotspots';
+import { site } from '../../data/site';
 import github from '../../data/github.json';
 
 const WALL = '#cbbd9f', MORTAR = '#bcad8f', LOWER = '#7f8a7a', FLOOR = '#958d80', FLOOR_DARK = '#857d71';
 const NAVY = '#293878', CYAN = '#29bdeb';
 const TUBES = [140, 340];
 
+/** One drifting music note: a head and a stem, fading out as it rises. */
+function drawNote(x: number, y: number, a: number) {
+  const g = ctx();
+  g.globalAlpha = Math.max(0, a);
+  rect(x, y + 3, 2, 2, '#fff6d8'); rect(x + 2, y, 1, 4, '#fff6d8');
+  g.globalAlpha = 1;
+}
+
 export interface GarageImages { bike: HTMLImageElement; pipecd: HTMLImageElement; icons: Icons }
 
 export class GarageScene implements Scene {
   mode = 'world' as const;
   hover: string | null = null;
+  /** Lights off. Set through setNight so the pull cord swings and the fade runs. */
+  night = false;
+  radioOn = false;
+  /** Set when the frame rate drops: the garage keeps its look but drops the extras. */
+  lowFx = false;
   private t = 0;
   private bg!: Sprite;
+  private nightDark?: Sprite;
+  private nightGlow?: Sprite;
+  private nightT = 0;
+  private pull = 0;
   private touch = matchMedia('(pointer: coarse)').matches;
+  // dust drifting through the tube-light beams: fixed seeds, so it looks the same every visit
+  private motes = Array.from({ length: 28 }, (_, i) => ({ x: TUBES[i % 2] + ((i * 37) % 70) - 35, y: 24 + ((i * 53) % 166), k: i }));
 
   constructor(private screen: Screen, private img: GarageImages) {}
 
   enter() {
     this.bg = this.roomSprite();
     this.t = 0;
+    this.nightT = this.night ? 1 : 0;
+  }
+
+  setNight(on: boolean, instant = false) {
+    this.night = on;
+    if (instant) this.nightT = on ? 1 : 0;
+    else this.pull = 1;
   }
 
   /** The static room. The door scene borrows it (without the bike) to show what's inside. */
   roomSprite(withBike = true): Sprite { return paint(480, 270, () => this.paintRoom(withBike)); }
 
-  update(dt: number) { this.t += dt; input.endFrame(); }
+  update(dt: number) {
+    this.t += dt;
+    this.nightT += Math.sign((this.night ? 1 : 0) - this.nightT) * Math.min(Math.abs((this.night ? 1 : 0) - this.nightT), dt * 3);
+    this.pull = Math.max(0, this.pull - dt * 1.6);
+    if (!this.lowFx) for (const m of this.motes) {
+      m.y += dt * (3 + (m.k % 3) * 2);
+      m.x += Math.sin(this.t * 0.6 + m.k) * dt * 4;
+      if (m.y > 190) m.y = 24;
+    }
+    input.endFrame();
+  }
 
   draw() {
     const g = this.screen.ctx;
     bind(g);
     g.drawImage(this.bg, 0, 0);
     this.animate();
-    const all = [...HOTSPOTS, BAR.list, BAR.ride];
+    this.nightPass(g);
+    const all: (Hotspot | Control)[] = [...HOTSPOTS, ...CONTROLS, BAR.list, BAR.ride];
     const hot = all.find((h) => h.id === this.hover);
-    if (hot && HOTSPOTS.includes(hot)) this.brackets(hot);
-    if (this.touch || this.t < 3.2) for (const h of HOTSPOTS) if (!['coffee', 'shelf', 'youtube', 'x', 'linkedin', 'github'].includes(h.id)) this.tagFor(h);
+    if (hot && !('href' in hot && (hot === BAR.list || hot === BAR.ride))) this.brackets(hot);
+    if (this.touch || this.t < 3.2) for (const h of [...HOTSPOTS, ...CONTROLS]) if (!['coffee', 'shelf', 'youtube', 'x', 'linkedin', 'github'].includes(h.id)) this.tagFor(h);
     this.bar(hot);
   }
 
@@ -81,6 +119,7 @@ export class GarageScene implements Scene {
     this.shelf();
     this.toolbox();
     this.tyres();
+    this.radioBox();
 
     if (withBike) {
       const bikeScale = 1.14;
@@ -242,6 +281,15 @@ export class GarageScene implements Scene {
     poly([[372, 169], [374, 173], [378, 173], [375, 176], [376, 180], [372, 178], [368, 180], [369, 176], [366, 173], [370, 173]], C.accent);
   }
 
+  private radioBox() {
+    rect(92, 128, 52, 3, C.wood); rect(92, 131, 52, 1, C.woodDark);
+    rect(96, 110, 44, 18, '#2a2a2e'); rect(97, 111, 42, 16, '#4a4d55'); rect(97, 111, 42, 1, '#6b6f79');
+    for (const cx of [106, 130]) { disc(cx, 119, 6, C.ink); disc(cx, 119, 4, '#33363d'); disc(cx, 119, 1, '#1b1712'); }
+    rect(113, 113, 10, 5, C.ink); rect(114, 116, 8, 1, '#4a4d55');
+    disc(118, 123, 1, '#7a2f24'); disc(121, 123, 1, '#5a5d66');
+    rect(104, 107, 32, 3, '#2a2a2e'); line(136, 110, 143, 98, C.steel); // handle and aerial
+  }
+
   private tyres() {
     ellipse(26, 253, 26, 3, '#5f584d');
     for (const y of [212, 226, 240]) {
@@ -260,7 +308,8 @@ export class GarageScene implements Scene {
       const n = (Math.sin(x * 12.99 + y * 78.23 + Math.floor(t * 12) * 3.7) * 43758.5) % 1;
       rect(x, y, 1, 1, Math.abs(n) > 0.55 ? '#7f8a82' : '#34403a');
     }
-    if (Math.floor(t * 1.5) % 2 === 0) { rect(33, 128, 28, 11, '#34403a'); textC('SOON', 47, 130, '#b8f0c0'); }
+    rect(31, 127, 32, 12, '#1d2a22'); text('> HI', 34, 130, '#b8f0c0');
+    if (Math.floor(t * 2) % 2 === 0) rect(56, 130, 4, 7, '#b8f0c0'); // blinking cursor
     // neon flickers now and then
     if (Math.sin(t * 7) > 0.985) rect(180, 4, 120, 9, '#3e3127');
     // coffee steam
@@ -268,9 +317,93 @@ export class GarageScene implements Scene {
       const p = (t * 0.7 + k / 3) % 1;
       rect(159 + Math.round(Math.sin((p + k) * 6) * 2), 148 - p * 14, 1, 2, '#f4f2ea');
     }
+    this.cat(t);
+    this.radioLive(t);
+    this.cord();
+    if (this.lowFx) return;
+    // dust catching the light, and now and then a tube flickers
+    const g = ctx();
+    for (const m of this.motes) {
+      g.globalAlpha = (0.35 + 0.4 * Math.sin(t * 1.3 + m.k * 2)) * (1 - 0.6 * this.nightT);
+      rect(m.x, m.y, 1, 1, '#fff6d8');
+    }
+    g.globalAlpha = 1;
+    if (Math.sin(t * 5.1) * Math.sin(t * 0.9 + 1) > 0.985) { g.globalAlpha = 0.18; rect(TUBES[1] - 44, 18, 88, 176, '#140f0a'); g.globalAlpha = 1; }
   }
 
-  private brackets(h: Hotspot) {
+  /** A grey cat asleep on the tyre stack. The tail flicks, and now and then it opens an eye. */
+  private cat(t: number) {
+    const body = '#3d3d44', shade = '#2c2c33';
+    ellipse(22, 208, 8, 5, body); ellipse(22, 211, 8, 2, shade);
+    disc(30, 203, 4, body); rect(27, 198, 2, 3, body); rect(32, 198, 2, 3, body); rect(28, 199, 1, 1, '#c98f8f');
+    const open = t % 7 > 6.3; // one slow blink
+    if (open) { rect(29, 203, 1, 1, '#b8f070'); rect(32, 203, 1, 1, '#b8f070'); } else { rect(29, 204, 2, 1, shade); rect(32, 204, 2, 1, shade); }
+    const sway = Math.round(Math.sin(t * 2.2) * 2);
+    line(15, 209, 11, 208 + sway, body); line(11, 208 + sway, 9, 204 + sway, body);
+  }
+
+  private radioLive(t: number) {
+    rect(118 - 1, 122, 3, 2, this.radioOn ? '#5fdc7a' : '#7a2f24');
+    if (!this.radioOn) return;
+    const beat = Math.floor(t * 2.27) % 2 === 0; // about 68 bpm
+    for (const cx of [106, 130]) { disc(cx, 119, beat ? 5 : 4, '#3a3d45'); disc(cx, 119, 1, C.ink); }
+    rect(114, 114, 3 + Math.floor((Math.sin(t * 9) + 1) * 3), 2, '#b8f0c0');
+    for (let k = 0; k < 2; k++) { // notes drifting up
+      const p = (t * 0.5 + k / 2) % 1, x = 114 + k * 12 + Math.round(Math.sin(p * 8 + k) * 3), y = 104 - p * 26;
+      drawNote(x, y, 1 - p);
+    }
+  }
+
+  private cord() {
+    const sway = Math.round(Math.sin(this.t * 4) * this.pull * 2), drop = Math.round(this.pull * 4);
+    rect(175, 17, 3, 2, '#2a2a2e');
+    line(176, 19, 176 + sway, 42 + drop, '#d8d2c4');
+    disc(176 + sway, 45 + drop, 2, C.accent); rect(175 + sway, 44 + drop, 1, 1, '#fff4c2');
+  }
+
+  /** Lights off: the dark room fades in, with dithered glows round the neon, TV, radio and the PipeCD sign. */
+  private nightPass(g: CanvasRenderingContext2D) {
+    if (this.nightT < 0.01) return;
+    if (!this.nightDark) this.buildNight();
+    g.globalAlpha = this.nightT;
+    g.drawImage(this.nightDark!, 0, 0);
+    g.globalCompositeOperation = 'lighter';
+    g.drawImage(this.nightGlow!, 0, 0);
+    g.globalCompositeOperation = 'source-over';
+    g.globalAlpha = 1;
+  }
+
+  private buildNight() {
+    const src = [
+      { x: 240, y: 9, r: 100, c: [255, 150, 120] },   // neon sign
+      { x: 240, y: 86, r: 62, c: [255, 236, 190] },   // PipeCD sign, spotlit
+      { x: 51, y: 134, r: 56, c: [120, 255, 170] },   // CRT
+      { x: 118, y: 119, r: 36, c: [255, 196, 110] },  // radio
+      { x: 240, y: 205, r: 84, c: [255, 226, 170] },  // work lamp over the bike
+    ];
+    const mk = () => { const c = document.createElement('canvas'); c.width = 480; c.height = 270; return c; };
+    const dark = mk(), glow = mk();
+    const dg = dark.getContext('2d')!, gg = glow.getContext('2d')!;
+    const di = dg.createImageData(480, 270), gi = gg.createImageData(480, 270);
+    for (let y = 0; y < 270; y++)
+      for (let x = 0; x < 480; x++) {
+        let L = 0, r = 0, gr = 0, b = 0;
+        for (const s of src) {
+          const k = Math.max(0, 1 - Math.hypot((x - s.x) / s.r, (y - s.y) / (s.r * 0.8))), w = k * k;
+          L += w; r += s.c[0] * w; gr += s.c[1] * w; b += s.c[2] * w;
+        }
+        const o = (y * 480 + x) * 4, lit = Math.min(1, L), q = Math.floor(0.74 * (1 - lit) * 8 + bayer(x, y) * 0.7) / 8;
+        di.data[o] = 8; di.data[o + 1] = 10; di.data[o + 2] = 32; di.data[o + 3] = Math.round(q * 255);
+        const band = Math.floor(lit * 5) / 5; // banded, not speckled: reads as pixel-art light
+        if (band > 0) {
+          gi.data[o] = r / L; gi.data[o + 1] = gr / L; gi.data[o + 2] = b / L; gi.data[o + 3] = Math.round(band * 70);
+        }
+      }
+    dg.putImageData(di, 0, 0); gg.putImageData(gi, 0, 0);
+    this.nightDark = dark as Sprite; this.nightGlow = glow as Sprite;
+  }
+
+  private brackets(h: Hotspot | Control) {
     if (Math.floor(this.t * 3) % 3 === 2) return;
     const [x, y, w, hh] = h.rect, c = C.accent, L = 5;
     for (const [cx, cy, sx, sy] of [[x, y, 1, 1], [x + w, y, -1, 1], [x, y + hh, 1, -1], [x + w, y + hh, -1, -1]]) {
@@ -279,21 +412,23 @@ export class GarageScene implements Scene {
     }
   }
 
-  private tagFor(h: Hotspot) {
+  private tagFor(h: Hotspot | Control) {
     const [x, y, w] = h.rect, tw = textW(h.tag) + 6;
     const tx = Math.round(Math.min(480 - tw - 2, Math.max(2, x + w / 2 - tw / 2))), ty = Math.max(18, y - 11);
     rect(tx, ty, tw, 10, C.ink);
     text(h.tag, tx + 3, ty + 2, C.accent);
   }
 
-  private bar(hot?: Hotspot) {
+  private bar(hot?: Hotspot | Control) {
     rect(0, 256, 480, 14, C.ink);
     text('LIST VIEW', 6, 260, this.hover === 'list' ? C.accent : C.hud);
     text('RIDE AGAIN >', 474 - textW('RIDE AGAIN >'), 260, this.hover === 'ride' ? C.accent : C.hud);
     // Portrait phones only see ~130px of the bar, so keep it short there.
     const narrow = this.screen.size.portrait;
+    const isLink = hot === BAR.list || hot === BAR.ride;
     const msg = hot
-      ? narrow ? hot.tag || hot.label : HOTSPOTS.includes(hot) ? `LOOK AT: ${hot.label}` : hot.label
+      ? narrow ? hot.tag || hot.label : isLink ? hot.label : `LOOK AT: ${hot.label}`
+      : this.t < 5 && !narrow ? site.tagline.toUpperCase()
       : narrow ? '< SWIPE >' : this.touch ? 'TAP ANYTHING · SWIPE TO LOOK AROUND' : 'POINT AT ANYTHING';
     textC(msg, 240, 260, hot ? C.accent : '#a89d8b');
   }
