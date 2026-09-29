@@ -15,7 +15,7 @@ import { idleMessage } from '../hints';
 import { istHMS, istLabel } from '../ist';
 import { countFound, type Theme, type Weather } from '../state';
 import { windowFall, windowSky } from './weather';
-import { SUN, TUBES, bikeGrounding, clockFace, clockHands, conduit, depthShading, floorDetail, floorProps, fuseBox, charger, chargerLive, sunSprite, sunStrength, tubeBeams } from './garageprops';
+import { SUN, TUBES, benchLamp, benchLampGlow, bikeGrounding, bikeRim, foreground, clockFace, clockHands, conduit, depthShading, floorDetail, floorProps, fuseBox, charger, chargerLive, sunSprite, sunStrength, tubeBeams } from './garageprops';
 import github from '../../data/github.json';
 
 const WALL = '#cbbd9f', MORTAR = '#bcad8f', LOWER = '#7f8a7a', FLOOR = '#958d80', FLOOR_DARK = '#857d71';
@@ -62,6 +62,7 @@ export class GarageScene implements Scene {
   private glow = 0;           // 0..1, eases in and out as you point at things
   private glowId: string | null = null;
   private bikeHalo?: Sprite;
+  private bikeBox?: { bx: number; by: number; bw: number; bh: number }; // where the bike was painted, for the rim light
   private sun?: Sprite; // the window's light on the floor, rebuilt when the weather changes
   private touch = matchMedia('(pointer: coarse)').matches;
   private reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -126,6 +127,7 @@ export class GarageScene implements Scene {
 
   // ---------------------------------------------------------------- the room, painted once
   private paintRoom(withBike: boolean) {
+    this.bikeBox = undefined;
     // wall: painted concrete blocks. Each block has its own tone, a lit top and a shadowed bottom edge; pores, damp, streaks and cracks on top.
     rect(0, 0, 480, 198, WALL);
     const tones = ['#cbbd9f', '#c5b798', '#d0c3a6', '#c1b395'];
@@ -185,20 +187,24 @@ export class GarageScene implements Scene {
     this.toolbox();
     this.tyres();
     this.radioBox();
-    conduit(); fuseBox(); clockFace(); charger(); floorProps();
+    conduit(); fuseBox(); clockFace(); charger(); floorProps(); benchLamp();
 
     if (withBike) {
       // Part of the room's personality, not its focus: mid-size, a little left of centre so the toolbox and PipeCD sign stay clear.
       const k = BIKE.scale, bw = Math.round(this.img.bike.width * k), bh = Math.round(this.img.bike.height * k);
       const bx = Math.round(BIKE.cx - bw / 2), by = BIKE.floor - bh;
       bikeGrounding(this.img.bike, bx, by, bw, bh, k);
+      this.bikeBox = { bx, by, bw, bh };
       blit(this.img.bike, bx, by, bw, bh);
       const hx = Math.round(bx + 50 * k), hy = Math.round(by + 23 * k), hr = Math.round(6.1 * k); // white helmet on the seat
       disc(hx, hy, hr + 1, '#0a0a0c'); disc(hx, hy, hr, '#1d1d22'); rect(hx + 2, hy + 1, Math.round(hr / 2), Math.round(hr * 0.6), '#2c2c33'); rect(hx - hr / 2, hy - hr / 1.5, Math.round(hr / 2.5), 3, '#6b6b78'); // black helmet with a glossy highlight
     }
 
+    foreground();
     this.light();
     tubeBeams();
+    benchLampGlow();
+    if (this.bikeBox) bikeRim(this.img.bike, this.bikeBox.bx, this.bikeBox.by, this.bikeBox.bw, this.bikeBox.bh);
     this.window();
     // things that glow are painted after the light so the lighting never dims them
     for (const x of TUBES) { rect(x - 30, 13, 60, 3, '#fff8e0'); rect(x - 30, 16, 60, 1, '#e8dcb8'); }
@@ -575,6 +581,7 @@ export class GarageScene implements Scene {
       { x: 244, y: 78, r: 66, c: [255, 236, 190] },   // the two posters, spotlit
       { x: 51, y: 134, r: 56, c: [120, 255, 170] },   // CRT
       { x: 365, y: 141, r: 26, c: [130, 255, 170] },  // charger lights
+      { x: 163, y: 148, r: 34, c: [255, 200, 110] },  // bench lamp
       { x: 118, y: 119, r: 36, c: [255, 196, 110] },  // radio
       { x: 214, y: 205, r: 92, c: [255, 226, 170] },  // work lamp over the bike
     ];

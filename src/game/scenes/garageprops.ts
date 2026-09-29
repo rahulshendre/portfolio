@@ -154,3 +154,62 @@ export function chargerLive(t: number) {
   rect(373, 139, 3, 2, full ? '#3a3d42' : Math.floor(t * 2) % 2 ? '#f5a623' : '#7a4e10'); // charging light
   rect(373, 143, 3, 2, full ? '#5fdc7a' : '#1f4a2a');                                     // full light
 }
+
+/** A warm rim of window light down the bike's left edge. Painted after the lighting pass so it adds to it. */
+export function bikeRim(bike: HTMLImageElement, bx: number, by: number, bw: number, bh: number) {
+  const layer = (shift: [number, number], col: string) => {
+    const c = document.createElement('canvas'); c.width = bw; c.height = bh;
+    const g = c.getContext('2d')!; g.imageSmoothingEnabled = false;
+    g.drawImage(bike, 0, 0, bw, bh);
+    g.globalCompositeOperation = 'destination-out'; g.drawImage(bike, shift[0], shift[1], bw, bh); // what is left is the edge the shifted copy does not cover
+    g.globalCompositeOperation = 'source-in'; g.fillStyle = col; g.fillRect(0, 0, bw, bh);
+    return c;
+  };
+  const g = ctx();
+  g.globalCompositeOperation = 'lighter';
+  g.globalAlpha = 0.4; g.drawImage(layer([2, 0], '#ffd9a0'), bx, by);   // window light from the left
+  g.globalAlpha = 1; g.globalCompositeOperation = 'source-over';
+}
+
+/** Things lying on the floor in front of the bike: a drip pan, a spanner, a parts tray, a creeper board and an extension lead. */
+export function foreground() {
+  // oil drip pan under the engine
+  ellipse(227, 254, 26, 2, '#00000040');
+  poly([[205, 248], [249, 248], [254, 254], [200, 254]], '#5a5f66'); rect(205, 248, 44, 1, '#8b9096'); rect(201, 253, 52, 1, '#3a3d42');
+  ellipse(227, 251, 19, 2, '#17120e'); rect(216, 250, 6, 1, '#6d6690'); rect(233, 251, 3, 1, '#6d6690'); // dark oil with a sheen
+  // spanner on the floor
+  line(160, 251, 181, 254, '#00000044'); line(160, 250, 181, 253, C.steel); line(160, 249, 181, 252, '#dfe3e6');
+  disc(159, 250, 2, C.steel); disc(159, 250, 1, '#6b6f79');
+  // magnetic parts tray with bolts
+  rect(98, 250, 22, 5, '#00000040'); rect(97, 249, 22, 4, '#3a3d42'); bevel(97, 249, 22, 4, '#5a5d66', '#1b1c20');
+  for (const [x, c] of [[100, '#c9a043'], [103, '#b8bcc2'], [107, '#c9a043'], [111, '#b8bcc2'], [114, '#c9a043']] as const) rect(x, 250, 2, 2, c);
+  // creeper board
+  ellipse(347, 255, 38, 2, '#00000040');
+  woodGrain(312, 248, 70, 5, C.wood, C.woodDark, '#a5764a', 190); rect(312, 248, 16, 5, '#26262a'); bevel(312, 248, 16, 5, '#4a4d55', '#101114');
+  for (const x of [316, 336, 360, 378]) { rect(x, 253, 3, 2, '#151515'); rect(x, 253, 1, 1, '#4a4d55'); }
+  // extension lead, orange, snaking across the floor
+  for (let x = 388; x < 440; x++) {
+    const y = 252 + Math.round(Math.sin((x - 388) * 0.22) * 1.5);
+    rect(x, y + 1, 1, 1, '#00000040'); rect(x, y, 1, 2, '#e8641f'); rect(x, y, 1, 1, '#f39a5c');
+  }
+  rect(384, 250, 6, 5, '#1b1712'); rect(384, 250, 6, 1, '#4a4d55'); rect(385, 252, 1, 2, '#c9a043'); rect(388, 252, 1, 2, '#c9a043'); // the plug
+}
+
+/** A gooseneck work lamp on the bench, warm against the cool tube light. */
+export function benchLamp() {
+  rect(166, 158, 11, 2, '#26262a'); rect(166, 158, 11, 1, '#4a4d55');
+  line(171, 158, 171, 147, '#3a3d42'); line(171, 147, 167, 140, '#3a3d42'); line(172, 158, 172, 147, '#5a5d66');
+  poly([[157, 135], [167, 133], [170, 141], [160, 143]], '#c9531a'); poly([[158, 136], [166, 134], [168, 139], [160, 141]], '#e8641f'); rect(158, 136, 8, 1, '#f39a5c');
+  disc(163, 142, 2, '#fff2c0');
+}
+/** The lamp's pool of light on the bench, added over the lighting. */
+export function benchLampGlow() {
+  const g = ctx();
+  g.globalAlpha = 0.22;
+  for (let y = 142; y < 161; y++) {
+    const hw = 4 + (y - 142) * 1.3;
+    for (let x = Math.round(163 - hw); x < 163 + hw; x++) if ((1 - Math.abs(x - 163) / hw) * (1 - (y - 142) / 24) * 1.1 > bayer(x, y)) rect(x, y, 1, 1, '#ffcf7a');
+  }
+  g.globalAlpha = 1;
+  disc(163, 142, 3, '#ffe9a855');
+}
