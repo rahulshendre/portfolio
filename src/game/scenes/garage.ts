@@ -237,6 +237,10 @@ export class GarageScene implements Scene {
       const ax = x + 6, ay = y + Math.round(14 - art.height / 2);
       ctx().drawImage(art, ax, ay);
       text(label, ax + art.width + 5, y + 11, fg);
+      bevel(x, y, 78, 28, '#ffffff44', '#00000066'); rect(x + 2, y + 2, 74, 1, '#ffffff33');                  // enamel gloss on the edge
+      speckle(x + 1, y + 1, 76, 26, '#00000022', 0.04, 60 + x + y); speckle(x + 1, y + 1, 76, 26, '#ffffff22', 0.02, 61 + x + y); // grime and scuffs
+      for (const [rx, ry] of [[1, 1], [75, 1], [1, 26], [75, 26]]) speckle(x + rx, y + ry, 3, 3, '#7a3f1e', 0.7, 62 + rx + ry + x);        // rust at the corners
+      line(x + 40, y + 26, x + 47, y + 20, '#ffffff33');                                                        // a scratch
     };
     plate(12, 24, '#f4f2ea', '#c4302b', tint(I.youtube, '#ff0000'), 'YOUTUBE', C.ink);
     plate(96, 24, '#0f0f10', '#3a3a3e', tint(I.x, '#f4f2ea'), 'TWITTER', '#f4f2ea');
@@ -248,12 +252,16 @@ export class GarageScene implements Scene {
   private pipecdSign() {
     const frame = (x: number, y: number, w: number, h: number) => {
       rect(x + 3, y + 3, w, h, '#00000033');
-      rect(x, y, w, h, C.wood); rect(x, y, w, 1, '#c9a577'); rect(x + 2, y + 2, w - 4, h - 4, '#f4f2ea');
+      woodGrain(x, y, w, h, C.wood, C.woodDark, '#a5764a', 70 + x); rect(x, y, w, 1, '#c9a577'); rect(x, y + h - 1, w, 1, '#5e3c24');
+      rect(x + 2, y + 2, w - 4, h - 4, '#f4f2ea'); bevel(x + 2, y + 2, w - 4, h - 4, '#d3ccb8', '#fbf9f2');              // paper set into the frame, edge in shadow
+      speckle(x + 3, y + 3, w - 6, h - 6, '#e2dcc9', 0.05, 71 + x);                                                      // yellowing and foxing
     };
     frame(192, 38, 44, 72);
     for (const [dx, dy] of [[4, 43], [36, 43], [4, 101], [36, 101]]) rect(192 + dx - 2, dy - 3, 2, 2, '#9a958b');
     const k = 0.53, pw = Math.round(this.img.pipecd.width * k), ph = Math.round(this.img.pipecd.height * k);
     blit(this.img.pipecd, 192 + Math.round((44 - pw) / 2), 48, pw, ph);
+    rect(194, 74, 40, 1, '#00000018'); rect(194, 75, 40, 1, '#ffffff22'); // a fold crease across the poster
+    rect(192, 34, 6, 3, '#e8d9a8aa'); rect(230, 34, 6, 3, '#e8d9a8aa');      // tape at the top corners
     frame(244, 33, 54, 42);
     frame(244, 79, 54, 36);
   }
@@ -289,7 +297,7 @@ export class GarageScene implements Scene {
 
   private pegboard() {
     rect(302, 24, 88, 52, '#00000033');
-    rect(300, 22, 88, 52, '#b08a5e');
+    rect(300, 22, 88, 52, '#b08a5e'); bevel(300, 22, 88, 52, '#c9a577', '#7a5a38'); speckle(301, 23, 86, 50, '#9a7648', 0.06, 80); speckle(301, 23, 86, 50, '#c4a06f', 0.03, 81);
     for (let y = 26; y < 72; y += 5) for (let x = 304; x < 386; x += 5) rect(x, y, 1, 1, '#8a6a44');
     rect(308, 28, 3, 30, C.steel); disc(309, 28, 3, C.steel); disc(309, 28, 1, '#b08a5e'); disc(309, 58, 3, C.steel);
     for (const [x, c] of [[318, C.red], [324, C.accent], [330, CYAN]] as const) { rect(x, 28, 4, 12, c); rect(x + 1, 40, 2, 16, C.steel); }
@@ -302,6 +310,7 @@ export class GarageScene implements Scene {
   private calendar() {
     rect(306, 84, 30, 42, '#00000033');
     rect(304, 82, 30, 42, '#2a2a2e'); rect(305, 83, 28, 40, '#f4f2ea'); rect(305, 83, 28, 9, C.red);
+    speckle(305, 92, 28, 31, '#e2dcc9', 0.05, 90); rect(326, 121, 7, 2, '#d8d2c4'); rect(329, 122, 4, 1, '#c4bdad'); disc(319, 83, 1, '#7a1f1a'); // yellowed paper, a curling corner, the pin
     const d = new Date(github.generatedAt);
     textC(d.toLocaleString('en', { month: 'short' }).toUpperCase(), 319, 84, '#f4f2ea');
     const active = new Set(github.prs.filter((p) => p.createdAt.startsWith(github.generatedAt.slice(0, 7))).map((p) => +p.createdAt.slice(8, 10)));
@@ -315,7 +324,7 @@ export class GarageScene implements Scene {
   private clipboard() {
     line(363, 80, 363, 83, '#555');
     rect(352, 86, 22, 32, '#00000033');
-    rect(350, 84, 22, 32, C.wood); rect(352, 88, 18, 26, '#f6f3ec');
+    woodGrain(350, 84, 22, 32, C.wood, C.woodDark, '#a5764a', 91); rect(352, 88, 18, 26, '#f6f3ec'); bevel(352, 88, 18, 26, '#d8d2c4', '#ffffff'); rect(366, 111, 4, 3, '#e6dfcd');
     for (let y = 92; y < 112; y += 3) rect(354, y, y % 2 ? 12 : 14, 1, '#b8b2a6');
     rect(356, 83, 10, 4, C.steel);
   }
@@ -323,6 +332,8 @@ export class GarageScene implements Scene {
   private whiteboard() {
     rect(394, 24, 84, 62, '#00000033');
     rect(392, 22, 84, 62, '#9aa0a5'); rect(394, 24, 80, 58, '#f4f4f0'); rect(396, 82, 76, 3, '#9aa0a5');
+    bevel(392, 22, 84, 62, '#c4c9cd', '#6f757a'); bevel(394, 24, 80, 58, '#c9c9c4', '#ffffff');
+    stain(430, 64, 24, 8, '#dcdcd6', 82, 0.9); stain(455, 46, 10, 6, '#e2e2dc', 83, 0.8); speckle(395, 25, 78, 56, '#d2d2cc', 0.025, 84); // ghosts of old writing, smudges
     text('NOW:', 398, 28, C.red);
     site.now.forEach((line, i) => text(line, 398, 40 + i * 12, i === 2 ? '#2f8f4e' : '#2c5aa0'));
     rect(430, 81, 8, 2, C.red); rect(440, 81, 8, 2, '#2c5aa0');
@@ -385,7 +396,7 @@ export class GarageScene implements Scene {
       rect(6, y, 40, 13, C.tyre); rect(4, y + 2, 44, 9, C.tyre);
       rect(6, y + 1, 40, 1, '#343434'); rect(8, y + 11, 36, 1, '#0c0c0c');
       for (let x = 8; x < 44; x += 4) rect(x, y + 4, 2, 5, '#262626');
-      speckle(4, y + 1, 44, 11, '#4a4a4a', 0.1, 46 + y); rect(10, y + 2, 12, 1, '#4d4d4d'); rect(28, y + 2, 8, 1, '#4d4d4d'); // rubber grain, moulded lettering
+      speckle(4, y + 1, 44, 11, '#4a4a4a', 0.05, 46 + y); rect(10, y + 2, 12, 1, '#4d4d4d'); rect(28, y + 2, 8, 1, '#4d4d4d'); // rubber grain, moulded lettering
     }
     speckle(4, 212, 44, 3, '#7a7466', 0.2, 50); // dust on the top tyre
     rect(54, 232, 10, 20, C.red); rect(56, 228, 6, 4, C.red); rect(57, 225, 4, 3, '#2a2a2e');
