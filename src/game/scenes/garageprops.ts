@@ -207,18 +207,16 @@ export function posterFrame(x: number, y: number) {
   speckle(x + 3, y + 3, w - 6, h - 6, '#e2dcc9', 0.03, 71 + x);
 }
 
-/** A framed map of India with the ride to Leh dotted in red, pins at Pune, Manali and Leh. Same frame as the posters. */
-export function mapArt() {
+/** The fourth frame on the poster wall is kept empty for the rides page: blank paper with dashed lines top and bottom, taped up, saying it is a work in progress. */
+export function ridesFrame() {
   const fx = 244, fy = 84;
   posterFrame(fx, fy);
-  rect(fx + 3, fy + 3, POSTER.w - 6, POSTER.h - 6, '#e8dcb8'); speckle(fx + 3, fy + 3, POSTER.w - 6, POSTER.h - 6, '#d4c69a', 0.05, 210);
-  const sc = 1.4, ox = fx + 4, oy = fy + 4, P = (x: number, y: number): [number, number] => [Math.round(ox + x * sc), Math.round(oy + y * sc)];
-  poly([[14, 0], [18, 0], [21, 3], [25, 4], [28, 7], [27, 10], [23, 10], [25, 13], [21, 15], [19, 21], [17, 22], [15, 20], [12, 14], [8, 12], [7, 8], [10, 6], [11, 3]].map(([x, y]) => P(x, y)), '#b9c08a');
-  for (const [x, y] of [[16, 8], [18, 12], [14, 16]]) { const [px, py] = P(x, y); rect(px, py, 1, 1, '#8f9660'); }
-  const pts: [number, number][] = [[13, 13], [15, 9], [16, 6], [16, 2]];
-  pts.slice(0, -1).forEach(([x0, y0], i) => { const [x1, y1] = pts[i + 1]; for (let s = 0; s <= 8; s++) if (s % 2 === 0) { const [px, py] = P(x0 + ((x1 - x0) * s) / 8, y0 + ((y1 - y0) * s) / 8); rect(px, py, 1, 1, C.red); } });
-  for (const [x, y] of pts.filter((_, i) => i !== 1)) { const [px, py] = P(x, y); disc(px, py, 1, C.red); rect(px, py, 1, 1, '#ffffff'); }
-  textC('RIDES', fx + POSTER.w / 2, fy + POSTER.h - 12, '#5a4636');
+  rect(fx + 3, fy + 3, POSTER.w - 6, POSTER.h - 6, '#f0ead8');
+  for (let x = fx + 5; x < fx + POSTER.w - 5; x += 3) { rect(x, fy + 5, 2, 1, '#b8b09a'); rect(x, fy + POSTER.h - 6, 2, 1, '#b8b09a'); }
+  const mid = fx + POSTER.w / 2;
+  textC('WORK IN', mid, fy + 17, '#5a4636'); textC('PROGRESS', mid, fy + 28, '#5a4636');
+  rect(mid - 12, fy + 38, 24, 1, '#c9c0a8');
+  rect(fx + 4, fy + 2, 8, 3, '#e8d9a8aa'); rect(fx + POSTER.w - 12, fy + 2, 8, 3, '#e8d9a8aa'); // tape at the top corners
 }
 
 /** A "days since" board like the ones on workshop walls; the number is days since Rahul's last pull request. */

@@ -41,7 +41,7 @@ export const HOTSPOTS: Hotspot[] = [
   { id: 'calendar', label: 'CALENDAR · PR LOG', tag: 'PR LOG', href: '/open-source#log', rect: [304, 82, 30, 42] },
   { id: 'clipboard', label: 'CLIPBOARD · RESUME', tag: 'RESUME', href: '/resume', rect: [348, 82, 26, 36] },
   { id: 'toolbox', label: 'TOOLBOX STICKERS · PROJECTS', tag: 'PROJECTS', href: '/open-source#projects', rect: [322, 146, 62, 88] },
-  { id: 'map', label: 'RIDE MAP · WHERE I HAVE RIDDEN', tag: 'RIDES', href: '/garage', rect: [244, 84, 52, 50] },
+  { id: 'map', label: 'RIDES · WORK IN PROGRESS', tag: 'RIDES', href: '/garage', rect: [244, 84, 52, 50] },
   { id: 'board', label: 'PR BOARD · DAYS SINCE MY LAST PR', tag: 'PR BOARD', href: '/open-source#log', rect: [290, 154, 26, 26] },
   { id: 'shelf', label: 'PARTS SHELF · BUILDS', tag: 'BUILDS', href: '/builds', rect: [390, 86, 86, 112] },
 ];
