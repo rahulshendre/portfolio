@@ -128,6 +128,7 @@ function mountHotspots(scene: GarageScene) {
       if (c.id === 'cord') { toggleNight(); b.setAttribute('aria-pressed', String(scene.night)); }
       else if (c.id === 'radio') toggleRadio();
       else if (c.id === 'window') { weather = WEATHERS[(WEATHERS.indexOf(weather) + 1) % WEATHERS.length]; scene.setWeather(weather); }
+      else if (c.id === 'clock') scene.clock24 = !scene.clock24;
       else { scene.pet(); meow(); }
     });
     hoverable(b, c.id, scene);

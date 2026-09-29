@@ -131,8 +131,8 @@ export function clockFace() {
   for (let k = 0; k < 12; k++) { const a = (k / 12) * Math.PI * 2; rect(Math.round(x + Math.sin(a) * (r - 2)), Math.round(y - Math.cos(a) * (r - 2)), 1, 1, k % 3 ? '#8a8578' : '#2a2a2e'); }
   speckle(x - r, y - r, r * 2, r * 2, '#d2cdbb', 0.06, 152);
 }
-export function clockHands(d: Date) {
-  const { x, y } = CLOCK, s = d.getSeconds(), m = d.getMinutes() + s / 60, h = (d.getHours() % 12) + m / 60;
+export function clockHands(t: { h: number; m: number; s: number }) {
+  const { x, y } = CLOCK, s = t.s, m = t.m + s / 60, h = (t.h % 12) + m / 60;
   const hand = (turn: number, len: number, col: string) => line(x, y, Math.round(x + Math.sin(turn * Math.PI * 2) * len), Math.round(y - Math.cos(turn * Math.PI * 2) * len), col);
   hand(h / 12, 4, '#2a2a2e'); hand(m / 60, 6, '#2a2a2e'); hand(s / 60, 7, C.red); disc(x, y, 1, '#2a2a2e');
 }

@@ -12,6 +12,7 @@ import { bevel, cobweb, crack, speckle, stain, streaks, withWear, woodGrain } fr
 import { BAR, CONTROLS, HOTSPOTS, type Control, type Hotspot } from '../hotspots';
 import { site } from '../../data/site';
 import { idleMessage } from '../hints';
+import { istHMS, istLabel } from '../ist';
 import { countFound, type Theme, type Weather } from '../state';
 import { windowFall, windowSky } from './weather';
 import { SUN, TUBES, bikeGrounding, clockFace, clockHands, conduit, depthShading, floorDetail, floorProps, fuseBox, charger, chargerLive, sunSprite, sunStrength, tubeBeams } from './garageprops';
@@ -41,6 +42,8 @@ export class GarageScene implements Scene {
   /** Lights off. Set through setNight so the pull cord swings and the fade runs. */
   night = false;
   radioOn = false;
+  /** The clock's readout on hover: 24 hour by default, click flips it. */
+  clock24 = true;
   /** Features the visitor has already used (shared with main, which saves it); their hints stop showing. */
   tried: ReadonlySet<string> = new Set();
   /** Objects the visitor has used (shared with main). Shown as a counter on the ceiling beam. */
@@ -114,7 +117,7 @@ export class GarageScene implements Scene {
     const all: (Hotspot | Control)[] = [...HOTSPOTS, ...CONTROLS, BAR.list, BAR.ride];
     const hot = all.find((h) => h.id === this.hover);
     if (hot && hot.id !== 'bike' && !('href' in hot && (hot === BAR.list || hot === BAR.ride))) this.brackets(hot);
-    if (this.touch || this.t < 3.2) for (const h of [...HOTSPOTS, ...CONTROLS]) if (!['coffee', 'shelf', 'youtube', 'x', 'linkedin', 'github'].includes(h.id)) this.tagFor(h);
+    if (this.touch || this.t < 3.2) for (const h of [...HOTSPOTS, ...CONTROLS]) if (!['coffee', 'shelf', 'youtube', 'x', 'linkedin', 'github', 'clock'].includes(h.id)) this.tagFor(h);
     if (hot?.tag) this.tagFor(hot); // whatever you point at gets its name on top, along with the glow
     this.bar(hot);
     this.counter();
@@ -430,7 +433,7 @@ export class GarageScene implements Scene {
     }
     windowFall(ctx(), WIN.x, WIN.y, WIN.w, WIN.h, this.weather, t);
     this.sunlight(t);
-    clockHands(new Date());
+    clockHands(istHMS(new Date()));
     chargerLive(t);
     this.cat(t);
     this.radioLive(t);
@@ -511,14 +514,14 @@ export class GarageScene implements Scene {
     const [x, y, w, hh] = h.rect, pulse = 0.9 + 0.1 * Math.sin(this.t * 5), a = this.glow * pulse * Math.min(1, 9000 / (w * hh)); // big areas (the bike) glow softer
     g.globalCompositeOperation = 'lighter';
     g.globalAlpha = 0.28 * a;
-    g.drawImage(this.bg, x, y, w, hh, x, y, w, hh);           // the object itself, brighter
+    if (h.id !== 'clock') g.drawImage(this.bg, x, y, w, hh, x, y, w, hh); // the object itself, brighter (not the clock: its white face would wash out the hands)
     for (let i = 1; i <= 5; i++) {                              // warm halo, fading outward in steps
       g.globalAlpha = (0.15 / i) * a;
       const o = i * 2;
       rect(x - o, y - o, w + o * 2, 2, '#ffc94d'); rect(x - o, y + hh + o - 2, w + o * 2, 2, '#ffc94d');
       rect(x - o, y - o + 2, 2, hh + o * 2 - 4, '#ffc94d'); rect(x + w + o - 2, y - o + 2, 2, hh + o * 2 - 4, '#ffc94d');
     }
-    g.globalAlpha = 0.03 * a; rect(x, y, w, hh, '#ffd76a'); // a touch of warmth inside
+    if (h.id !== 'clock') { g.globalAlpha = 0.03 * a; rect(x, y, w, hh, '#ffd76a'); } // a touch of warmth inside
     g.globalCompositeOperation = 'source-over';
     g.globalAlpha = 1;
   }
@@ -606,10 +609,11 @@ export class GarageScene implements Scene {
   }
 
   private tagFor(h: Hotspot | Control) {
-    const [x, y, w] = h.rect, tw = textW(h.tag) + 6;
+    const label = h.id === 'clock' ? istLabel(new Date(), this.clock24) : h.tag; // the clock's tag is the live time
+    const [x, y, w] = h.rect, tw = textW(label) + 6;
     const tx = Math.round(Math.min(480 - tw - 2, Math.max(2, x + w / 2 - tw / 2))), ty = Math.max(18, y - 11);
     rect(tx, ty, tw, 10, C.ink);
-    text(h.tag, tx + 3, ty + 2, C.accent);
+    text(label, tx + 3, ty + 2, C.accent);
   }
 
   private counter() {

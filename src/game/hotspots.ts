@@ -15,7 +15,7 @@ export interface Hotspot {
 
 /** Things you operate rather than open. Buttons, not links. */
 export interface Control {
-  id: 'cord' | 'radio' | 'cat' | 'window';
+  id: 'cord' | 'radio' | 'cat' | 'window' | 'clock';
   label: string;
   tag: string;
   rect: [number, number, number, number];
@@ -48,6 +48,7 @@ export const CONTROLS: Control[] = [
   { id: 'cord', label: 'PULL CORD · LIGHTS', tag: 'LIGHTS', rect: [169, 28, 16, 26] },
   { id: 'radio', label: 'RADIO · LO-FI ON OR OFF', tag: 'RADIO', rect: [96, 108, 44, 22] },
   { id: 'window', label: 'WINDOW · CHANGE THE WEATHER', tag: 'WEATHER', rect: [5, 19, 82, 82] },
+  { id: 'clock', label: 'CLOCK · INDIA TIME · TAP TO FLIP', tag: 'CLOCK', rect: [162, 102, 20, 20] },
   { id: 'cat', label: 'THE CAT · PET HER', tag: 'CAT', rect: [14, 171, 44, 24] },
 ];
 
