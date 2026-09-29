@@ -48,6 +48,7 @@ export class GarageScene implements Scene {
   private glowId: string | null = null;
   private bikeHalo?: Sprite;
   private touch = matchMedia('(pointer: coarse)').matches;
+  private reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
   // dust drifting through the tube-light beams: fixed seeds, so it looks the same every visit
   private motes = Array.from({ length: 28 }, (_, i) => ({ x: TUBES[i % 2] + ((i * 37) % 70) - 35, y: 24 + ((i * 53) % 166), k: i }));
 
@@ -319,8 +320,9 @@ export class GarageScene implements Scene {
     }
     rect(31, 127, 32, 12, '#1d2a22'); text('> HI', 34, 130, '#b8f0c0');
     if (Math.floor(t * 2) % 2 === 0) rect(56, 130, 4, 7, '#b8f0c0'); // blinking cursor
-    // neon flickers now and then
-    if (Math.sin(t * 7) > 0.985) rect(180, 4, 120, 9, '#3e3127');
+    // the neon stutters in a short burst every so often (about one 7 s slot in three), never with reduced motion
+    const slot = Math.floor(t / 7), into = t - slot * 7, roll = Math.abs(Math.sin(slot * 12.9898) * 43758.5453) % 1;
+    if (!this.reduced && roll > 0.7 && into < 0.35 && Math.floor(into * 20) % 2 === 0) rect(180, 4, 120, 9, '#3e3127');
     // coffee steam
     for (let k = 0; k < 3; k++) {
       const p = (t * 0.7 + k / 3) % 1;
