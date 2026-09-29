@@ -14,13 +14,13 @@ import { site } from '../../data/site';
 import { idleMessage } from '../hints';
 import { countFound, type Theme, type Weather } from '../state';
 import { windowFall, windowSky } from './weather';
-import { SUN, TUBES, bikeGrounding, certificate, clockFace, clockHands, conduit, depthShading, floorDetail, floorProps, fuseBox, jacket, laptop, laptopLive, sunSprite, sunStrength, tubeBeams } from './garageprops';
+import { SUN, TUBES, bikeGrounding, clockFace, clockHands, conduit, depthShading, floorDetail, floorProps, fuseBox, jacket, laptop, laptopLive, sunSprite, sunStrength, tubeBeams } from './garageprops';
 import github from '../../data/github.json';
 
 const WALL = '#cbbd9f', MORTAR = '#bcad8f', LOWER = '#7f8a7a', FLOOR = '#958d80', FLOOR_DARK = '#857d71';
 const NAVY = '#293878', CYAN = '#29bdeb';
 const BENCH_DY = 0; // how far the workbench group is shifted up from its original spot
-const WIN = { x: 152, y: 92, w: 34, h: 40 }; // the window between the radio and the posters
+const WIN = { x: 104, y: 36, w: 34, h: 40 }; // the window, up on the left wall clear of the posters
 export const BIKE = { scale: 1.4, cx: 214, floor: 250 };
 
 /** One drifting music note: a head and a stem, fading out as it rises. */
@@ -179,7 +179,7 @@ export class GarageScene implements Scene {
     this.toolbox();
     this.tyres();
     this.radioBox();
-    conduit(); fuseBox(); clockFace(); jacket(); certificate(); laptop(); floorProps();
+    conduit(); fuseBox(); clockFace(); jacket(); laptop(); floorProps();
 
     if (withBike) {
       // Part of the room's personality, not its focus: mid-size, a little left of centre so the toolbox and PipeCD sign stay clear.
@@ -235,24 +235,24 @@ export class GarageScene implements Scene {
   }
 
   // ---------------------------------------------------------------- wall pieces
+  /** The socials as Indian number plates in a tidy stack: yellow (commercial), black with yellow letters (rental), white (private), green (electric). */
   private signs() {
-    const I = this.img.icons;
-    const plate = (x: number, y: number, bg: string, edge: string, art: Sprite | HTMLImageElement, label: string, fg: string) => {
-      rect(x + 2, y + 2, 78, 28, '#00000033');
-      rect(x, y, 78, 28, edge); rect(x + 1, y + 1, 76, 26, bg);
-      for (const [rx, ry] of [[3, 3], [74, 3], [3, 24], [74, 24]]) rect(x + rx, y + ry, 1, 1, '#d8d2c4');
-      const ax = x + 6, ay = y + Math.round(14 - art.height / 2);
-      ctx().drawImage(art, ax, ay);
-      text(label, ax + art.width + 5, y + 11, fg);
-      bevel(x, y, 78, 28, '#ffffff44', '#00000066'); rect(x + 2, y + 2, 74, 1, '#ffffff33');                  // enamel gloss on the edge
-      speckle(x + 1, y + 1, 76, 26, '#00000022', 0.04, 60 + x + y); speckle(x + 1, y + 1, 76, 26, '#ffffff22', 0.02, 61 + x + y); // grime and scuffs
-      for (const [rx, ry] of [[1, 1], [75, 1], [1, 26], [75, 26]]) speckle(x + rx, y + ry, 3, 3, '#7a3f1e', 0.7, 62 + rx + ry + x);        // rust at the corners
-      line(x + 40, y + 26, x + 47, y + 20, '#ffffff33');                                                        // a scratch
+    const plate = (y: number, bg: string, fg: string, edge: string, label: string) => {
+      const x = 14, w = 66, h = 15;
+      rect(x + 2, y + 2, w, h, '#00000033');
+      rect(x, y, w, h, edge); rect(x + 1, y + 1, w - 2, h - 2, bg);
+      rect(x + 1, y + 1, 9, h - 2, '#1d3d9a'); rect(x + 4, y + 4, 3, 3, '#f4f2ea'); rect(x + 5, y + 5, 1, 1, '#1d3d9a'); rect(x + 3, y + 9, 5, 1, '#f4f2ea'); // the blue IND strip and its chakra
+      bevel(x, y, w, h, '#ffffff44', '#00000066'); rect(x + 11, y + 2, w - 13, 1, '#00000022'); rect(x + 11, y + h - 3, w - 13, 1, '#ffffff22'); // embossed rim
+      for (const rx of [x + 12, x + w - 4]) { rect(rx, y + 2, 2, 2, '#9a958b'); rect(rx, y + 2, 1, 1, '#d8d2c4'); }                                     // rivets
+      speckle(x + 1, y + 1, w - 2, h - 2, '#00000022', 0.05, 60 + y); speckle(x + 1, y + 1, w - 2, h - 2, '#ffffff22', 0.02, 61 + y);         // road grime
+      speckle(x + 1, y + h - 5, w - 2, 4, '#6a4a2a', 0.18, 62 + y);                                                                            // splashed mud along the bottom
+      line(x + 40, y + h - 2, x + 46, y + 3, '#ffffff33');                                                                                     // a scratch
+      text(label, x + 14, y + 5, fg); // the lettering goes on last so the grime never eats it
     };
-    plate(12, 24, '#f4f2ea', '#c4302b', tint(I.youtube, '#ff0000'), 'YOUTUBE', C.ink);
-    plate(96, 24, '#0f0f10', '#3a3a3e', tint(I.x, '#f4f2ea'), 'TWITTER', '#f4f2ea');
-    plate(12, 58, '#0a66c2', '#084d92', tint(I.linkedin, '#ffffff'), 'LINKEDIN', '#ffffff');
-    plate(96, 58, '#24292f', '#111418', tint(I.github, '#f4f2ea'), 'GITHUB', '#f4f2ea');
+    plate(24, '#f2c318', C.ink, '#3a3010', 'YOUTUBE');
+    plate(42, '#131314', '#f2c318', '#2a2a2e', 'TWITTER');
+    plate(60, '#f1eee4', C.ink, '#8f8b80', 'LINKEDIN');
+    plate(78, '#1f8a5b', '#f4f2ea', '#125536', 'GITHUB');
   }
 
   /** The PipeCD poster on the left; on the right two plaques for the real PlanetRead and BookBox logos (main.ts lays the crisp images over them). */

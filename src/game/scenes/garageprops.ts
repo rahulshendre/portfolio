@@ -8,7 +8,7 @@ import { paint, type Sprite } from '../engine/sprites';
 import type { Weather } from '../state';
 
 export const TUBES = [140, 340];
-export const SUN = { x0: 152, x1: 186, y0: 96, y1: 234, px: 206, pw: 30, gap: 6 }; // window edge, and where its light lands on the floor
+export const SUN = { x0: 104, x1: 138, y0: 78, y1: 234, px: 206, pw: 30, gap: 6 }; // window edge, and where its light lands on the floor
 
 /** Corners, the wall meeting the floor and the strip under the beam go dim, so the room reads as a box with depth. Painted before the lighting pass. */
 export function depthShading() {
@@ -149,16 +149,6 @@ export function jacket() {
   rect(205, 132, 5, 6, C.jacketLight); rect(214, 132, 5, 6, C.jacketLight);                                          // armour panels
   speckle(199, 121, 26, 25, '#00000044', 0.08, 161); speckle(199, 121, 26, 25, '#ffffff22', 0.03, 162);
   poly([[229, 123], [235, 123], [236, 133], [233, 135], [229, 133]], '#3a2a1e'); rect(229, 123, 6, 1, '#5a3d2b');    // gloves
-}
-
-/** An LFX certificate in a wood frame. */
-export function certificate() {
-  rect(304, 131, 40, 16, '#00000033');
-  woodGrain(302, 128, 40, 16, C.wood, C.woodDark, '#a5764a', 170);
-  rect(304, 130, 36, 12, '#f4efdc'); bevel(304, 130, 36, 12, '#d3ccb8', '#fbf9f2');
-  text('LFX', 307, 131, '#2c5aa0');
-  rect(307, 137, 22, 1, '#b8b2a6'); rect(307, 139, 16, 1, '#b8b2a6');
-  disc(335, 137, 3, '#d9a520'); disc(335, 137, 1, '#f3d47a'); rect(333, 140, 2, 3, C.red); rect(336, 140, 2, 3, C.red);
 }
 
 /** An open laptop on top of the toolbox. The screen is redrawn each frame by laptopLive. */
