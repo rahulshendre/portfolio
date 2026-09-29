@@ -15,6 +15,7 @@ import github from '../../data/github.json';
 const WALL = '#cbbd9f', MORTAR = '#bcad8f', LOWER = '#7f8a7a', FLOOR = '#958d80', FLOOR_DARK = '#857d71';
 const NAVY = '#293878', CYAN = '#29bdeb';
 const TUBES = [140, 340];
+export const BIKE = { scale: 1.7, cx: 208, floor: 250 };
 
 /** One drifting music note: a head and a stem, fading out as it rises. */
 function drawNote(x: number, y: number, a: number) {
@@ -122,12 +123,13 @@ export class GarageScene implements Scene {
     this.radioBox();
 
     if (withBike) {
-      const bikeScale = 1.14;
-      const bw = Math.round(this.img.bike.width * bikeScale), bh = Math.round(this.img.bike.height * bikeScale);
-      const bx = Math.round(240 - bw / 2);
-      ellipse(240, 249, 82, 4, '#5f584d');
-      blit(this.img.bike, bx, 249 - bh, bw, bh);
-      disc(236, 191, 7, C.ink); disc(236, 191, 6, C.white); rect(238, 192, 3, 4, C.whiteShade); rect(232, 187, 3, 2, '#ffffff'); // white helmet on the seat
+      // The star of the room: big, and a little left of centre so the toolbox and the PipeCD sign stay in view.
+      const k = BIKE.scale, bw = Math.round(this.img.bike.width * k), bh = Math.round(this.img.bike.height * k);
+      const bx = Math.round(BIKE.cx - bw / 2), by = BIKE.floor - bh;
+      ellipse(BIKE.cx, BIKE.floor, bw * 0.48, 5, '#5f584d');
+      blit(this.img.bike, bx, by, bw, bh);
+      const hx = Math.round(bx + 50 * k), hy = Math.round(by + 23 * k), hr = Math.round(6.1 * k); // white helmet on the seat
+      disc(hx, hy, hr + 1, C.ink); disc(hx, hy, hr, C.white); rect(hx + 2, hy + 1, Math.round(hr / 2), Math.round(hr * 0.6), C.whiteShade); rect(hx - hr / 2, hy - hr / 1.5, Math.round(hr / 2.5), 3, '#ffffff');
     }
 
     this.light();
@@ -379,7 +381,7 @@ export class GarageScene implements Scene {
       { x: 240, y: 86, r: 62, c: [255, 236, 190] },   // PipeCD sign, spotlit
       { x: 51, y: 134, r: 56, c: [120, 255, 170] },   // CRT
       { x: 118, y: 119, r: 36, c: [255, 196, 110] },  // radio
-      { x: 240, y: 205, r: 84, c: [255, 226, 170] },  // work lamp over the bike
+      { x: 208, y: 200, r: 110, c: [255, 226, 170] },  // work lamp over the bike
     ];
     const mk = () => { const c = document.createElement('canvas'); c.width = 480; c.height = 270; return c; };
     const dark = mk(), glow = mk();
