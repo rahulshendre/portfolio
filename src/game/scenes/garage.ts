@@ -22,6 +22,7 @@ const WALL = '#cbbd9f', MORTAR = '#bcad8f', LOWER = '#7f8a7a', FLOOR = '#958d80'
 const NAVY = '#293878', CYAN = '#29bdeb';
 const BENCH_DY = 0; // how far the workbench group is shifted up from its original spot
 const CAT = { dx: 12, dy: -23 }; // where her nap spot sits on the tyre stack, from where she was first drawn
+const SELF_EXPLAINING = ['youtube', 'x', 'linkedin', 'github']; // the number plates spell out what they are, so hovering them only glows
 const CARE = 0.3; // how battered the room looks: lived in and looked after, not abandoned (the door keeps its full wear)
 const WIN = { x: 10, y: 24, w: 72, h: 70 }; // the window, at the far left of the wall
 export const BIKE = { scale: 1.55, cx: 214, floor: 250 };
@@ -118,7 +119,7 @@ export class GarageScene implements Scene {
     const hot = all.find((h) => h.id === this.hover);
     if (hot && hot.id !== 'bike' && !('href' in hot && (hot === BAR.list || hot === BAR.ride))) this.brackets(hot);
     if (this.touch || this.t < 3.2) for (const h of [...HOTSPOTS, ...CONTROLS]) if (!['coffee', 'shelf', 'youtube', 'x', 'linkedin', 'github', 'clock'].includes(h.id)) this.tagFor(h);
-    if (hot?.tag) this.tagFor(hot); // whatever you point at gets its name on top, along with the glow
+    if (hot?.tag && !SELF_EXPLAINING.includes(hot.id)) this.tagFor(hot); // whatever you point at gets its name on top, along with the glow (the number plates already say their name)
     this.bar(hot);
     this.counter();
   }
