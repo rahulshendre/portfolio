@@ -5,6 +5,9 @@ import { bind, bayer, ctx, disc, ellipse, line, poly, rect } from '../engine/pix
 import { text, textC } from '../engine/font';
 import { input } from '../engine/input';
 import { DoorSound } from '../engine/audio';
+import { glow } from '../engine/light';
+import { BEAM, THUNDER_AT, fall, grade, ground } from './weather';
+import type { Weather } from '../state';
 import type { Scene } from '../engine/scene';
 import { WIDE_W, type Screen } from '../engine/screen';
 import { blit, paint, type Sprite } from '../engine/sprites';
@@ -18,13 +21,6 @@ const OX = 80; // the garage is drawn in 480-wide world coordinates, centred in 
 const BIKE_K = 1.4, PAD = { x: 8, y: 24 };
 const ease = (p: number) => 1 - Math.pow(1 - Math.min(1, Math.max(0, p)), 3);
 const glide = (p: number) => 1 - Math.pow(1 - Math.min(1, Math.max(0, p)), 2); // gentler braking for the bike
-
-/** A soft light: a radial gradient added onto what is already there, so lamps bloom smoothly instead of speckling. */
-function glow(g: CanvasRenderingContext2D, x: number, y: number, rx: number, ry: number, rgb: string, a: number) {
-  const gr = g.createRadialGradient(0, 0, 0, 0, 0, 1);
-  for (let i = 0; i <= 8; i++) { const t = i / 8; gr.addColorStop(t, `rgba(${rgb},${(a * Math.pow(1 - t, 2.2)).toFixed(3)})`); }
-  g.save(); g.globalCompositeOperation = 'lighter'; g.translate(x, y); g.scale(rx, ry); g.fillStyle = gr; g.fillRect(-1, -1, 2, 2); g.restore();
-}
 
 /** Rahul on the bike, side view, facing right. (x, y) is the bike sprite's top-left. */
 function riderSide(x: number, y: number) {
@@ -50,16 +46,18 @@ export class DoorScene implements Scene {
   private rig!: Sprite; // bike and rider drawn together at native size, then scaled as one
   private finished = false;
   private sfx = new DoorSound();
+  private cues = CUES as typeof CUES & { thunder?: number };
   private idle = 0;
   private go = false; // the scene holds on its first frame until sound is running or the visitor taps
 
   private room!: Sprite;
 
-  constructor(private screen: Screen, private bike: HTMLImageElement, private mountains: HTMLImageElement, private makeRoom: () => Sprite, private onDone: () => void) {}
+  constructor(private screen: Screen, private bike: HTMLImageElement, private mountains: HTMLImageElement, private makeRoom: () => Sprite, private onDone: () => void, private weather: Weather = 'clear') {}
 
   enter() {
     this.t = 0;
-    this.sfx.start(() => this.t, CUES);
+    this.cues = { ...CUES, thunder: this.weather === 'rain' ? THUNDER_AT : undefined };
+    this.sfx.start(() => this.t, this.cues, this.weather);
     this.bg = paint(WIDE_W, 270, () => this.facade());
     this.room = this.makeRoom();
     this.rig = paint(this.bike.width + PAD.x * 2, this.bike.height + PAD.y, () => { blit(this.bike, PAD.x, PAD.y); riderSide(PAD.x, PAD.y); });
@@ -82,7 +80,7 @@ export class DoorScene implements Scene {
       this.idle += dt;
       const pressed = input.tap() || input.anyKey();
       if (this.sfx.running && this.idle > 0.2) this.go = true; // autoplay was allowed
-      else if (this.idle > 0.5 && pressed) { this.sfx.start(() => this.t, CUES); this.go = true; } // a tap unlocks sound and starts
+      else if (this.idle > 0.5 && pressed) { this.sfx.start(() => this.t, this.cues, this.weather); this.go = true; } // a tap unlocks sound and starts
       input.endFrame();
       return;
     }
@@ -96,6 +94,7 @@ export class DoorScene implements Scene {
     const g = this.screen.ctx;
     bind(g);
     g.drawImage(this.bg, 0, 0);
+    ground(g, this.weather);
     g.save(); g.translate(OX, 0); // everything below is in garage coordinates
     const up = ease((this.t - T_OPEN) / T_UP) * DOOR.h;
     const shake = this.t > T_SENSE + 0.3 && this.t < T_OPEN ? Math.round(Math.sin(this.t * 90)) : 0;
@@ -117,8 +116,42 @@ export class DoorScene implements Scene {
     const bob = this.t < T_ARRIVE ? Math.round(Math.sin(this.t * 30) * 0.8) : 0;
     if (this.t < T_ARRIVE) for (let p, i = 0; i < 3; i++) { p = (this.t * 3 + i / 3) % 1; disc(bx + 8 - p * 30, 244 - p * 6, 2 + p * 3, '#b8ad98'); }
     blit(this.rig, Math.round(bx - PAD.x * k), 251 - rh + bob, rw, rh);
-    // headlight: a soft cone on the road ahead, a bloom on the lens and a pool where it lands
     const hx = bx + 108 * k, hy = 251 - rh + (PAD.y + 22) * k + bob, beam = 1 - Math.min(1, Math.max(0, (this.t - (T_END - 1.4)) / 1.0)); // hx, hy: the lens on the sprite, not its box
+    // the sensor beside the door: red while it waits, green once it sees the bike
+    const seen = this.t > T_SENSE;
+    rect(372, 184, 12, 22, '#2a2a2e'); rect(373, 185, 10, 1, '#4a4a52');
+    const lens = seen ? '#5ff08a' : Math.floor(this.t * 2) % 2 ? '#e0453a' : '#5a2320';
+    disc(378, 191, 3, lens); rect(376, 200, 5, 2, seen ? '#3fae62' : '#5a4a4a');
+    // the street dog wakes up a little when you pull in
+    const wag = this.t > T_ARRIVE ? Math.round(Math.sin(this.t * 14) * 2) : 0;
+    ellipse(346, 244, 12, 4, '#9c6d45'); disc(357, 240, 4, '#9c6d45'); rect(358, 236, 2, 3, '#7a5234');
+    rect(359, 240, 1, 1, this.t > T_ARRIVE ? C.ink : '#7a5234');
+    line(334, 243, 330, 240 + wag, '#9c6d45');
+    g.restore();
+    grade(g, this.weather, this.t); // the weather dims and cools everything painted so far; lights go on top of it
+    g.save(); g.translate(OX, 0);
+    this.lights(g, hx, hy, beam, seen, up);
+    g.restore();
+    fall(g, this.weather, this.t);
+    text('SKIP >', 6, 258, C.hud, 1, C.ink);
+    if (!this.go && this.idle > 0.5) {
+      g.globalAlpha = 0.45; rect(0, 0, WIDE_W, 270, '#140f0a'); g.globalAlpha = 1;
+      textC('TAP TO START', 320, 172, C.hud, 2, C.ink);
+      if (Math.floor(this.idle * 1.6) % 2) textC('SOUND ON', 320, 194, '#f4f2ea', 1, C.ink);
+    }
+    const fade = Math.min(1, Math.max(0, (this.t - (T_END - 0.6)) / 0.6));
+    if (fade > 0) { g.globalAlpha = fade; rect(0, 0, WIDE_W, 270, '#f4e6c8'); g.globalAlpha = 1; }
+  }
+
+  /** Light sources, drawn after the weather grade so they stay bright. */
+  private lights(g: CanvasRenderingContext2D, hx: number, hy: number, beam: number, seen: boolean, up: number) {
+    const bk = BEAM[this.weather];
+    if (this.weather !== 'clear') { // the grade dimmed these, so put them back
+      const fog = this.weather === 'fog' ? 1.7 : 1;
+      glow(g, 436, 74, 48 * fog, 52 * fog, '255,214,150', 0.6); glow(g, 436, 67, 12, 12, '255,246,214', 0.9);
+      glow(g, 130, 58, 26, 20, '255,238,180', 0.5);
+      if (up > 30) glow(g, 240, 254, 170, 11, '255,196,120', 0.5 * Math.min(1, up / DOOR.h));
+    }
     if (beam > 0) {
       g.save(); g.globalCompositeOperation = 'lighter'; g.beginPath(); g.rect(-OX, 0, WIDE_W, 262); g.clip();
       // many thin cones nested inside each other: the edge fades out over a few pixels, like light scattering in dusty air
@@ -128,34 +161,15 @@ export class DoorScene implements Scene {
       const N = 16;
       for (let i = 1; i <= N; i++) {
         const spread = 44 * (0.12 + 0.88 * i / N), ay = hy + 40; // the axis dips toward the road
-        g.globalAlpha = (0.34 * beam) / N * 1.6;
+        g.globalAlpha = (0.34 * beam * bk) / N * 1.6;
         g.beginPath(); g.moveTo(hx, hy); g.lineTo(hx + 230, ay - spread); g.lineTo(hx + 230, ay + spread); g.closePath(); g.fill();
       }
       g.globalAlpha = 1;
       g.restore();
-      glow(g, hx + 90, 254, 110, 9, '255,228,170', 0.45 * beam); glow(g, hx, hy, 20, 20, '255,244,214', 0.8 * beam); glow(g, hx + 14, hy, 34, 3, '255,244,214', 0.5 * beam);
+      glow(g, hx + 90, 254, 110, 9, '255,228,170', 0.45 * beam * bk); glow(g, hx, hy, 20, 20, '255,244,214', 0.8 * beam); glow(g, hx + 14, hy, 34, 3, '255,244,214', 0.5 * beam);
     }
-    // the sensor beside the door: red while it waits, green once it sees the bike
-    const seen = this.t > T_SENSE;
-    rect(372, 184, 12, 22, '#2a2a2e'); rect(373, 185, 10, 1, '#4a4a52');
-    const lens = seen ? '#5ff08a' : Math.floor(this.t * 2) % 2 ? '#e0453a' : '#5a2320';
-    disc(378, 191, 3, lens);
     if (seen) { glow(g, 378, 191, 26, 26, '110,255,160', 0.7); glow(g, 378, 191, 7, 7, '220,255,230', 0.9); }
-    else if (Math.floor(this.t * 2) % 2) glow(g, 378, 191, 12, 12, '255,70,50', 0.45); rect(376, 200, 5, 2, seen ? '#3fae62' : '#5a4a4a');
-    // the street dog wakes up a little when you pull in
-    const wag = this.t > T_ARRIVE ? Math.round(Math.sin(this.t * 14) * 2) : 0;
-    ellipse(346, 244, 12, 4, '#9c6d45'); disc(357, 240, 4, '#9c6d45'); rect(358, 236, 2, 3, '#7a5234');
-    rect(359, 240, 1, 1, this.t > T_ARRIVE ? C.ink : '#7a5234');
-    line(334, 243, 330, 240 + wag, '#9c6d45');
-    g.restore();
-    text('SKIP >', 6, 258, C.hud, 1, C.ink);
-    if (!this.go && this.idle > 0.5) {
-      g.globalAlpha = 0.45; rect(0, 0, WIDE_W, 270, '#140f0a'); g.globalAlpha = 1;
-      textC('TAP TO START', 320, 172, C.hud, 2, C.ink);
-      if (Math.floor(this.idle * 1.6) % 2) textC('SOUND ON', 320, 194, '#f4f2ea', 1, C.ink);
-    }
-    const fade = Math.min(1, Math.max(0, (this.t - (T_END - 0.6)) / 0.6));
-    if (fade > 0) { g.globalAlpha = fade; rect(0, 0, WIDE_W, 270, '#f4e6c8'); g.globalAlpha = 1; }
+    else if (Math.floor(this.t * 2) % 2) glow(g, 378, 191, 12, 12, '255,70,50', 0.45);
   }
 
   /** Multiply a painted area by a dusk tint: cool violet on the left, warm orange on the right, darker toward the ground. Stepped, so it stays pixel art. */

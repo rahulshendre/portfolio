@@ -7,7 +7,7 @@ import { RideScene } from './scenes/ride';
 import { DoorScene } from './scenes/door';
 import { GarageScene } from './scenes/garage';
 import { BAR, CONTROLS, HOTSPOTS, toPct } from './hotspots';
-import { hasVisited, isNightHour, loadFound, loadNight, loadTried, markVisited, pickStart, saveFound, saveNight, saveTried } from './state';
+import { hasVisited, isNightHour, loadFound, loadNight, loadTried, markVisited, pickStart, pickWeather, saveFound, saveNight, saveTried } from './state';
 import { radio } from './engine/audio';
 import { mountTerminal } from './terminal-ui';
 import { isPanelHref, mountPanel, parsePanelHash, titleFor } from './panel';
@@ -94,7 +94,7 @@ screen.onResize(() => { if (director.current instanceof GarageScene) requestAnim
 async function door() {
   const img = await images;
   current = undefined;
-  director.go(new DoorScene(screen, img.bike, img.mountains, () => new GarageScene(screen, img).roomSprite(false), garage));
+  director.go(new DoorScene(screen, img.bike, img.mountains, () => new GarageScene(screen, img).roomSprite(false), garage, pickWeather(location.search)));
 }
 
 function mountHotspots(scene: GarageScene) {

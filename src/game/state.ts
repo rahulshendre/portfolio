@@ -1,5 +1,16 @@
 // Where the home page starts, and remembering that someone has already ridden in.
 export type Start = 'ride' | 'door' | 'garage';
+// The door scene's weather: it changes from visit to visit, or pick one with ?weather=rain|snow|fog|clear.
+export type Weather = 'clear' | 'rain' | 'snow' | 'fog';
+export const WEATHERS: Weather[] = ['clear', 'rain', 'snow', 'fog'];
+
+export function pickWeather(search: string, rand: () => number = Math.random): Weather {
+  const w = new URLSearchParams(search).get('weather');
+  if (w && (WEATHERS as string[]).includes(w)) return w as Weather;
+  const r = rand();
+  return r < 0.4 ? 'clear' : r < 0.6 ? 'rain' : r < 0.8 ? 'snow' : 'fog';
+}
+
 const KEY = 'rs:seen-door';
 const NIGHT = 'rs:night';
 

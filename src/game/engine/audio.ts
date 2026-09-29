@@ -133,16 +133,18 @@ export const radio = new RadioSound();
 // The door scene's soundtrack, all synthesised: wind, a single-cylinder engine coming in and idling, the sensor
 // beeping, then the roller door's relay click, motor, rattle and thunk. Cues follow the scene clock, so it lines up
 // with the pictures. Browsers keep audio locked until a gesture, so start() is safe to call again after a tap.
-export interface DoorCues { sense: number; arrive: number; open: number; up: number; end: number }
+export interface DoorCues { sense: number; arrive: number; open: number; up: number; end: number; thunder?: number }
 
 export class DoorSound {
   private ctx?: AudioContext;
   private master?: GainNode;
   private dead = false;
   running = false;
+  private weather = 'clear';
 
-  start(now: () => number, cues: DoorCues) {
+  start(now: () => number, cues: DoorCues, weather = 'clear') {
     if (this.running || this.dead) return;
+    this.weather = weather;
     try { this.ctx ??= new AudioContext(); } catch { return; }
     const c = this.ctx;
     void c.resume().then(() => {
@@ -207,6 +209,16 @@ export class DoorSound {
       g.gain.setValueAtTime(vol, at(s)); g.gain.exponentialRampToValueAtTime(0.0001, at(s + 0.25));
       o.connect(g).connect(master); o.start(at(s)); o.stop(at(s + 0.3));
     };
+
+    if (this.weather === 'rain') { // steady rain, and a rumble of thunder after the flash
+      const r = noise(true), hp = filt('highpass', 1300), lp2 = filt('lowpass', 7500), rg = gain(0);
+      r.connect(hp).connect(lp2).connect(rg).connect(master); r.start();
+      rg.gain.setValueAtTime(0, at(0)); rg.gain.linearRampToValueAtTime(0.1, at(0.8)); rg.gain.setValueAtTime(0.1, at(q.end - 0.5)); rg.gain.linearRampToValueAtTime(0, at(q.end));
+      if (q.thunder) { burst(q.thunder, 2.4, 130, 0.55, 'lowpass'); burst(q.thunder + 0.5, 1.6, 90, 0.4, 'lowpass'); }
+    } else if (this.weather === 'snow' || this.weather === 'fog') { // muffled: a quiet, wide hush
+      const r = noise(true), lp2 = filt('lowpass', 900), rg = gain(0.03);
+      r.connect(lp2).connect(rg).connect(master); r.start();
+    }
 
     // sensor sees the bike: two beeps, then the relay clicks and the door wakes up
     beep(q.sense); beep(q.sense + 0.16);
