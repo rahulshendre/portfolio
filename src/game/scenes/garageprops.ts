@@ -18,6 +18,25 @@ export function depthShading() {
   for (let y = 19; y < 198; y++) for (let x = 0; x < 34; x++) { const d = (1 - x / 34) * 0.4; shade(x, y, d, '#00000028'); shade(479 - x, y, d, '#00000028'); } // corners
 }
 
+/**
+ * Everything hung on the wall stands off it, so it throws a shadow down and to the right (the window is on the left).
+ * Painted before the objects, so only the part beyond each edge shows: a hard contact shadow, then a dithered soft one.
+ */
+export function wallShadows(rects: [number, number, number, number][]) {
+  const g = ctx();
+  g.save(); g.beginPath(); g.rect(0, 19, 480, 178); g.clip();
+  for (const [x, y, w, h] of rects) {
+    g.globalAlpha = 0.34; rect(x + 2, y + 3, w, h, '#1d1810');            // tight shadow at the edge
+    g.globalAlpha = 0.16; rect(x + 4, y + 6, w, h, '#1d1810');            // wider, fainter
+    g.globalAlpha = 1;
+    for (let j = 0; j < h + 9; j++) for (let i = 0; i < w + 7; i++) {      // a dithered fringe further out, uneven so it reads as soft
+      const px = x + 2 + i, py = y + 3 + j, edge = Math.min(i / 7, j / 9, 1);
+      if (i >= w && j >= 0 && edge < 0.9 && (1 - i / (w + 7)) * 0.5 > bayer(px, py)) rect(px, py, 1, 1, '#1d181022');
+    }
+  }
+  g.restore();
+}
+
 /** Soft visible shafts of tube light falling from each fitting. Painted after the lighting pass, so they add to it. */
 export function tubeBeams() {
   const g = ctx();

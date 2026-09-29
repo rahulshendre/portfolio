@@ -16,7 +16,7 @@ import { istHMS, istLabel } from '../ist';
 import { tick } from '../engine/audio';
 import { countFound, type Theme, type Weather } from '../state';
 import { stormFlash, windowFall, windowSky } from './weather';
-import { POSTER_AT, SUN, TUBES, benchLamp, benchLampGlow, bikeGrounding, ceilingMech, helmetStand, compressor, compressorPuff, fanLive, fanStatic, foreground, posterFrame, POSTER, incidentBoard, ridesFrame, clockFace, clockHands, conduit, depthShading, floorDetail, floorProps, charger, chargerLive, mothLive, sunSprite, sunStrength, tubeBeams } from './garageprops';
+import { CLOCK, FAN, wallShadows, POSTER_AT, SUN, TUBES, benchLamp, benchLampGlow, bikeGrounding, ceilingMech, helmetStand, compressor, compressorPuff, fanLive, fanStatic, foreground, posterFrame, POSTER, incidentBoard, ridesFrame, clockFace, clockHands, conduit, depthShading, floorDetail, floorProps, charger, chargerLive, mothLive, sunSprite, sunStrength, tubeBeams } from './garageprops';
 import github from '../../data/github.json';
 
 const WALL = '#cbbd9f', MORTAR = '#bcad8f', LOWER = '#7f8a7a', FLOOR = '#958d80', FLOOR_DARK = '#857d71';
@@ -67,6 +67,16 @@ export class GarageScene implements Scene {
   private glow = 0;           // 0..1, eases in and out as you point at things
   private glowId: string | null = null;
   private bikeHalo?: Sprite;
+  private far?: Sprite;  // the room without the bike, and the bike (with its shadows) alone: two planes that slide a little as the pointer moves
+  private near?: Sprite;
+  private layerTimer = 0;
+  private par = { x: 0, y: 0 };
+  private aim = { x: 0, y: 0 }; // pointer position over the stage, -1 to 1
+  private onMove = (e: PointerEvent) => {
+    if (e.pointerType === 'touch') return;
+    const r = this.screen.canvas.getBoundingClientRect();
+    this.aim = { x: Math.max(-1, Math.min(1, ((e.clientX - r.left) / r.width - 0.5) * 2)), y: Math.max(-1, Math.min(1, ((e.clientY - r.top) / r.height - 0.5) * 2)) };
+  };
   private sun?: Sprite; // the window's light on the floor, rebuilt when the weather changes
   private touch = matchMedia('(pointer: coarse)').matches;
   private reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -78,13 +88,17 @@ export class GarageScene implements Scene {
 
   enter() {
     this.bg = this.roomSprite();
+    this.layers();
+    addEventListener('pointermove', this.onMove);
     this.sun = sunSprite(this.weather);
     this.t = 0;
     this.nightT = this.night ? 1 : 0;
   }
 
   /** Change what is outside the window (repaints the room, since the sky is part of the still picture). */
-  setWeather(w: Weather) { this.weather = w; this.bg = this.roomSprite(); this.sun = sunSprite(w); }
+  setWeather(w: Weather) { this.weather = w; this.bg = this.roomSprite(); this.layers(); this.sun = sunSprite(w); }
+
+  exit() { removeEventListener('pointermove', this.onMove); clearTimeout(this.layerTimer); }
 
   pet() { this.petT = this.t; }
   /** The compressor's blast of air. */
@@ -98,6 +112,20 @@ export class GarageScene implements Scene {
     else this.pull = 1;
   }
 
+  /** Split the finished room into a far plane (no bike) and a near plane (only what the bike adds), a moment after the first frame so the start stays quick. */
+  private layers() {
+    this.far = this.near = undefined;
+    clearTimeout(this.layerTimer);
+    const full = this.bg;
+    this.layerTimer = window.setTimeout(() => {
+      if (this.bg !== full) return; // the room was rebuilt meanwhile
+      const far = this.roomSprite(false), a = full.getContext('2d')!.getImageData(0, 0, 480, 270), b = far.getContext('2d')!.getImageData(0, 0, 480, 270);
+      for (let i = 0; i < a.data.length; i += 4) if (a.data[i] === b.data[i] && a.data[i + 1] === b.data[i + 1] && a.data[i + 2] === b.data[i + 2]) a.data[i + 3] = 0;
+      const near = paint(480, 270, () => {}); near.getContext('2d')!.putImageData(a, 0, 0);
+      this.far = far; this.near = near;
+    }, 120);
+  }
+
   /** The static room. The door scene borrows it (without the bike) to show what's inside. */
   roomSprite(withBike = true): Sprite { return paint(480, 270, () => withWear(CARE, () => this.paintRoom(withBike))); }
 
@@ -105,6 +133,8 @@ export class GarageScene implements Scene {
     this.t += dt;
     this.nightT += Math.sign((this.night ? 1 : 0) - this.nightT) * Math.min(Math.abs((this.night ? 1 : 0) - this.nightT), dt * 3);
     this.pull = Math.max(0, this.pull - dt * 1.6);
+    const k = Math.min(1, dt * 4), a = this.reduced ? { x: 0, y: 0 } : this.aim; // ease toward where the pointer is
+    this.par.x += (a.x - this.par.x) * k; this.par.y += (a.y - this.par.y) * k;
     if (this.hover && this.hover !== 'list' && this.hover !== 'ride') { this.glowId = this.hover; this.glow = Math.min(1, this.glow + dt * 9); }
     else { this.glow = Math.max(0, this.glow - dt * 6); if (this.glow === 0) this.glowId = null; }
     if (!this.lowFx) for (const m of this.motes) {
@@ -119,7 +149,8 @@ export class GarageScene implements Scene {
   draw() {
     const g = this.screen.ctx;
     bind(g);
-    g.drawImage(this.bg, 0, 0);
+    if (this.far && this.near) { g.drawImage(this.far, 0, 0); g.drawImage(this.near, Math.round(this.par.x * 2), Math.round(this.par.y * 1)); } // the bike is nearer than the wall: it slides against it
+    else g.drawImage(this.bg, 0, 0);
     this.animate();
     this.nightPass(g);
     this.nightWindow(g);
@@ -183,6 +214,10 @@ export class GarageScene implements Scene {
     rect(0, 196, 480, 1, '#00000022');
     floorDetail();
     depthShading();
+    wallShadows([
+      ...(['pipecd', 'planetread', 'bookbox', 'map', 'youtube', 'x', 'linkedin', 'github', 'pegboard', 'whiteboard', 'calendar', 'clipboard', 'board', 'shelf', 'toolbox', 'tv'] as const).map((id) => HOTSPOTS.find((h) => h.id === id)!.rect),
+      [FAN.x - FAN.half, FAN.y - FAN.half, FAN.half * 2, FAN.half * 2], [CLOCK.x - CLOCK.r, CLOCK.y - CLOCK.r, CLOCK.r * 2, CLOCK.r * 2],
+    ]);
     this.signs();
     this.pipecdSign();
     this.workbench();
@@ -529,7 +564,7 @@ export class GarageScene implements Scene {
   private hoverGlow(g: CanvasRenderingContext2D) {
     const h = this.glowId && [...HOTSPOTS, ...CONTROLS].find((x) => x.id === this.glowId);
     if (!h || this.glow <= 0) return;
-    if (h.id === 'bike') { this.bikeGlow(g); return; }
+    if (h.id === 'bike') { g.save(); g.translate(Math.round(this.par.x * 2), Math.round(this.par.y * 1)); this.bikeGlow(g); g.restore(); return; } // the glow rides with the bike
     const [x, y, w, hh] = h.rect, pulse = 0.9 + 0.1 * Math.sin(this.t * 5), a = this.glow * pulse * Math.min(1, 9000 / (w * hh)); // big areas (the bike) glow softer
     g.globalCompositeOperation = 'lighter';
     g.globalAlpha = 0.28 * a;
