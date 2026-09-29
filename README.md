@@ -8,6 +8,7 @@ More screenshots in `docs/screenshots/` (door, night with the bike lit, the TV t
 
 ## In the garage
 
+- Two posters on the back wall: PipeCD (open source) and PlanetRead (subtitles and apps, `/planetread`). The edit bay by the shelf shows the Premiere Pro plugins.
 - Point at anything: it glows. Click: sections open in a panel over the garage (Esc or Back closes it, "Full page" opens the plain page). Outside links open in a new tab.
 - The CRT TV is a terminal (`help`, `about`, `pipecd`, `open builds`, `night`, `radio`, `ride`). `/` or `` ` `` opens it from anywhere.
 - Pull the cord for lights on or off. It follows the visitor's clock (dark from 7pm to 6am) until they choose, and remembers the choice.
@@ -16,9 +17,9 @@ More screenshots in `docs/screenshots/` (door, night with the bike lit, the TV t
 
 ## Controls
 
-- Door scene: any key or tap skips it. It plays once per browser tab session, then links back to `/` go straight to the garage.
+- Door scene: about 7 seconds of arrival with wind, engine and a sensor light that opens the door. The weather changes per visit (clear, rain with lightning, snow, fog). Browsers keep sound locked until a tap, so if it is blocked the scene waits on TAP TO START. After that any key or tap skips it. It plays once per browser tab session, then links back to `/` go straight to the garage.
 - Ride (the "ride again" button): any key or tap starts it. `S` / Esc or SKIP: straight to the garage. Arrow keys, A/D or tapping screen halves steer (or let the autopilot ride). `V`, `1` `2` `3` or the camera icon: behind, rider POV, top-down. `M` or the speaker icon: engine sound.
-- URLs: `/?ride` forces the ride, `/?garage` skips the door, `/?door` shows only the door, `/?night` and `/?day` force the lights, `/#terminal` opens the terminal, `/#p=%2Fopen-source` opens a section panel, `/?ride&at=700` starts at a road segment, `/?garage&og` hides the counter (share image).
+- URLs: `/?ride` forces the ride, `/?garage` skips the door, `/?door` shows only the door, `/?door&weather=rain|snow|fog|clear` picks the weather, `/?night` and `/?day` force the lights, `/#terminal` opens the terminal, `/#p=%2Fopen-source` opens a section panel, `/?ride&at=700` starts at a road segment, `/?garage&og` hides the counter (share image).
 
 ## Run it
 

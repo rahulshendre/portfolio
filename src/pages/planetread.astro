@@ -1,0 +1,34 @@
+---
+import Page from '../layouts/Page.astro';
+import ProjectCard from '../components/ProjectCard.astro';
+import { planetread } from '../data/site';
+---
+<Page title="PlanetRead" description="Rahul Shendre's work with PlanetRead: two Premiere Pro subtitle plugins live on Adobe Exchange, the BookBox app on React Native, Cricmaths, and an audio and subtitle mismatch checker.">
+  <header class="page-head">
+    <span class="kicker">Edit bay · {planetread.role}, since {planetread.since}</span>
+    <h1>Subtitles that<br /><em>teach reading</em>.</h1>
+    <p class="lede"><a href={planetread.url}>PlanetRead</a> is a non-profit behind <a href={planetread.sls}>Same Language Subtitling</a>: subtitles in the same language as the audio, so watching becomes reading practice. {planetread.path}</p>
+  </header>
+
+  <div class="stat-row">
+    {planetread.stats.map(([n, label]) => <div class="stat"><b>{n}</b><span>{label}</span></div>)}
+  </div>
+
+  {planetread.work.map((w) => (
+    <section id={w.id}>
+      <h2>{w.name}</h2>
+      <ProjectCard title={w.tag} summary={w.body[0]} stack={w.stack} links={w.links}>
+        {w.body.slice(1).map((p) => <p>{p}</p>)}
+      </ProjectCard>
+    </section>
+  ))}
+
+  <h2 id="timeline">How it went</h2>
+  <ul class="log">
+    {planetread.timeline.map(([when, what]) => (
+      <li><time>{when}</time><span>{what}</span></li>
+    ))}
+  </ul>
+
+  <p class="read">Everything here links to the code. If you work on literacy, subtitling or media tools, <a href="mailto:rahulshendre789@gmail.com">say hello</a>.</p>
+</Page>

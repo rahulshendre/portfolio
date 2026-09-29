@@ -15,7 +15,6 @@ const EXTRA: Record<string, { href: string; external: boolean }> = {
   twitter: { href: site.links.x, external: true },
   linkedin: { href: site.links.linkedin, external: true },
   pipecd: { href: pipecd.site, external: true },
-  planetread: { href: planetread.url, external: true },
   list: { href: '/list', external: false },
   home: { href: '/?garage', external: false },
 };
@@ -23,7 +22,7 @@ const EXTRA: Record<string, { href: string; external: boolean }> = {
 const HELP: [string, string][] = [
   ['about', 'who is Rahul'],
   ['pipecd', 'the LFX mentorship'],
-  ['planetread', 'the subtitle plugins'],
+  ['planetread', 'my work with PlanetRead'],
   ['stack', 'tools I use'],
   ['bike', 'the Scrambler 400 X'],
   ['ls', 'every section'],
@@ -79,7 +78,13 @@ export function run(raw: string): Result {
       };
     case 'planetread':
       return {
-        lines: [{ text: planetread.what }, ...planetread.plugins.map((p) => link(p.name, p.url, true))],
+        lines: [
+          { text: `${planetread.role}, since ${planetread.since}` },
+          { text: planetread.what },
+          ...planetread.work.map((w) => ({ text: `${w.name}: ${w.tag}` })),
+          link('the full story', '/planetread'),
+          link('planetread.org', planetread.url, true),
+        ],
       };
     case 'stack':
       return { lines: [{ text: site.stack.join(', ') }, link('the pegboard', '/about#stack')] };

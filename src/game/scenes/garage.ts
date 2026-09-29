@@ -140,6 +140,7 @@ export class GarageScene implements Scene {
     this.whiteboard();
     this.shelf();
     this.toolbox();
+    this.editBay();
     this.tyres();
     this.radioBox();
 
@@ -201,12 +202,23 @@ export class GarageScene implements Scene {
     plate(96, 58, '#24292f', '#111418', tint(I.github, '#f4f2ea'), 'GITHUB', '#f4f2ea');
   }
 
+  /** Two posters side by side: PipeCD (open source) and PlanetRead (subtitles). */
   private pipecdSign() {
-    rect(198, 36, 90, 104, '#00000033');
-    rect(195, 33, 90, 104, '#2a2a2e'); rect(197, 35, 86, 100, '#f4f2ea');
-    for (const [x, y] of [[200, 38], [278, 38], [200, 130], [278, 130]]) rect(x, y, 2, 2, '#9a958b');
-    const pw = Math.round(this.img.pipecd.width * 90 / 108), ph = Math.round(this.img.pipecd.height * 104 / 126);
-    blit(this.img.pipecd, 211, 47, pw, ph);
+    const frame = (x: number) => {
+      rect(x + 3, 36, 50, 82, '#00000033');
+      rect(x, 33, 50, 82, '#2a2a2e'); rect(x + 2, 35, 46, 78, '#f4f2ea');
+      for (const [dx, dy] of [[4, 38], [42, 38], [4, 106], [42, 106]]) rect(x + dx, dy, 2, 2, '#9a958b');
+    };
+    frame(192);
+    const k = 0.6, pw = Math.round(this.img.pipecd.width * k), ph = Math.round(this.img.pipecd.height * k);
+    blit(this.img.pipecd, 192 + Math.round((50 - pw) / 2), 44, pw, ph);
+    // PlanetRead: a screen with a subtitle bar under a small planet, the name, and the SLS badge
+    frame(246);
+    rect(251, 41, 40, 26, '#1f3146'); rect(251, 41, 40, 1, '#33506e');
+    disc(271, 52, 6, '#4aa3c7'); disc(269, 50, 2, '#7fd0e8'); line(260, 56, 282, 49, '#e8b83a'); line(260, 57, 282, 50, '#e8b83a');
+    rect(256, 61, 30, 3, '#f4f2ea'); rect(259, 61, 9, 1, '#1f3146');
+    text('PLANET', 253, 72, '#2c5aa0'); text('READ', 253, 82, '#e8623a');
+    rect(251, 95, 40, 14, '#2f8f4e'); textC('SLS', 271, 99, '#f4f2ea');
   }
 
   private workbench() {
@@ -302,6 +314,21 @@ export class GarageScene implements Scene {
     poly([[372, 169], [374, 173], [378, 173], [375, 176], [376, 180], [372, 178], [368, 180], [369, 176], [366, 173], [370, 173]], C.accent);
   }
 
+  /** A small video edit bay on a crate: a monitor showing a Premiere-style timeline. The playhead moves in animate(). */
+  private editBay() {
+    ellipse(434, 251, 38, 3, '#5f584d');
+    rect(398, 236, 72, 14, '#b8915f'); rect(398, 236, 72, 2, '#cda875'); rect(398, 248, 72, 2, '#8f6e45');
+    for (const x of [414, 438, 458]) rect(x, 238, 1, 10, '#8f6e45');
+    rect(408, 240, 24, 6, '#f4f2ea'); text('BIRD', 411, 241, '#2c5aa0');
+    rect(424, 233, 20, 3, '#3a3d44'); rect(430, 229, 8, 4, '#3a3d44');
+    rect(402, 202, 64, 28, '#2a2a2e'); rect(402, 202, 64, 1, '#4a4d55'); rect(404, 204, 60, 24, '#12151b');
+    rect(406, 206, 27, 13, '#1f3146'); text('SLS', 410, 208, '#f4f2ea'); rect(409, 215, 21, 2, '#f4f2ea'); // preview with a subtitle bar
+    rect(435, 206, 27, 13, '#23262e'); for (const y of [208, 211, 214, 217]) rect(437, y, 12 + (y % 3) * 3, 1, '#5a5f6b');
+    rect(406, 221, 56, 2, '#3d6fb5'); rect(406, 224, 56, 2, '#2f8f4e'); // video and audio tracks
+    for (const [x, w] of [[407, 14], [424, 10], [437, 20]]) rect(x, 227, w, 2, '#e8b83a'); // subtitle clips
+    rect(463, 229, 1, 1, C.red);
+  }
+
   private radioBox() {
     rect(92, 128, 52, 3, C.wood); rect(92, 131, 52, 1, C.woodDark);
     rect(96, 110, 44, 18, '#2a2a2e'); rect(97, 111, 42, 16, '#4a4d55'); rect(97, 111, 42, 1, '#6b6f79');
@@ -339,6 +366,9 @@ export class GarageScene implements Scene {
       const p = (t * 0.7 + k / 3) % 1;
       rect(159 + Math.round(Math.sin((p + k) * 6) * 2), 148 - p * 14, 1, 2, '#f4f2ea');
     }
+    // edit bay: the playhead sweeps the timeline
+    const ph = 406 + Math.floor((t * 7) % 56);
+    rect(ph, 218, 1, 12, C.red); rect(ph - 1, 218, 3, 1, C.red);
     this.cat(t);
     this.radioLive(t);
     this.cord();
@@ -454,10 +484,11 @@ export class GarageScene implements Scene {
   private buildNight() {
     const src = [
       { x: 240, y: 9, r: 100, c: [255, 150, 120] },   // neon sign
-      { x: 240, y: 86, r: 62, c: [255, 236, 190] },   // PipeCD sign, spotlit
+      { x: 244, y: 78, r: 66, c: [255, 236, 190] },   // the two posters, spotlit
       { x: 51, y: 134, r: 56, c: [120, 255, 170] },   // CRT
       { x: 118, y: 119, r: 36, c: [255, 196, 110] },  // radio
       { x: 214, y: 205, r: 92, c: [255, 226, 170] },  // work lamp over the bike
+      { x: 434, y: 216, r: 42, c: [140, 190, 255] },  // edit bay monitor
     ];
     const mk = () => { const c = document.createElement('canvas'); c.width = 480; c.height = 270; return c; };
     const dark = mk(), glow = mk();
