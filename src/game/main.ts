@@ -9,7 +9,7 @@ import { DoorScene } from './scenes/door';
 import { GarageScene } from './scenes/garage';
 import { BAR, CONTROLS, HOTSPOTS, toPct } from './hotspots';
 import { WEATHERS, hasVisited, isNightHour, loadFound, loadMute, saveMute, loadNight, loadRadio, loadTried, markVisited, pickStart, pickTheme, pickWeather, saveFound, saveNight, saveRadio, saveTried } from './state';
-import { meow, preloadMeow, radio, setMuted } from './engine/audio';
+import { hiss, meow, preloadMeow, radio, setMuted } from './engine/audio';
 import { mountTerminal } from './terminal-ui';
 import { isPanelHref, mountPanel, parsePanelHash, titleFor } from './panel';
 
@@ -129,6 +129,7 @@ function mountHotspots(scene: GarageScene) {
       else if (c.id === 'radio') toggleRadio();
       else if (c.id === 'window') { weather = WEATHERS[(WEATHERS.indexOf(weather) + 1) % WEATHERS.length]; scene.setWeather(weather); }
       else if (c.id === 'clock') scene.clock24 = !scene.clock24;
+      else if (c.id === 'compressor') { scene.puff(); hiss(); }
       else { scene.pet(); meow(); }
     });
     hoverable(b, c.id, scene);

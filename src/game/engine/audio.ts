@@ -322,3 +322,30 @@ export function meow() {
   formant(3100, 2900, 2600, 8, 0.25);
   buzz.start(t); vib.start(t); buzz.stop(t + dur + 0.05); vib.stop(t + dur + 0.05);
 }
+
+// Small shop sounds for the garage: the compressor's blast of air, and the clock's tick while you point at it.
+let sfxCtx: AudioContext | undefined;
+const sfx = () => (sfxCtx ??= newCtx());
+
+export function hiss() {
+  if (muted) return;
+  let c: AudioContext;
+  try { c = sfx(); } catch { return; }
+  void wake(c);
+  const len = Math.floor(c.sampleRate * 1.1), buf = c.createBuffer(1, len, c.sampleRate), d = buf.getChannelData(0);
+  for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 1.6);
+  const src = c.createBufferSource(), hp = c.createBiquadFilter(), g = c.createGain();
+  src.buffer = buf; hp.type = 'highpass'; hp.frequency.value = 2600; g.gain.value = 0.3;
+  src.connect(hp).connect(g).connect(c.destination); src.start();
+}
+
+export function tick() {
+  if (muted) return;
+  let c: AudioContext;
+  try { c = sfx(); } catch { return; }
+  void wake(c);
+  const o = c.createOscillator(), g = c.createGain(), t = c.currentTime;
+  o.type = 'square'; o.frequency.value = 1900;
+  g.gain.setValueAtTime(0.05, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.03);
+  o.connect(g).connect(c.destination); o.start(t); o.stop(t + 0.04);
+}

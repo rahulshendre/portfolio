@@ -2,7 +2,7 @@
 // Every function draws with the current pixel context (garage.ts paints them once into the room sprite, or per frame for the live bits).
 import { C } from '../art/palette';
 import { bayer, ctx, disc, ellipse, line, poly, rect } from '../engine/pixel';
-import { text } from '../engine/font';
+import { text, textC } from '../engine/font';
 import { bevel, hash, speckle, stain, streaks, woodGrain } from '../art/wear';
 import { paint, type Sprite } from '../engine/sprites';
 import type { Weather } from '../state';
@@ -77,7 +77,7 @@ export function floorDetail() {
   rect(436, 236, 28, 14, '#3a3a3c'); bevel(436, 236, 28, 14, '#5a5a5e', '#1c1c1e');                                            // drain grate
   for (let x = 439; x < 462; x += 4) rect(x, 238, 2, 10, '#141416');
   stain(450, 243, 20, 6, '#6a6357', 141, 0.6);
-  ellipse(410, 226, 20, 3, '#7c8494'); ellipse(410, 226, 17, 2, '#98a0b0'); rect(400, 225, 8, 1, '#f3f0e2'); rect(414, 226, 4, 1, '#e6e2d2'); // puddle and the tube light in it
+  ellipse(303, 246, 13, 2, '#7c8494'); ellipse(303, 246, 10, 1, '#98a0b0'); rect(298, 246, 5, 1, '#f3f0e2'); // puddle and the tube light in it
 }
 
 export function floorProps() {
@@ -90,11 +90,11 @@ export function floorProps() {
   poly([[458, 216], [464, 222], [458, 228], [452, 222]], C.accent); poly([[458, 219], [461, 222], [458, 225], [455, 222]], '#2c2a26');
   streaks(444, 230, 28, 12, '#5a3a22', 5, 142); speckle(444, 208, 28, 34, '#8a3d1c', 0.03, 143); rect(456, 243, 2, 6, '#141210');
   // bucket and a mop
-  ellipse(410, 246, 11, 2, '#0000003a');
-  poly([[401, 232], [419, 232], [417, 246], [403, 246]], '#6b7075'); rect(401, 232, 18, 1, '#8b9096'); rect(403, 245, 14, 1, '#4a4e53');
-  ellipse(410, 232, 9, 2, '#3a3d42'); ellipse(410, 232, 7, 1, '#2a4a70');
-  line(414, 232, 426, 194, '#a5764a'); line(415, 232, 427, 194, '#8a5a36');
-  for (let k = 0; k < 6; k++) line(408 + k, 231, 406 + k * 2, 236, '#d8d2c4');
+  ellipse(396, 246, 11, 2, '#0000003a');
+  poly([[387, 232], [405, 232], [403, 246], [389, 246]], '#6b7075'); rect(387, 232, 18, 1, '#8b9096'); rect(389, 245, 14, 1, '#4a4e53');
+  ellipse(396, 232, 9, 2, '#3a3d42'); ellipse(396, 232, 7, 1, '#2a4a70');
+  line(400, 232, 412, 194, '#a5764a'); line(401, 232, 413, 194, '#8a5a36');
+  for (let k = 0; k < 6; k++) line(394 + k, 231, 392 + k * 2, 236, '#d8d2c4');
 }
 
 /** Conduit along the top of the wall, with a drop to the fuse box, clipped to the plaster every so often. */
@@ -167,6 +167,8 @@ export function foreground() {
   // magnetic parts tray with bolts
   rect(98, 250, 22, 5, '#00000040'); rect(97, 249, 22, 4, '#3a3d42'); bevel(97, 249, 22, 4, '#5a5d66', '#1b1c20');
   for (const [x, c] of [[100, '#c9a043'], [103, '#b8bcc2'], [107, '#c9a043'], [111, '#b8bcc2'], [114, '#c9a043']] as const) rect(x, 250, 2, 2, c);
+  // wheel chocks, yellow and black, either side of the bike
+  poly([[136, 251], [147, 251], [147, 246]], C.accent); poly([[283, 246], [283, 251], [294, 251]], C.accent); rect(141, 249, 2, 2, '#2a2c30'); rect(288, 249, 2, 2, '#2a2c30');
   // creeper board
   ellipse(347, 255, 38, 2, '#00000040');
   woodGrain(312, 248, 70, 5, C.wood, C.woodDark, '#a5764a', 190); rect(312, 248, 16, 5, '#26262a'); bevel(312, 248, 16, 5, '#4a4d55', '#101114');
@@ -196,4 +198,123 @@ export function benchLampGlow() {
   }
   g.globalAlpha = 1;
   disc(163, 142, 3, '#ffe9a855');
+}
+
+/** The door's torsion tube with its big spring and cable drums, running along the top of the wall. */
+export function ceilingMech() {
+  rect(4, 19, 290, 3, '#6b6f79'); rect(4, 19, 290, 1, '#a0a5aa'); rect(4, 21, 290, 1, '#3a3d42');
+  for (let x = 70; x < 150; x += 3) { rect(x, 18, 2, 5, x % 6 ? '#3a3d42' : '#8b9096'); rect(x, 18, 1, 1, '#b4b9be'); } // the spring, coil by coil
+  for (const x of [20, 250]) { rect(x - 4, 17, 8, 7, '#4a4e53'); bevel(x - 4, 17, 8, 7, '#6b6f79', '#2a2c30'); for (let y = 18; y < 23; y += 2) rect(x - 3, y, 6, 1, '#2a2c30'); } // cable drums
+  for (const x of [46, 176, 286]) { rect(x, 17, 3, 7, '#3a3d42'); rect(x, 17, 3, 1, '#6b6f79'); }                                                   // brackets
+}
+
+/** A round extractor fan set into a square housing above the PipeCD poster. The blades are drawn each frame by fanLive. */
+export const FAN = { x: 225, y: 30 };
+export function fanStatic() {
+  const { x, y } = FAN;
+  rect(x - 9, y - 9, 18, 18, '#8b9096'); bevel(x - 9, y - 9, 18, 18, '#b4b9be', '#4a4e53');
+  disc(x, y, 7, '#2a2c30'); disc(x, y, 6, '#101114');
+  for (const [dx, dy] of [[-7, -7], [6, -7], [-7, 6], [6, 6]]) rect(x + dx, y + dy, 1, 1, '#4a4e53'); // screws
+}
+export function fanLive(t: number) {
+  const { x, y } = FAN, a = t * 9;
+  for (let k = 0; k < 4; k++) {
+    const r = a + (k * Math.PI) / 2;
+    line(x, y, Math.round(x + Math.cos(r) * 5), Math.round(y + Math.sin(r) * 5), '#b4b9be');
+    line(x, y, Math.round(x + Math.cos(r + 0.35) * 4), Math.round(y + Math.sin(r + 0.35) * 4), '#6b6f79');
+  }
+  disc(x, y, 1, '#d8dcdf');
+}
+
+/** A wall shelf with a trailing money plant and a small desk speaker. */
+export function shelfPlant() {
+  rect(158, 69, 32, 2, '#00000033');
+  woodGrain(158, 66, 32, 3, C.wood, C.woodDark, '#a5764a', 200);
+  for (const x of [161, 185]) { rect(x, 69, 2, 5, '#4a4e53'); rect(x, 69, 2, 1, '#6b6f79'); }
+  poly([[160, 58], [169, 58], [168, 66], [161, 66]], '#b3563a'); rect(160, 58, 9, 1, '#d17a5a'); rect(161, 62, 7, 1, '#8f3f28'); // terracotta pot
+  disc(164, 54, 4, '#3f7a3a'); disc(160, 56, 3, '#4f9247'); disc(168, 55, 3, '#3a6d34'); disc(165, 52, 2, '#6bab52');
+  for (const [x, y] of [[159, 70], [158, 73], [159, 76], [158, 79], [160, 82]] as const) { rect(x, y, 2, 2, '#4f9247'); rect(x, y, 1, 1, '#6bab52'); } // a vine trailing down
+  rect(177, 53, 12, 13, '#2a2c30'); bevel(177, 53, 12, 13, '#4a4d55', '#101114');
+  for (let y = 55; y < 65; y += 2) for (let x = 179; x < 188; x += 2) rect(x, y, 1, 1, '#17181b');
+}
+export function speakerLive(t: number, on: boolean) {
+  const pulse = on && Math.floor(t * 4.4) % 2 === 0;
+  disc(183, 61, pulse ? 4 : 3, '#17181b'); disc(183, 61, 1, '#3a3d42');
+  rect(186, 55, 2, 1, on ? '#5fdc7a' : '#7a2f24');
+}
+
+/** A framed map of India with the ride to Leh dotted in red, pins at Pune, Manali and Leh. */
+export function mapArt() {
+  rect(238, 118, 36, 28, '#00000033');
+  rect(236, 116, 36, 28, '#3e3127'); bevel(236, 116, 36, 28, '#5a4636', '#241a12');
+  rect(238, 118, 32, 24, '#e8dcb8'); speckle(238, 118, 32, 24, '#d4c69a', 0.06, 210);
+  const ox = 240, oy = 119;
+  poly([[14, 0], [18, 0], [21, 3], [25, 4], [28, 7], [27, 10], [23, 10], [25, 13], [21, 15], [19, 21], [17, 22], [15, 20], [12, 14], [8, 12], [7, 8], [10, 6], [11, 3]].map(([x, y]) => [ox + x, oy + y] as [number, number]), '#b9c08a');
+  for (const [x, y] of [[16, 8], [18, 12], [14, 16]]) rect(ox + x, oy + y, 1, 1, '#8f9660');
+  const pts: [number, number][] = [[13, 13], [15, 9], [16, 6], [16, 2]];
+  pts.slice(0, -1).forEach(([x0, y0], i) => { const [x1, y1] = pts[i + 1]; for (let s = 0; s <= 6; s++) if (s % 2 === 0) rect(ox + Math.round(x0 + ((x1 - x0) * s) / 6), oy + Math.round(y0 + ((y1 - y0) * s) / 6), 1, 1, C.red); });
+  for (const [x, y] of pts.filter((_, i) => i !== 1)) { disc(ox + x, oy + y, 1, C.red); rect(ox + x, oy + y, 1, 1, '#ffffff'); }
+  rect(238, 118, 32, 1, '#ffffff33');
+}
+
+/** A "days since" board like the ones on workshop walls; the number is days since Rahul's last pull request. */
+export function incidentBoard(days: number) {
+  rect(292, 156, 26, 26, '#00000033');
+  rect(290, 154, 26, 26, '#2a2a2e'); bevel(290, 154, 26, 26, '#4a4d55', '#101114');
+  rect(291, 155, 24, 7, C.red); textC('PR', 303, 156, '#ffffff');
+  rect(291, 162, 24, 11, '#0a0a0c'); textC(String(Math.min(99, days)), 303, 165, C.accent);
+  rect(291, 173, 24, 6, '#f1eee4'); textC('DAYS', 303, 174, C.ink);
+  for (const [x, y] of [[291, 155], [314, 155], [291, 178], [314, 178]]) rect(x, y, 1, 1, '#9a958b');
+}
+
+/** A small wheeled air compressor: blue tank, red pump, a gauge and a brass valve. */
+export function compressor() {
+  ellipse(426, 247, 19, 3, '#0000003a');
+  rect(412, 229, 28, 13, '#4d6b8a'); bevel(412, 229, 28, 13, '#7a9ab8', '#2a3e54'); rect(412, 235, 28, 1, '#3a5570');
+  rect(418, 218, 14, 11, '#b32a1b'); bevel(418, 218, 14, 11, '#dc4a3a', '#6e160e'); for (let y = 220; y < 228; y += 2) rect(419, y, 12, 1, '#7e1c12');
+  rect(432, 221, 7, 8, '#2a2c30'); rect(432, 221, 7, 1, '#4a4d55');
+  disc(415, 226, 3, '#f4f2ea'); disc(415, 226, 2, '#dcd7c8'); rect(415, 224, 1, 3, C.red); rect(412, 232, 3, 2, '#c9a043'); // gauge and the valve
+  line(412, 229, 408, 221, '#3a3d42'); line(408, 221, 414, 221, '#3a3d42');                                                     // carry handle
+  for (const x of [416, 436]) { disc(x, 244, 3, '#151515'); disc(x, 244, 1, '#6b6f79'); }
+  speckle(412, 229, 28, 13, '#00000033', 0.05, 220);
+}
+/** The blast of air after a click: pale specks streaming out of the valve, fading. */
+export function compressorPuff(age: number) {
+  if (age < 0 || age > 1.1) return;
+  const g = ctx();
+  for (let i = 0; i < 14; i++) {
+    const p = age * (1.4 + (i % 4) * 0.35), x = 410 - p * 14 - hash(i, 230) * 4, y = 233 + Math.sin(i * 2.1) * (2 + p * 6) + p * 4;
+    g.globalAlpha = Math.max(0, 1 - age / 1.1) * 0.8;
+    rect(Math.round(x), Math.round(y), i % 3 ? 1 : 2, 1, '#f4f2ea');
+  }
+  g.globalAlpha = 1;
+}
+
+/** A steel flask of chai and two glasses on the bench's lower shelf. The steam is drawn each frame by chaiLive. */
+export function chai() {
+  rect(100, 171, 9, 15, '#b8bcc2'); bevel(100, 171, 9, 15, '#e6e9ec', '#7c8087'); rect(101, 168, 7, 3, '#b32a1b'); rect(101, 168, 7, 1, '#dc4a3a'); rect(109, 174, 2, 6, '#7c8087');
+  for (const x of [113, 120]) { rect(x, 180, 5, 6, '#e8d9a8'); rect(x, 180, 5, 1, '#f6efd2'); rect(x + 1, 181, 3, 3, '#b8621f'); rect(x, 185, 5, 1, '#8a7a4c'); }
+}
+export function chaiLive(t: number) {
+  const g = ctx();
+  for (const [x0, seed] of [[100, 0], [115, 1], [122, 2]] as const) for (let k = 0; k < 3; k++) {
+    const p = (t * 0.55 + k / 3 + seed * 0.21) % 1;
+    g.globalAlpha = (1 - p) * 0.7;
+    rect(x0 + 3 + Math.round(Math.sin((p + k + seed) * 6) * 1.5), 178 - Math.round(p * 12), 1, 2, '#f4f2ea');
+  }
+  g.globalAlpha = 1;
+}
+
+/** A floor helmet stand: a steel pole on a three-legged base with a cradle, and the white helmet on top. */
+export const HELMET = { x: 104, y: 205 };
+export function helmetStand() {
+  const { x, y } = HELMET;
+  ellipse(x, 249, 12, 2, '#0000003a');
+  rect(x - 1, y + 8, 3, 39, '#8b9096'); rect(x - 1, y + 8, 1, 39, '#b4b9be'); rect(x + 1, y + 8, 1, 39, '#4a4e53');
+  line(x, 247, x - 11, 250, '#6b6f79'); line(x, 247, x + 11, 250, '#6b6f79'); line(x, 246, x, 250, '#6b6f79'); rect(x - 2, 245, 5, 3, '#4a4e53'); // base
+  rect(x - 6, y + 6, 13, 2, '#4a4e53'); rect(x - 6, y + 6, 13, 1, '#8b9096');                                                                  // cradle
+  disc(x, y, 9, C.ink); disc(x, y, 8, C.white);                                                                                                 // shell
+  rect(x - 8, y + 2, 9, 4, '#20242c'); rect(x - 8, y + 2, 9, 1, '#4a5060'); rect(x - 6, y + 3, 2, 1, '#8fa0c0');                                // visor
+  rect(x + 2, y - 1, 5, 6, C.whiteShade); rect(x - 3, y - 7, 4, 2, '#ffffff'); rect(x - 1, y - 9, 6, 1, '#ffffffaa');                           // shade and gloss
+  rect(x + 3, y - 3, 3, 1, C.red);                                                                                                               // a red stripe
 }

@@ -15,7 +15,7 @@ export interface Hotspot {
 
 /** Things you operate rather than open. Buttons, not links. */
 export interface Control {
-  id: 'cord' | 'radio' | 'cat' | 'window' | 'clock';
+  id: 'cord' | 'radio' | 'cat' | 'window' | 'clock' | 'compressor';
   label: string;
   tag: string;
   rect: [number, number, number, number];
@@ -41,6 +41,8 @@ export const HOTSPOTS: Hotspot[] = [
   { id: 'calendar', label: 'CALENDAR · PR LOG', tag: 'PR LOG', href: '/open-source#log', rect: [304, 82, 30, 42] },
   { id: 'clipboard', label: 'CLIPBOARD · RESUME', tag: 'RESUME', href: '/resume', rect: [348, 82, 26, 36] },
   { id: 'toolbox', label: 'TOOLBOX STICKERS · PROJECTS', tag: 'PROJECTS', href: '/open-source#projects', rect: [322, 146, 62, 88] },
+  { id: 'map', label: 'RIDE MAP · WHERE I HAVE RIDDEN', tag: 'RIDES', href: '/garage', rect: [236, 116, 36, 28] },
+  { id: 'board', label: 'PR BOARD · DAYS SINCE MY LAST PR', tag: 'PR BOARD', href: '/open-source#log', rect: [290, 154, 26, 26] },
   { id: 'shelf', label: 'PARTS SHELF · BUILDS', tag: 'BUILDS', href: '/builds', rect: [390, 86, 86, 112] },
 ];
 
@@ -49,6 +51,7 @@ export const CONTROLS: Control[] = [
   { id: 'radio', label: 'RADIO · LO-FI ON OR OFF', tag: 'RADIO', rect: [96, 108, 44, 22] },
   { id: 'window', label: 'WINDOW · CHANGE THE WEATHER', tag: 'WEATHER', rect: [5, 19, 82, 82] },
   { id: 'clock', label: 'CLOCK · INDIA TIME · TAP TO FLIP', tag: 'CLOCK', rect: [162, 102, 20, 20] },
+  { id: 'compressor', label: 'AIR COMPRESSOR · GIVE IT A BLAST', tag: 'COMPRESSOR', rect: [408, 216, 36, 32] },
   { id: 'cat', label: 'THE CAT · PET HER', tag: 'CAT', rect: [14, 171, 44, 24] },
 ];
 

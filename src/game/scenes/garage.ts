@@ -13,9 +13,10 @@ import { BAR, CONTROLS, HOTSPOTS, type Control, type Hotspot } from '../hotspots
 import { site } from '../../data/site';
 import { idleMessage } from '../hints';
 import { istHMS, istLabel } from '../ist';
+import { tick } from '../engine/audio';
 import { countFound, type Theme, type Weather } from '../state';
 import { windowFall, windowSky } from './weather';
-import { SUN, TUBES, benchLamp, benchLampGlow, bikeGrounding, foreground, clockFace, clockHands, conduit, depthShading, floorDetail, floorProps, fuseBox, charger, chargerLive, sunSprite, sunStrength, tubeBeams } from './garageprops';
+import { SUN, TUBES, benchLamp, benchLampGlow, bikeGrounding, ceilingMech, chai, chaiLive, helmetStand, compressor, compressorPuff, fanLive, fanStatic, foreground, incidentBoard, mapArt, shelfPlant, speakerLive, clockFace, clockHands, conduit, depthShading, floorDetail, floorProps, fuseBox, charger, chargerLive, sunSprite, sunStrength, tubeBeams } from './garageprops';
 import github from '../../data/github.json';
 
 const WALL = '#cbbd9f', MORTAR = '#bcad8f', LOWER = '#7f8a7a', FLOOR = '#958d80', FLOOR_DARK = '#857d71';
@@ -23,6 +24,8 @@ const NAVY = '#293878', CYAN = '#29bdeb';
 const BENCH_DY = 0; // how far the workbench group is shifted up from its original spot
 const CAT = { dx: 12, dy: -23 }; // where her nap spot sits on the tyre stack, from where she was first drawn
 const SELF_EXPLAINING = ['youtube', 'x', 'linkedin', 'github']; // the number plates spell out what they are, so hovering them only glows
+const LAST_PR = Math.max(...github.prs.map((p) => +new Date(p.createdAt)));
+const DAYS_SINCE_PR = Math.max(0, Math.floor((Date.now() - LAST_PR) / 864e5)); // the number on the wall board
 const CARE = 0.3; // how battered the room looks: lived in and looked after, not abandoned (the door keeps its full wear)
 const WIN = { x: 10, y: 24, w: 72, h: 70 }; // the window, at the far left of the wall
 export const BIKE = { scale: 1.4, cx: 214, floor: 250 };
@@ -50,6 +53,8 @@ export class GarageScene implements Scene {
   /** Objects the visitor has used (shared with main). Shown as a counter on the ceiling beam. */
   found: ReadonlySet<string> = new Set();
   private petT = -10;
+  private puffT = -10;
+  private tickS = -1;
   private cheerT = -10;
   /** Set when the frame rate drops: the garage keeps its look but drops the extras. */
   lowFx = false;
@@ -82,6 +87,8 @@ export class GarageScene implements Scene {
   setWeather(w: Weather) { this.weather = w; this.bg = this.roomSprite(); this.sun = sunSprite(w); }
 
   pet() { this.petT = this.t; }
+  /** The compressor's blast of air. */
+  puff() { this.puffT = this.t; }
   /** Everything found: the bar says so for a few seconds. */
   cheer() { this.cheerT = this.t; }
 
@@ -105,6 +112,7 @@ export class GarageScene implements Scene {
       m.x += Math.sin(this.t * 0.6 + m.k) * dt * 4;
       if (m.y > 190) m.y = 24;
     }
+    if (this.hover === 'clock') { const sec = istHMS(new Date()).s; if (sec !== this.tickS) { this.tickS = sec; tick(); } } else this.tickS = -1; // the clock ticks while you look at it
     input.endFrame();
   }
 
@@ -186,6 +194,7 @@ export class GarageScene implements Scene {
     this.tyres();
     this.radioBox();
     conduit(); fuseBox(); clockFace(); charger(); floorProps(); benchLamp();
+    helmetStand(); ceilingMech(); fanStatic(); shelfPlant(); mapArt(); incidentBoard(DAYS_SINCE_PR); compressor(); chai();
 
     if (withBike) {
       // Part of the room's personality, not its focus: mid-size, a little left of centre so the toolbox and PipeCD sign stay clear.
@@ -193,8 +202,6 @@ export class GarageScene implements Scene {
       const bx = Math.round(BIKE.cx - bw / 2), by = BIKE.floor - bh;
       bikeGrounding(this.img.bike, bx, by, bw, bh, k);
       blit(this.img.bike, bx, by, bw, bh);
-      const hx = Math.round(bx + 50 * k), hy = Math.round(by + 23 * k), hr = Math.round(6.1 * k); // white helmet on the seat
-      disc(hx, hy, hr + 1, C.ink); disc(hx, hy, hr, C.white); rect(hx + 2, hy + 1, Math.round(hr / 2), Math.round(hr * 0.6), C.whiteShade); rect(hx - hr / 2, hy - hr / 1.5, Math.round(hr / 2.5), 3, '#ffffff'); // white helmet
     }
 
     foreground();
@@ -436,8 +443,12 @@ export class GarageScene implements Scene {
     }
     windowFall(ctx(), WIN.x, WIN.y, WIN.w, WIN.h, this.weather, t);
     this.sunlight(t);
+    fanLive(t);
+    speakerLive(t, this.radioOn);
+    chaiLive(t);
+    compressorPuff(t - this.puffT);
     clockHands(istHMS(new Date()));
-    chargerLive(t);
+    chargerLive(this.hover === 'toolbox' ? t * 3 : t); // it works harder when you look at it
     this.cat(t);
     this.radioLive(t);
     this.cord();
@@ -553,8 +564,6 @@ export class GarageScene implements Scene {
     g.drawImage(this.bikeHalo, bx - R, by - R);
     g.globalAlpha = this.glow * 0.1;
     g.drawImage(this.img.bike, bx, by, bw, bh);                 // the bike itself, brighter
-    const hx = Math.round(bx + 50 * k), hy = Math.round(by + 23 * k), hr = Math.round(6.1 * k) + 1;
-    g.drawImage(this.bg, hx - hr, hy - hr, hr * 2 + 1, hr * 2 + 1, hx - hr, hy - hr, hr * 2 + 1, hr * 2 + 1); // and the helmet on it
     g.globalCompositeOperation = 'source-over';
     g.globalAlpha = 1;
   }
