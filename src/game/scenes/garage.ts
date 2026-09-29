@@ -352,7 +352,6 @@ export class GarageScene implements Scene {
 
   private shelf() {
     rect(390, 198, 86, 4, '#6f685c');
-    rect(404, 86, 60, 10, C.ink); textC('BUILDS', 434, 88, C.accent);
     rect(392, 96, 3, 102, '#6b7075'); rect(471, 96, 3, 102, '#6b7075'); rect(392, 96, 1, 102, '#8b9096'); rect(471, 96, 1, 102, '#8b9096'); rect(394, 96, 1, 102, '#4a4e53'); rect(473, 96, 1, 102, '#4a4e53');
     speckle(392, 96, 3, 102, '#7a4a2a', 0.12, 44); speckle(471, 96, 3, 102, '#7a4a2a', 0.12, 45);
     const boxes = [[C.accent, CYAN, C.red], ['#3d8b4f', C.reflector, NAVY], [C.red, C.accent, '#3d8b4f']];
