@@ -22,7 +22,7 @@ const NAVY = '#293878', CYAN = '#29bdeb';
 const BENCH_DY = 0; // how far the workbench group is shifted up from its original spot
 const CAT = { dx: 12, dy: -23 }; // where her nap spot sits on the tyre stack, from where she was first drawn
 const CARE = 0.3; // how battered the room looks: lived in and looked after, not abandoned (the door keeps its full wear)
-const WIN = { x: 14, y: 28, w: 56, h: 58 }; // the window, at the far left of the wall
+const WIN = { x: 10, y: 24, w: 72, h: 70 }; // the window, at the far left of the wall
 export const BIKE = { scale: 1.4, cx: 214, floor: 250 };
 
 /** One drifting music note: a head and a stem, fading out as it rises. */

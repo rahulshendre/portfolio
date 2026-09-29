@@ -8,7 +8,7 @@ import { paint, type Sprite } from '../engine/sprites';
 import type { Weather } from '../state';
 
 export const TUBES = [140, 340];
-export const SUN = { x0: 14, x1: 70, y0: 88, y1: 234, px: 206, pw: 30, gap: 6 }; // window edge, and where its light lands on the floor
+export const SUN = { x0: 10, x1: 82, y0: 96, y1: 234, px: 206, pw: 30, gap: 6 }; // window edge, and where its light lands on the floor
 
 /** Corners, the wall meeting the floor and the strip under the beam go dim, so the room reads as a box with depth. Painted before the lighting pass. */
 export function depthShading() {
