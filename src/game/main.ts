@@ -7,7 +7,7 @@ import { RideScene } from './scenes/ride';
 import { DoorScene } from './scenes/door';
 import { GarageScene } from './scenes/garage';
 import { BAR, CONTROLS, HOTSPOTS, toPct } from './hotspots';
-import { hasVisited, isNightHour, loadFound, loadNight, loadTried, markVisited, pickStart, pickWeather, saveFound, saveNight, saveTried } from './state';
+import { WEATHERS, hasVisited, isNightHour, loadFound, loadNight, loadTried, markVisited, pickStart, pickTheme, pickWeather, saveFound, saveNight, saveTried } from './state';
 import { radio } from './engine/audio';
 import { mountTerminal } from './terminal-ui';
 import { isPanelHref, mountPanel, parsePanelHash, titleFor } from './panel';
@@ -19,11 +19,14 @@ const screen = new Screen(canvas);
 const director = new Director((m) => screen.setMode(m));
 input.attach(screen);
 
-const SPRITES = ['mountains', 'bike-side', 'pipecd', 'pipecd-sm', 'icon-github', 'icon-x', 'icon-linkedin', 'icon-youtube'] as const;
-const images = Promise.all(SPRITES.map((n) => loadImage(`/sprites/${n}.png`))).then(([mountains, bike, pipecd, pipecdSm, github, x, linkedin, youtube]) => ({
-  mountains, bike, pipecd, icons: { pipecd: pipecdSm, github, x, linkedin, youtube },
+const SPRITES = ['mountains', 'bike-side', 'pipecd', 'pipecd-sm', 'planetread', 'icon-github', 'icon-x', 'icon-linkedin', 'icon-youtube'] as const;
+const images = Promise.all(SPRITES.map((n) => loadImage(`/sprites/${n}.png`))).then(([mountains, bike, pipecd, pipecdSm, planetread, github, x, linkedin, youtube]) => ({
+  mountains, bike, pipecd, planetread, icons: { pipecd: pipecdSm, github, x, linkedin, youtube },
 }));
 
+let theme = pickTheme(location.search); // the arrival's look, and the view from the garage window
+let weather = pickWeather(location.search); // one weather per visit: the door scene and the garage window show the same sky
+const LOGOS: Record<string, string> = { planetread: '/sprites/planetread-px.png', bookbox: '/sprites/bookbox-px.png' };
 let current: GarageScene | undefined;
 const found = new Set(loadFound());
 function markFound(id: string) {
@@ -39,6 +42,7 @@ function toggleNight() {
   if (!current) return;
   current.setNight(!current.night);
   saveNight(current.night);
+  layer.toggleAttribute('data-night', current.night);
   markTried('cord');
 }
 
@@ -71,7 +75,7 @@ document.getElementById('phone-term')?.addEventListener('click', () => terminal.
 
 async function garage() {
   const img = await images;
-  const scene = new GarageScene(screen, img);
+  const scene = new GarageScene(screen, img, weather, theme);
   const q = new URLSearchParams(location.search); // ?night and ?day force the lights (handy for screenshots)
   scene.night = q.has('night') ? true : q.has('day') ? false : loadNight() ?? isNightHour(new Date().getHours()); // until they pull the cord, the room follows their clock
   scene.tried = tried;
@@ -81,6 +85,7 @@ async function garage() {
   director.go(scene);
   markVisited();
   mountHotspots(scene);
+  layer.toggleAttribute('data-night', scene.night);
   requestAnimationFrame(centre);
   if (location.hash === '#terminal') terminal.open();
   const deep = parsePanelHash(location.hash);
@@ -94,7 +99,7 @@ screen.onResize(() => { if (director.current instanceof GarageScene) requestAnim
 async function door() {
   const img = await images;
   current = undefined;
-  director.go(new DoorScene(screen, img.bike, img.mountains, () => new GarageScene(screen, img).roomSprite(false), garage, pickWeather(location.search)));
+  director.go(new DoorScene(screen, img.bike, img.mountains, () => new GarageScene(screen, img, weather, theme).roomSprite(false), garage, weather, theme, (o) => { weather = o.weather ?? weather; theme = o.theme ?? theme; void door(); }));
 }
 
 function mountHotspots(scene: GarageScene) {
@@ -104,12 +109,13 @@ function mountHotspots(scene: GarageScene) {
     b.type = 'button';
     b.dataset.control = c.id;
     b.setAttribute('aria-label', c.label.replace(' · ', ': ').toLowerCase());
-    if (c.id !== 'cat') b.setAttribute('aria-pressed', String(c.id === 'radio' ? radio.on : scene.night));
+    if (c.id === 'cord' || c.id === 'radio') b.setAttribute('aria-pressed', String(c.id === 'radio' ? radio.on : scene.night));
     Object.assign(b.style, toPct(c.rect));
     b.addEventListener('click', () => {
       markFound(c.id);
       if (c.id === 'cord') { toggleNight(); b.setAttribute('aria-pressed', String(scene.night)); }
       else if (c.id === 'radio') toggleRadio();
+      else if (c.id === 'window') { weather = WEATHERS[(WEATHERS.indexOf(weather) + 1) % WEATHERS.length]; scene.setWeather(weather); }
       else scene.pet();
     });
     hoverable(b, c.id, scene);
@@ -129,6 +135,12 @@ function mountHotspots(scene: GarageScene) {
     if (h.external) { a.target = '_blank'; a.rel = 'noopener'; }
     Object.assign(a.style, toPct(h.rect));
     if (h.id !== 'list' && h.id !== 'ride') { a.addEventListener('click', () => markFound(h.id)); a.addEventListener('auxclick', () => markFound(h.id)); }
+    const logo = LOGOS[h.id];
+    if (logo) { // the real logo, drawn by the browser at full resolution over its plaque
+      const img = document.createElement('img');
+      img.src = logo; img.alt = ''; img.decoding = 'async';
+      a.append(img);
+    }
     hoverable(a, h.id, scene);
     layer.append(a);
   }

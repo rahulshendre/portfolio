@@ -2,12 +2,12 @@
 import { C } from '../art/palette';
 import { graffitiTag } from '../art/sprites';
 import { bind, bayer, ctx, disc, ellipse, line, poly, rect } from '../engine/pixel';
-import { text, textC } from '../engine/font';
+import { text, textC, textW } from '../engine/font';
 import { input } from '../engine/input';
 import { DoorSound } from '../engine/audio';
 import { glow } from '../engine/light';
 import { BEAM, THUNDER_AT, fall, grade, ground } from './weather';
-import type { Weather } from '../state';
+import { THEMES, WEATHERS, type Theme, type Weather } from '../state';
 import type { Scene } from '../engine/scene';
 import { WIDE_W, type Screen } from '../engine/screen';
 import { blit, paint, type Sprite } from '../engine/sprites';
@@ -52,7 +52,7 @@ export class DoorScene implements Scene {
 
   private room!: Sprite;
 
-  constructor(private screen: Screen, private bike: HTMLImageElement, private mountains: HTMLImageElement, private makeRoom: () => Sprite, private onDone: () => void, private weather: Weather = 'clear') {}
+  constructor(private screen: Screen, private bike: HTMLImageElement, private mountains: HTMLImageElement, private makeRoom: () => Sprite, private onDone: () => void, private weather: Weather = 'clear', private theme: Theme = 'himalaya', private onChange?: (o: { weather?: Weather; theme?: Theme }) => void) {}
 
   enter() {
     this.t = 0;
@@ -69,7 +69,7 @@ export class DoorScene implements Scene {
       line(52, 46, 56, 40, C.accent); line(56, 40, 60, 46, C.accent); line(60, 46, 64, 40, C.accent); line(64, 40, 68, 46, C.accent);
       text('MH-12', 200, 150, '#2a2a2e');
       rect(DOOR.w / 2 - 12, DOOR.h - 8, 24, 3, '#3a3d42');
-      this.duskLight(0, 0, DOOR.w, DOOR.h); // the shutter catches the same dusk as the wall
+      if (this.theme === 'himalaya') this.duskLight(0, 0, DOOR.w, DOOR.h); // the shutter catches the same dusk as the wall
     });
   }
 
@@ -79,19 +79,41 @@ export class DoorScene implements Scene {
     return Math.min(WIDE_W, Math.max(0, OX + (-340 + glide(this.t / T_ARRIVE) * 460) + 110));
   }
 
+  /** Two small buttons, centred at the bottom (on a phone, in the part of the frame you can see): the look and the weather. */
+  private buttons() {
+    const cx = this.screen.size.portrait ? this.focus : WIDE_W / 2;
+    return [
+      { label: `THEME: ${this.theme === 'xp' ? 'WINDOWS XP' : 'HIMALAYA'} >`, y: 238, key: 'KeyT', o: { theme: THEMES[(THEMES.indexOf(this.theme) + 1) % THEMES.length] } },
+      { label: `WEATHER: ${this.weather.toUpperCase()} >`, y: 252, key: 'KeyW', o: { weather: WEATHERS[(WEATHERS.indexOf(this.weather) + 1) % WEATHERS.length] } },
+    ].map((b) => { const w = textW(b.label) + 8; return { ...b, w, h: 12, x: Math.round(cx - w / 2) }; });
+  }
+
+  /** Taps on a button (or its key: T, W) change the look instead of skipping the arrival. */
+  private changePressed(tap: boolean) {
+    const { x, y } = input.pointer;
+    for (const b of this.buttons()) {
+      if ((tap && x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h) || input.pressed(b.key)) { this.onChange?.(b.o); return true; }
+    }
+    return false;
+  }
+
+  exit() { this.sfx.stop(); }
+
   private finish() { if (!this.finished) { this.finished = true; this.sfx.stop(); this.onDone(); } }
 
   update(dt: number) {
+    const tap = input.tap();
+    if (this.onChange && this.changePressed(tap)) { input.endFrame(); return; }
     if (!this.go) {
       this.idle += dt;
-      const pressed = input.tap() || input.anyKey();
+      const pressed = tap || input.anyKey();
       if (this.sfx.running && this.idle > 0.2) this.go = true; // autoplay was allowed
       else if (this.idle > 0.5 && pressed) { this.sfx.start(() => this.t, this.cues, this.weather); this.go = true; } // a tap unlocks sound and starts
       input.endFrame();
       return;
     }
     this.t += dt;
-    if (this.t > 0.3 && (input.tap() || input.anyKey())) this.finish();
+    if (this.t > 0.3 && (tap || input.anyKey())) this.finish();
     if (this.t > T_END) this.finish();
     input.endFrame();
   }
@@ -140,6 +162,7 @@ export class DoorScene implements Scene {
     g.restore();
     fall(g, this.weather, this.t);
     text('SKIP >', 6, 258, C.hud, 1, C.ink);
+    if (this.onChange) for (const b of this.buttons()) { rect(b.x, b.y, b.w, b.h, C.ink); text(b.label, b.x + 4, b.y + 3, C.hud); }
     if (!this.go && this.idle > 0.5) {
       g.globalAlpha = 0.45; rect(0, 0, WIDE_W, 270, '#140f0a'); g.globalAlpha = 1;
       textC('TAP TO START', 320, 172, C.hud, this.screen.size.portrait ? 1 : 2, C.ink); // a phone shows only ~130 of the 640 columns
@@ -193,36 +216,61 @@ export class DoorScene implements Scene {
     g.putImageData(im, x0 + ox, y0);
   }
 
+  /** The Windows XP wallpaper as a backdrop: a blue sky, white clouds and one big green hill rolling down to the road. */
+  private bliss(X0: number, X1: number) {
+    const sky = ['#2a68cc', '#4a86dc', '#74a8ec', '#9cc6f4', '#b8d8f8'];
+    for (let y = 0; y < 200; y++) for (let x = X0; x < X1; x++) {
+      const t = (y / 200) * (sky.length - 1), i = Math.min(sky.length - 2, Math.floor(t));
+      rect(x, y, 1, 1, t - i > bayer(x, y) ? sky[i + 1] : sky[i]);
+    }
+    for (const [cx, cy, cw] of [[-30, 34, 70], [90, 76, 90], [300, 30, 80], [470, 60, 100], [590, 96, 60], [200, 110, 60]]) { // chunky pixel clouds
+      rect(cx - cw / 2, cy + 4, cw, 6, '#ffffff'); rect(cx - cw / 2 + 4, cy + 10, cw - 8, 3, '#e8f0fb');
+      rect(cx - cw / 2 + 8, cy, cw - 16, 4, '#ffffff'); rect(cx - cw / 2 + 4, cy - 3, cw / 2, 3, '#ffffff');
+    }
+    const grass = ['#b4e05c', '#8cc63f', '#5fa32c', '#3f8a20'];
+    for (let x = X0; x < X1; x++) {
+      const top = 112 + Math.round(((x - X0) / (X1 - X0)) * 34 + Math.sin((x - X0) / 120) * 8);
+      for (let y = top; y < 248; y++) {
+        const t = Math.min(1, (y - top) / (248 - top) * 1.2) * (grass.length - 1), i = Math.min(grass.length - 2, Math.floor(t));
+        rect(x, y, 1, 1, t - i > bayer(x, y) ? grass[i + 1] : grass[i]);
+      }
+    }
+  }
+
   private facade() {
     const g0 = ctx(); g0.save(); g0.translate(OX, 0); // garage coordinates again; the sides run from -OX to 480 + OX
     const X0 = -OX, X1 = 480 + OX;
-    // whole backdrop first, so nothing ever shows through (the bike would leave trails)
-    // same dusk the ride ends in
-    const sky = ['#58739b', '#7888a8', '#a495ab', '#d6a58c', '#eca676', '#f2985e'];
-    for (let y = 0; y < 200; y++) for (let x = X0; x < X1; x++) {
-      const t = (y / 190) * (sky.length - 1), i = Math.min(sky.length - 2, Math.floor(t));
-      rect(x, y, 1, 1, t - i > bayer(x, y) ? sky[i + 1] : sky[i]);
+    if (this.theme === 'xp') this.bliss(X0, X1);
+    else {
+      // whole backdrop first, so nothing ever shows through (the bike would leave trails)
+      // same dusk the ride ends in
+      const sky = ['#58739b', '#7888a8', '#a495ab', '#d6a58c', '#eca676', '#f2985e'];
+      for (let y = 0; y < 200; y++) for (let x = X0; x < X1; x++) {
+        const t = (y / 190) * (sky.length - 1), i = Math.min(sky.length - 2, Math.floor(t));
+        rect(x, y, 1, 1, t - i > bayer(x, y) ? sky[i + 1] : sky[i]);
+      }
+      disc(400, 176, 18, '#f6b27a'); disc(400, 176, 12, '#ffd49a');
+      glow(ctx(), 400, 176, 90, 60, '255,170,110', 0.32);
+      // the Himalaya: a real photo, regraded to this dusk and reduced to a pixel palette (tools/backdrop.py)
+      blit(this.mountains, X0, 0);
+      // haze: the mountains melt into the dusk light where they meet the valley
+      for (let y = 120; y < 200; y++) for (let x = X0; x < X1; x++) if (Math.pow((y - 120) / 80, 2.2) * 0.65 > bayer(x, y)) rect(x, y, 1, 1, '#eca676');
+      // foothills either side of the garage, in the same indigo as the shadowed faces
+      const hill = (x: number, cx: number, w: number, h: number) => Math.max(0, h * (1 - Math.abs(x - cx) / w));
+      for (let x = X0; x < X1; x++) {
+        const h = Math.round(Math.max(hill(x, -30, 100, 20), hill(x, 545, 90, 18), hill(x, 20, 90, 22), hill(x, 130, 70, 12), hill(x, 440, 80, 20), hill(x, 340, 60, 10)));
+        if (h > 0) { rect(x, 200 - h, 1, h + 1, '#4b415f'); if (h > 3) rect(x, 200 - h, 1, 2, '#6a5876'); }
+      }
+      // valley floor: warm dusk ochre, darker toward the road, with scree
+      const soil = ['#a58a6f', '#977c64', '#87705b', '#75604f'];
+      for (let y = 200; y < 248; y++) for (let x = X0; x < X1; x++) {
+        const t = ((y - 200) / 48) * (soil.length - 1), i = Math.min(soil.length - 2, Math.floor(t));
+        rect(x, y, 1, 1, t - i > bayer(x, y) ? soil[i + 1] : soil[i]);
+      }
+      for (let x = X0; x < X1; x += 3) if (bayer(x, 210) > 0.5) rect(x, 202 + (((x % 7) + 7) % 7) * 5, 2, 1, '#6a5747');
+      for (let x = X0 + 1; x < X1; x += 5) if (bayer(x, 77) > 0.6) rect(x, 206 + ((((x * 7) % 34) + 34) % 34), 1, 1, '#b79c80');
+
     }
-    disc(400, 176, 18, '#f6b27a'); disc(400, 176, 12, '#ffd49a');
-    glow(ctx(), 400, 176, 90, 60, '255,170,110', 0.32);
-    // the Himalaya: a real photo, regraded to this dusk and reduced to a pixel palette (tools/backdrop.py)
-    blit(this.mountains, X0, 0);
-    // haze: the mountains melt into the dusk light where they meet the valley
-    for (let y = 120; y < 200; y++) for (let x = X0; x < X1; x++) if (Math.pow((y - 120) / 80, 2.2) * 0.65 > bayer(x, y)) rect(x, y, 1, 1, '#eca676');
-    // foothills either side of the garage, in the same indigo as the shadowed faces
-    const hill = (x: number, cx: number, w: number, h: number) => Math.max(0, h * (1 - Math.abs(x - cx) / w));
-    for (let x = X0; x < X1; x++) {
-      const h = Math.round(Math.max(hill(x, -30, 100, 20), hill(x, 545, 90, 18), hill(x, 20, 90, 22), hill(x, 130, 70, 12), hill(x, 440, 80, 20), hill(x, 340, 60, 10)));
-      if (h > 0) { rect(x, 200 - h, 1, h + 1, '#4b415f'); if (h > 3) rect(x, 200 - h, 1, 2, '#6a5876'); }
-    }
-    // valley floor: warm dusk ochre, darker toward the road, with scree
-    const soil = ['#a58a6f', '#977c64', '#87705b', '#75604f'];
-    for (let y = 200; y < 248; y++) for (let x = X0; x < X1; x++) {
-      const t = ((y - 200) / 48) * (soil.length - 1), i = Math.min(soil.length - 2, Math.floor(t));
-      rect(x, y, 1, 1, t - i > bayer(x, y) ? soil[i + 1] : soil[i]);
-    }
-    for (let x = X0; x < X1; x += 3) if (bayer(x, 210) > 0.5) rect(x, 202 + (((x % 7) + 7) % 7) * 5, 2, 1, '#6a5747');
-    for (let x = X0 + 1; x < X1; x += 5) if (bayer(x, 77) > 0.6) rect(x, 206 + ((((x * 7) % 34) + 34) % 34), 1, 1, '#b79c80');
     // sparse poplar left; pole and wires on the right
     rect(32, 118, 4, 132, '#5a4530');
     disc(34, 102, 7, '#9aa858'); disc(34, 92, 5, '#7a8840');
@@ -252,7 +300,7 @@ export class DoorScene implements Scene {
     rect(90, 200, 300, 48, '#c9b99c');
     rect(90, 42, 300, 3, '#a8917c'); rect(90, 45, 300, 1, '#bba58f'); // shadow under the roof lip
     rect(90, 238, 300, 10, '#a3927f'); rect(90, 238, 300, 1, '#8c7b69'); // plinth
-    this.duskLight(90, 42, 300, 206);
+    if (this.theme === 'himalaya') this.duskLight(90, 42, 300, 206);
     rect(90, 42, 2, 206, '#5d5470'); rect(388, 42, 2, 206, '#f3c48e'); // dark left edge, sun-catching right edge
     ellipse(240, 250, 160, 3, '#3a3040'); // the garage's shadow on the driveway
     // sign and lamp

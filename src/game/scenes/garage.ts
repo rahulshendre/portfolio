@@ -11,12 +11,15 @@ import { blit, paint, type Sprite } from '../engine/sprites';
 import { BAR, CONTROLS, HOTSPOTS, type Control, type Hotspot } from '../hotspots';
 import { site } from '../../data/site';
 import { idleMessage } from '../hints';
-import { countFound } from '../state';
+import { countFound, type Theme, type Weather } from '../state';
+import { windowFall, windowSky } from './weather';
 import github from '../../data/github.json';
 
 const WALL = '#cbbd9f', MORTAR = '#bcad8f', LOWER = '#7f8a7a', FLOOR = '#958d80', FLOOR_DARK = '#857d71';
 const NAVY = '#293878', CYAN = '#29bdeb';
 const TUBES = [140, 340];
+const BENCH_DY = 0; // how far the workbench group is shifted up from its original spot
+const WIN = { x: 152, y: 92, w: 34, h: 40 }; // the window between the radio and the posters
 export const BIKE = { scale: 1.4, cx: 214, floor: 250 };
 
 /** One drifting music note: a head and a stem, fading out as it rises. */
@@ -27,7 +30,7 @@ function drawNote(x: number, y: number, a: number) {
   g.globalAlpha = 1;
 }
 
-export interface GarageImages { bike: HTMLImageElement; pipecd: HTMLImageElement; icons: Icons }
+export interface GarageImages { bike: HTMLImageElement; pipecd: HTMLImageElement; planetread: HTMLImageElement; icons: Icons }
 
 export class GarageScene implements Scene {
   mode = 'world' as const;
@@ -58,13 +61,16 @@ export class GarageScene implements Scene {
   // dust drifting through the tube-light beams: fixed seeds, so it looks the same every visit
   private motes = Array.from({ length: 28 }, (_, i) => ({ x: TUBES[i % 2] + ((i * 37) % 70) - 35, y: 24 + ((i * 53) % 166), k: i }));
 
-  constructor(private screen: Screen, private img: GarageImages) {}
+  constructor(private screen: Screen, private img: GarageImages, private weather: Weather = 'clear', private theme: Theme = 'himalaya') {}
 
   enter() {
     this.bg = this.roomSprite();
     this.t = 0;
     this.nightT = this.night ? 1 : 0;
   }
+
+  /** Change what is outside the window (repaints the room, since the sky is part of the still picture). */
+  setWeather(w: Weather) { this.weather = w; this.bg = this.roomSprite(); }
 
   pet() { this.petT = this.t; }
   /** Everything found: the bar says so for a few seconds. */
@@ -140,7 +146,6 @@ export class GarageScene implements Scene {
     this.whiteboard();
     this.shelf();
     this.toolbox();
-    this.editBay();
     this.tyres();
     this.radioBox();
 
@@ -155,6 +160,7 @@ export class GarageScene implements Scene {
     }
 
     this.light();
+    this.window();
     // things that glow are painted after the light so the lighting never dims them
     for (const x of TUBES) { rect(x - 30, 13, 60, 3, '#fff8e0'); rect(x - 30, 16, 60, 1, '#e8dcb8'); }
     for (const x of [200, 280]) { rect(x - 4, 18, 8, 4, '#2a2a2e'); rect(x - 2, 22, 4, 1, '#fff4c2'); }
@@ -177,6 +183,16 @@ export class GarageScene implements Scene {
         d[o] = Math.min(255, d[o] * m * 1.03); d[o + 1] = Math.min(255, d[o + 1] * m); d[o + 2] = Math.min(255, d[o + 2] * m * 0.95);
       }
     g.putImageData(im, 0, 0);
+  }
+
+  /** A window onto the same weather the visitor rode in through. Painted after the lighting so the sky stays bright. */
+  private window() {
+    const { x, y, w, h } = WIN, g = ctx(), snow = this.weather === 'snow';
+    rect(x - 3, y - 3, w + 6, h + 6, '#3e3127'); rect(x - 3, y - 3, w + 6, 1, '#5a4636');
+    windowSky(g, x, y, w, h, this.weather, this.theme);
+    rect(x + w / 2 - 1, y, 2, h, '#3e3127'); rect(x, y + Math.round(h * 0.45), w, 2, '#3e3127');
+    rect(x - 5, y + h + 3, w + 10, 3, '#6b5a45'); rect(x - 5, y + h + 3, w + 10, 1, '#8a7860');
+    if (snow) { rect(x - 3, y - 5, w + 6, 2, '#eef2fa'); rect(x - 5, y + h + 1, w + 10, 2, '#eef2fa'); }
   }
 
   private neon(s: string, cx: number, y: number) {
@@ -202,43 +218,40 @@ export class GarageScene implements Scene {
     plate(96, 58, '#24292f', '#111418', tint(I.github, '#f4f2ea'), 'GITHUB', '#f4f2ea');
   }
 
-  /** Two posters side by side: PipeCD (open source) and PlanetRead (subtitles). */
+  /** The PipeCD poster on the left; on the right two plaques for the real PlanetRead and BookBox logos (main.ts lays the crisp images over them). */
   private pipecdSign() {
-    const frame = (x: number) => {
-      rect(x + 3, 36, 50, 82, '#00000033');
-      rect(x, 33, 50, 82, '#2a2a2e'); rect(x + 2, 35, 46, 78, '#f4f2ea');
-      for (const [dx, dy] of [[4, 38], [42, 38], [4, 106], [42, 106]]) rect(x + dx, dy, 2, 2, '#9a958b');
+    const frame = (x: number, y: number, w: number, h: number) => {
+      rect(x + 3, y + 3, w, h, '#00000033');
+      rect(x, y, w, h, C.wood); rect(x, y, w, 1, '#c9a577'); rect(x + 2, y + 2, w - 4, h - 4, '#f4f2ea');
     };
-    frame(192);
-    const k = 0.6, pw = Math.round(this.img.pipecd.width * k), ph = Math.round(this.img.pipecd.height * k);
-    blit(this.img.pipecd, 192 + Math.round((50 - pw) / 2), 44, pw, ph);
-    // PlanetRead: a screen with a subtitle bar under a small planet, the name, and the SLS badge
-    frame(246);
-    rect(251, 41, 40, 26, '#1f3146'); rect(251, 41, 40, 1, '#33506e');
-    disc(271, 52, 6, '#4aa3c7'); disc(269, 50, 2, '#7fd0e8'); line(260, 56, 282, 49, '#e8b83a'); line(260, 57, 282, 50, '#e8b83a');
-    rect(256, 61, 30, 3, '#f4f2ea'); rect(259, 61, 9, 1, '#1f3146');
-    text('PLANET', 253, 72, '#2c5aa0'); text('READ', 253, 82, '#e8623a');
-    rect(251, 95, 40, 14, '#2f8f4e'); textC('SLS', 271, 99, '#f4f2ea');
+    frame(192, 38, 44, 72);
+    for (const [dx, dy] of [[4, 43], [36, 43], [4, 101], [36, 101]]) rect(192 + dx - 2, dy - 3, 2, 2, '#9a958b');
+    const k = 0.53, pw = Math.round(this.img.pipecd.width * k), ph = Math.round(this.img.pipecd.height * k);
+    blit(this.img.pipecd, 192 + Math.round((44 - pw) / 2), 48, pw, ph);
+    frame(244, 33, 54, 42);
+    frame(244, 79, 54, 36);
   }
 
   private workbench() {
+    const d = BENCH_DY;
     // CRT TV
-    line(40, 112, 30, 96, '#555'); line(60, 112, 70, 94, '#555');
-    rect(20, 112, 62, 48, '#cfc8b8'); rect(20, 112, 62, 2, '#e0dbcf'); rect(26, 117, 42, 34, '#2a2a2e');
-    for (let y = 140; y < 150; y += 2) rect(71, y, 7, 1, '#9e978a');
-    disc(74, 122, 2, '#6b6760'); disc(74, 131, 2, '#6b6760');
+    line(40, 112 + d, 33, 102 + d, '#555'); line(60, 112 + d, 67, 101 + d, '#555');
+    rect(20, 112 + d, 62, 48, '#cfc8b8'); rect(20, 112 + d, 62, 2, '#e0dbcf'); rect(26, 117 + d, 42, 34, '#2a2a2e');
+    for (let y = 140; y < 150; y += 2) rect(71, y + d, 7, 1, '#9e978a');
+    disc(74, 122 + d, 2, '#6b6760'); disc(74, 131 + d, 2, '#6b6760');
     // binders: the nine tutorial chapters, in PipeCD colours
     for (let k = 0; k < 9; k++) {
       const x = 92 + k * 6, h = 26 + (k % 3), col = k % 2 ? CYAN : NAVY;
-      rect(x, 160 - h, 5, h, col); rect(x + 1, 160 - h + 5, 3, 4, '#f4f2ea'); rect(x, 160 - h, 1, h, '#1b2550');
+      rect(x, 160 + d - h, 5, h, col); rect(x + 1, 160 + d - h + 5, 3, 4, '#f4f2ea'); rect(x, 160 + d - h, 1, h, '#1b2550');
     }
-    rect(146, 150, 5, 10, '#e9e3d1');
+    rect(146, 150 + d, 5, 10, '#e9e3d1');
     // coffee mug
-    rect(156, 150, 8, 10, '#e8e2d1'); rect(164, 152, 2, 5, '#e8e2d1'); rect(157, 151, 6, 2, '#5a3d2b');
-    // bench and its shadow
+    rect(156, 150 + d, 8, 10, '#e8e2d1'); rect(164, 152 + d, 2, 5, '#e8e2d1'); rect(157, 151 + d, 6, 2, '#5a3d2b');
+    // bench: top at about 0.9m, a lower shelf, and its shadow
     rect(8, 198, 172, 5, '#6f685c');
-    rect(8, 160, 172, 6, C.wood); rect(8, 166, 172, 2, C.woodDark);
-    rect(14, 168, 6, 30, C.woodDark); rect(168, 168, 6, 30, C.woodDark); rect(14, 186, 160, 3, C.wood);
+    rect(8, 160 + d, 172, 6, C.wood); rect(8, 166 + d, 172, 2, C.woodDark);
+    rect(14, 168 + d, 6, 30 - d, C.woodDark); rect(168, 168 + d, 6, 30 - d, C.woodDark);
+    rect(14, 186, 160, 3, C.wood);
     rect(24, 176, 26, 10, '#6b7075'); rect(54, 178, 18, 8, '#b8915f'); rect(80, 180, 12, 6, C.red);
   }
 
@@ -314,28 +327,14 @@ export class GarageScene implements Scene {
     poly([[372, 169], [374, 173], [378, 173], [375, 176], [376, 180], [372, 178], [368, 180], [369, 176], [366, 173], [370, 173]], C.accent);
   }
 
-  /** A small video edit bay on a crate: a monitor showing a Premiere-style timeline. The playhead moves in animate(). */
-  private editBay() {
-    ellipse(434, 251, 38, 3, '#5f584d');
-    rect(398, 236, 72, 14, '#b8915f'); rect(398, 236, 72, 2, '#cda875'); rect(398, 248, 72, 2, '#8f6e45');
-    for (const x of [414, 438, 458]) rect(x, 238, 1, 10, '#8f6e45');
-    rect(408, 240, 24, 6, '#f4f2ea'); text('BIRD', 411, 241, '#2c5aa0');
-    rect(424, 233, 20, 3, '#3a3d44'); rect(430, 229, 8, 4, '#3a3d44');
-    rect(402, 202, 64, 28, '#2a2a2e'); rect(402, 202, 64, 1, '#4a4d55'); rect(404, 204, 60, 24, '#12151b');
-    rect(406, 206, 27, 13, '#1f3146'); text('SLS', 410, 208, '#f4f2ea'); rect(409, 215, 21, 2, '#f4f2ea'); // preview with a subtitle bar
-    rect(435, 206, 27, 13, '#23262e'); for (const y of [208, 211, 214, 217]) rect(437, y, 12 + (y % 3) * 3, 1, '#5a5f6b');
-    rect(406, 221, 56, 2, '#3d6fb5'); rect(406, 224, 56, 2, '#2f8f4e'); // video and audio tracks
-    for (const [x, w] of [[407, 14], [424, 10], [437, 20]]) rect(x, 227, w, 2, '#e8b83a'); // subtitle clips
-    rect(463, 229, 1, 1, C.red);
-  }
-
   private radioBox() {
-    rect(92, 128, 52, 3, C.wood); rect(92, 131, 52, 1, C.woodDark);
-    rect(96, 110, 44, 18, '#2a2a2e'); rect(97, 111, 42, 16, '#4a4d55'); rect(97, 111, 42, 1, '#6b6f79');
-    for (const cx of [106, 130]) { disc(cx, 119, 6, C.ink); disc(cx, 119, 4, '#33363d'); disc(cx, 119, 1, '#1b1712'); }
-    rect(113, 113, 10, 5, C.ink); rect(114, 116, 8, 1, '#4a4d55');
-    disc(118, 123, 1, '#7a2f24'); disc(121, 123, 1, '#5a5d66');
-    rect(104, 107, 32, 3, '#2a2a2e'); line(136, 110, 143, 98, C.steel); // handle and aerial
+    const d = BENCH_DY;
+    rect(92, 128 + d, 52, 3, C.wood); rect(92, 131 + d, 52, 1, C.woodDark);
+    rect(96, 110 + d, 44, 18, '#2a2a2e'); rect(97, 111 + d, 42, 16, '#4a4d55'); rect(97, 111 + d, 42, 1, '#6b6f79');
+    for (const cx of [106, 130]) { disc(cx, 119 + d, 6, C.ink); disc(cx, 119 + d, 4, '#33363d'); disc(cx, 119 + d, 1, '#1b1712'); }
+    rect(113, 113 + d, 10, 5, C.ink); rect(114, 116 + d, 8, 1, '#4a4d55');
+    disc(118, 123 + d, 1, '#7a2f24'); disc(121, 123 + d, 1, '#5a5d66');
+    rect(104, 107 + d, 32, 3, '#2a2a2e'); line(136, 110 + d, 143, 98 + d, C.steel); // handle and aerial
   }
 
   private tyres() {
@@ -352,23 +351,21 @@ export class GarageScene implements Scene {
   private animate() {
     const t = this.t;
     // TV: glowing static with SOON flashing through
-    for (let y = 119; y < 149; y++) for (let x = 28; x < 66; x++) {
+    for (let y = 119 + BENCH_DY; y < 149 + BENCH_DY; y++) for (let x = 28; x < 66; x++) {
       const n = (Math.sin(x * 12.99 + y * 78.23 + Math.floor(t * 12) * 3.7) * 43758.5) % 1;
       rect(x, y, 1, 1, Math.abs(n) > 0.55 ? '#7f8a82' : '#34403a');
     }
-    rect(31, 127, 32, 12, '#1d2a22'); text('> HI', 34, 130, '#b8f0c0');
-    if (Math.floor(t * 2) % 2 === 0) rect(56, 130, 4, 7, '#b8f0c0'); // blinking cursor
+    rect(31, 127 + BENCH_DY, 32, 12, '#1d2a22'); text('> HI', 34, 130 + BENCH_DY, '#b8f0c0');
+    if (Math.floor(t * 2) % 2 === 0) rect(56, 130 + BENCH_DY, 4, 7, '#b8f0c0'); // blinking cursor
     // the neon stutters in a short burst every so often (about one 7 s slot in three), never with reduced motion
     const slot = Math.floor(t / 7), into = t - slot * 7, roll = Math.abs(Math.sin(slot * 12.9898) * 43758.5453) % 1;
     if (!this.reduced && roll > 0.7 && into < 0.35 && Math.floor(into * 20) % 2 === 0) rect(180, 4, 120, 9, '#3e3127');
     // coffee steam
     for (let k = 0; k < 3; k++) {
       const p = (t * 0.7 + k / 3) % 1;
-      rect(159 + Math.round(Math.sin((p + k) * 6) * 2), 148 - p * 14, 1, 2, '#f4f2ea');
+      rect(159 + Math.round(Math.sin((p + k) * 6) * 2), 148 + BENCH_DY - p * 14, 1, 2, '#f4f2ea');
     }
-    // edit bay: the playhead sweeps the timeline
-    const ph = 406 + Math.floor((t * 7) % 56);
-    rect(ph, 218, 1, 12, C.red); rect(ph - 1, 218, 3, 1, C.red);
+    windowFall(ctx(), WIN.x, WIN.y, WIN.w, WIN.h, this.weather, t);
     this.cat(t);
     this.radioLive(t);
     this.cord();
@@ -401,13 +398,13 @@ export class GarageScene implements Scene {
   }
 
   private radioLive(t: number) {
-    rect(118 - 1, 122, 3, 2, this.radioOn ? '#5fdc7a' : '#7a2f24');
+    rect(118 - 1, 122 + BENCH_DY, 3, 2, this.radioOn ? '#5fdc7a' : '#7a2f24');
     if (!this.radioOn) return;
-    const beat = Math.floor(t * 2.27) % 2 === 0; // about 68 bpm
-    for (const cx of [106, 130]) { disc(cx, 119, beat ? 5 : 4, '#3a3d45'); disc(cx, 119, 1, C.ink); }
-    rect(114, 114, 3 + Math.floor((Math.sin(t * 9) + 1) * 3), 2, '#b8f0c0');
+    const d = BENCH_DY, beat = Math.floor(t * 2.27) % 2 === 0; // about 68 bpm
+    for (const cx of [106, 130]) { disc(cx, 119 + d, beat ? 5 : 4, '#3a3d45'); disc(cx, 119 + d, 1, C.ink); }
+    rect(114, 114 + d, 3 + Math.floor((Math.sin(t * 9) + 1) * 3), 2, '#b8f0c0');
     for (let k = 0; k < 2; k++) { // notes drifting up
-      const p = (t * 0.5 + k / 2) % 1, x = 114 + k * 12 + Math.round(Math.sin(p * 8 + k) * 3), y = 104 - p * 26;
+      const p = (t * 0.5 + k / 2) % 1, x = 114 + k * 12 + Math.round(Math.sin(p * 8 + k) * 3), y = 104 + d - p * 26;
       drawNote(x, y, 1 - p);
     }
   }
@@ -488,7 +485,6 @@ export class GarageScene implements Scene {
       { x: 51, y: 134, r: 56, c: [120, 255, 170] },   // CRT
       { x: 118, y: 119, r: 36, c: [255, 196, 110] },  // radio
       { x: 214, y: 205, r: 92, c: [255, 226, 170] },  // work lamp over the bike
-      { x: 434, y: 216, r: 42, c: [140, 190, 255] },  // edit bay monitor
     ];
     const mk = () => { const c = document.createElement('canvas'); c.width = 480; c.height = 270; return c; };
     const dark = mk(), glow = mk();

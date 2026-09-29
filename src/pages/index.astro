@@ -50,6 +50,8 @@ import { site, nav } from '../data/site';
     .hotspots { position: absolute; inset: 0; pointer-events: none; }
     .hotspots a:hover, .hotspots a:focus { background: none; } /* the canvas draws the highlight; the site-wide link tint would cover the art */
     .hotspots a { position: absolute; pointer-events: auto; display: block; cursor: pointer; border-radius: 2px; }
+    .hotspots a img { position: absolute; inset: 6% 5%; width: 90%; height: 88%; object-fit: contain; image-rendering: pixelated; pointer-events: none; transition: filter 0.3s; }
+    .hotspots[data-night] a img { filter: brightness(0.45); }
     .hotspots a:focus-visible { outline: 3px solid #e8b923; outline-offset: 2px; }
     .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
     .skip-plain { position: fixed; left: 8px; top: 8px; z-index: 10; transform: translateY(-200%); background: #e8b923; color: #1b1712; padding: 8px 12px; font: 600 14px/1 system-ui; }

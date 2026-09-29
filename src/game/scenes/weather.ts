@@ -1,6 +1,6 @@
 // Weather for the door scene: clear dusk, rain with a lightning flash, snow, or fog. Drawn over the finished frame
 // (a colour grade first, then falling things), so the same painted scene serves every weather.
-import type { Weather } from '../state';
+import type { Theme, Weather } from '../state';
 
 const W = 640, H = 270, OX = 80;
 export const FLASH_AT = 1.6, THUNDER_AT = 2.3; // seconds into the scene
@@ -86,6 +86,72 @@ export function fall(g: CanvasRenderingContext2D, w: Weather, t: number) {
       const x = ((hash(i, 1) * (W + 320) + t * (5 + i * 1.5)) % (W + 320)) - 160, y = 130 + hash(i, 2) * 120;
       const gr = g.createRadialGradient(0, 0, 0, 0, 0, 1); gr.addColorStop(0, 'rgba(226,231,240,0.42)'); gr.addColorStop(1, 'rgba(226,231,240,0)');
       g.save(); g.translate(x, y); g.scale(150 + hash(i, 3) * 60, 22 + hash(i, 4) * 12); g.fillStyle = gr; g.fillRect(-1, -1, 2, 2); g.restore();
+    }
+  }
+  g.restore();
+}
+
+// ---- the garage window: the same weather, seen from inside
+// Each theme's view, with the weather's tint laid over it.
+const TINT: Record<Weather, string> = { clear: '', rain: 'rgba(38,50,72,0.52)', snow: 'rgba(222,232,246,0.42)', fog: 'rgba(214,220,230,0.66)' };
+
+const mix = (a: string, b: string, t: number) => {
+  const p = (c: string, i: number) => parseInt(c.slice(1 + i * 2, 3 + i * 2), 16);
+  return `rgb(${[0, 1, 2].map((i) => Math.round(p(a, i) + (p(b, i) - p(a, i)) * t)).join(',')})`;
+};
+
+/** The still part of the view: the theme's picture, then the weather's tint, and snow lying along the bottom. */
+export function windowSky(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, wt: Weather, theme: Theme = 'himalaya') {
+  if (theme === 'xp') { // the old Windows XP wallpaper: blue sky, white clouds, one green hill
+    const skyH = Math.round(h * 0.75);
+    for (let r = 0; r < skyH; r++) { g.fillStyle = mix('#2a68cc', '#a4cdf4', r / (skyH - 1)); g.fillRect(x, y + r, w, 1); }
+    g.fillStyle = '#ffffff';
+    for (const [cx, cy, cw] of [[0.28, 0.16, 14], [0.7, 0.3, 18], [0.5, 0.44, 12]]) {
+      const px = x + Math.round(w * cx), py = y + Math.round(h * cy);
+      g.fillRect(px - cw / 2 + 3, py, cw - 6, 2); g.fillRect(px - cw / 2, py + 2, cw, 3); g.fillRect(px - cw / 2 + 2, py + 5, cw - 4, 1);
+    }
+    for (let c = 0; c < w; c++) {
+      const top = y + Math.round(h * 0.5 + (c / w) * h * 0.12 + Math.sin((c / w) * 3.4) * 3), bottom = y + h;
+      for (let yy = top; yy < bottom; yy++) { g.fillStyle = mix('#a6d94a', '#3d8420', Math.min(1, (yy - top) / (bottom - top) * 1.3)); g.fillRect(x + c, yy, 1, 1); }
+    }
+  } else { // the Himalaya at dusk, like the arrival: a warm sky, snow peaks and a dark valley
+    const skyH = Math.round(h * 0.8);
+    for (let r = 0; r < skyH; r++) { g.fillStyle = mix('#58739b', '#f2985e', r / (skyH - 1)); g.fillRect(x, y + r, w, 1); }
+    g.fillStyle = '#ffd49a'; g.fillRect(x + w - 11, y + h - 22, 6, 6);
+    for (let c = 0; c < w; c++) {
+      const peak = Math.abs(((c + 6) % 22) - 11) / 11, top = y + Math.round(h * 0.42 + peak * h * 0.2 + hash(Math.floor(c / 4), 4) * 3);
+      g.fillStyle = '#4b415f'; g.fillRect(x + c, top, 1, y + h - top);
+      g.fillStyle = '#e8e2ee'; g.fillRect(x + c, top, 1, peak < 0.35 ? 3 : 1);
+    }
+    g.fillStyle = '#75604f'; g.fillRect(x, y + h - 5, w, 5);
+  }
+  if (TINT[wt]) { g.fillStyle = TINT[wt]; g.fillRect(x, y, w, h); }
+  if (wt === 'snow') { g.fillStyle = '#eef2fa'; g.fillRect(x, y + h - 5, w, 5); }
+}
+
+/** The moving part of the view, clipped to the glass: rain and a flash, snow, or drifting mist. */
+export function windowFall(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, wt: Weather, t: number) {
+  if (wt === 'clear') return;
+  g.save(); g.beginPath(); g.rect(x, y, w, h); g.clip();
+  if (wt === 'rain') {
+    g.fillStyle = 'rgba(214,226,246,0.6)';
+    for (let i = 0; i < 16; i++) {
+      const yy = (hash(i, 1) * h + t * (80 + hash(i, 2) * 40)) % (h + 8) - 4, xx = (hash(i, 3) * (w + 12) - yy * 0.2 + w + 12) % (w + 12);
+      g.fillRect(x + Math.round(xx), y + Math.round(yy), 1, 3);
+    }
+    const f = Math.max(0, 1 - Math.abs((t % 9) - 4) / 0.08);
+    if (f > 0) { g.fillStyle = `rgba(232,238,255,${(f * 0.6).toFixed(2)})`; g.fillRect(x, y, w, h); }
+  } else if (wt === 'snow') {
+    for (let i = 0; i < 26; i++) {
+      const yy = (hash(i, 1) * h + t * (10 + hash(i, 2) * 12)) % (h + 4) - 2, xx = hash(i, 3) * w + Math.sin(t * 0.9 + i) * 3;
+      g.fillStyle = i % 4 === 0 ? 'rgba(255,255,255,0.9)' : 'rgba(240,246,255,0.65)';
+      g.fillRect(x + Math.round((xx + w) % w), y + Math.round(yy), i % 4 === 0 ? 2 : 1, i % 4 === 0 ? 2 : 1);
+    }
+  } else {
+    for (let i = 0; i < 3; i++) {
+      const bx = ((hash(i, 1) * (w + 60) + t * (2 + i)) % (w + 60)) - 30, by = y + h * 0.4 + hash(i, 2) * h * 0.5;
+      const gr = g.createRadialGradient(0, 0, 0, 0, 0, 1); gr.addColorStop(0, 'rgba(226,231,240,0.55)'); gr.addColorStop(1, 'rgba(226,231,240,0)');
+      g.save(); g.translate(x + bx, by); g.scale(24, 7); g.fillStyle = gr; g.fillRect(-1, -1, 2, 2); g.restore();
     }
   }
   g.restore();

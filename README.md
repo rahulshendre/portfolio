@@ -8,7 +8,7 @@ More screenshots in `docs/screenshots/` (door, night with the bike lit, the TV t
 
 ## In the garage
 
-- Two posters on the back wall: PipeCD (open source) and PlanetRead (subtitles and apps, `/planetread`). The edit bay by the shelf shows the Premiere Pro plugins.
+- Two posters on the back wall: PipeCD (open source) and PlanetRead (subtitles and apps, `/planetread`).
 - Point at anything: it glows. Click: sections open in a panel over the garage (Esc or Back closes it, "Full page" opens the plain page). Outside links open in a new tab.
 - The CRT TV is a terminal (`help`, `about`, `pipecd`, `open builds`, `night`, `radio`, `ride`). `/` or `` ` `` opens it from anywhere.
 - Pull the cord for lights on or off. It follows the visitor's clock (dark from 7pm to 6am) until they choose, and remembers the choice.

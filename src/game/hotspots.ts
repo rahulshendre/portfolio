@@ -15,7 +15,7 @@ export interface Hotspot {
 
 /** Things you operate rather than open. Buttons, not links. */
 export interface Control {
-  id: 'cord' | 'radio' | 'cat';
+  id: 'cord' | 'radio' | 'cat' | 'window';
   label: string;
   tag: string;
   rect: [number, number, number, number];
@@ -24,9 +24,9 @@ export interface Control {
 const yt = site.links.youtube;
 
 export const HOTSPOTS: Hotspot[] = [
-  { id: 'pipecd', label: 'PIPECD POSTER · OPEN SOURCE', tag: 'PIPECD', href: '/open-source', rect: [192, 33, 50, 82] },
-  { id: 'planetread', label: 'PLANETREAD POSTER · SUBTITLES AND APPS', tag: 'PLANETREAD', href: '/planetread', rect: [246, 33, 50, 82] },
-  { id: 'editbay', label: 'EDIT BAY · THE PREMIERE PLUGINS', tag: 'PLUGINS', href: '/planetread#plugins', rect: [398, 202, 72, 48] },
+  { id: 'pipecd', label: 'PIPECD POSTER · OPEN SOURCE', tag: 'PIPECD', href: '/open-source', rect: [192, 38, 44, 72] },
+  { id: 'planetread', label: 'PLANETREAD POSTER · SUBTITLES AND APPS', tag: 'PLANETREAD', href: '/planetread', rect: [244, 33, 54, 42] },
+  { id: 'bookbox', label: 'BOOKBOX · THE REACT NATIVE APP', tag: 'BOOKBOX', href: '/planetread#bookbox', rect: [244, 79, 54, 36] },
   { id: 'bike', label: 'THE SCRAMBLER 400X', tag: 'THE BIKE', href: '/garage', rect: [108, 146, 214, 106] },
   // enamel signs: the socials
   { id: 'youtube', label: yt ? 'YOUTUBE · MY CHANNEL' : 'YOUTUBE · VIDEOS FROM OCT', tag: 'YOUTUBE', href: yt || '/videos', rect: [12, 24, 78, 28], external: !!yt },
@@ -47,6 +47,7 @@ export const HOTSPOTS: Hotspot[] = [
 export const CONTROLS: Control[] = [
   { id: 'cord', label: 'PULL CORD · LIGHTS', tag: 'LIGHTS', rect: [169, 28, 16, 26] },
   { id: 'radio', label: 'RADIO · LO-FI ON OR OFF', tag: 'RADIO', rect: [96, 108, 44, 22] },
+  { id: 'window', label: 'WINDOW · CHANGE THE WEATHER', tag: 'WEATHER', rect: [149, 87, 40, 54] },
   { id: 'cat', label: 'THE CAT · PET HER', tag: 'CAT', rect: [6, 196, 38, 20] },
 ];
 

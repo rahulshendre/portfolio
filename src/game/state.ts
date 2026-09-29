@@ -11,6 +11,14 @@ export function pickWeather(search: string, rand: () => number = Math.random): W
   return r < 0.4 ? 'clear' : r < 0.6 ? 'rain' : r < 0.8 ? 'snow' : 'fog';
 }
 
+// The arrival's look: the Himalaya by default, or the old Windows XP wallpaper. Pick one with ?theme=xp|himalaya.
+export type Theme = 'himalaya' | 'xp';
+export const THEMES: Theme[] = ['himalaya', 'xp'];
+export const pickTheme = (search: string): Theme => {
+  const t = new URLSearchParams(search).get('theme');
+  return t && (THEMES as string[]).includes(t) ? (t as Theme) : 'himalaya';
+};
+
 const KEY = 'rs:seen-door';
 const NIGHT = 'rs:night';
 

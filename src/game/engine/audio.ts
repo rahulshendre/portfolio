@@ -155,6 +155,7 @@ export class DoorSound {
   }
 
   stop() {
+    if (this.dead) return; // finish() and exit() both call this
     this.dead = true;
     const c = this.ctx;
     if (!c) return;
