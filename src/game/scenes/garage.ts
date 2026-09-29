@@ -20,6 +20,7 @@ import github from '../../data/github.json';
 const WALL = '#cbbd9f', MORTAR = '#bcad8f', LOWER = '#7f8a7a', FLOOR = '#958d80', FLOOR_DARK = '#857d71';
 const NAVY = '#293878', CYAN = '#29bdeb';
 const BENCH_DY = 0; // how far the workbench group is shifted up from its original spot
+const CAT = { dx: 12, dy: -7 }; // where her nap spot sits on the tyre stack, from where she was first drawn
 const CARE = 0.3; // how battered the room looks: lived in and looked after, not abandoned (the door keeps its full wear)
 const WIN = { x: 14, y: 28, w: 56, h: 58 }; // the window, at the far left of the wall
 export const BIKE = { scale: 1.4, cx: 214, floor: 250 };
@@ -397,15 +398,16 @@ export class GarageScene implements Scene {
   }
 
   private tyres() {
-    ellipse(26, 253, 26, 3, '#5f584d');
-    for (const y of [212, 226, 240]) {
-      rect(6, y, 40, 13, C.tyre); rect(4, y + 2, 44, 9, C.tyre);
-      rect(6, y + 1, 40, 1, '#343434'); rect(8, y + 11, 36, 1, '#0c0c0c');
-      for (let x = 8; x < 44; x += 4) rect(x, y + 4, 2, 5, '#262626');
-      speckle(4, y + 1, 44, 11, '#4a4a4a', 0.05, 46 + y); rect(10, y + 2, 12, 1, '#4d4d4d'); rect(28, y + 2, 8, 1, '#4d4d4d'); // rubber grain, moulded lettering
+    const x0 = 2, w = 62, h = 18;
+    ellipse(33, 254, 34, 3, '#5f584d');
+    for (const y of [205, 221, 237]) {
+      rect(x0 + 2, y, w - 4, h, C.tyre); rect(x0, y + 3, w, h - 6, C.tyre);
+      rect(x0 + 2, y + 1, w - 4, 1, '#343434'); rect(x0 + 4, y + h - 2, w - 8, 1, '#0c0c0c');
+      for (let x = x0 + 4; x < x0 + w - 3; x += 5) rect(x, y + 5, 3, 8, '#262626');
+      speckle(x0, y + 1, w, h - 2, '#4a4a4a', 0.05, 46 + y); rect(x0 + 8, y + 3, 16, 1, '#4d4d4d'); rect(x0 + 34, y + 3, 12, 1, '#4d4d4d'); // rubber grain, moulded lettering
     }
-    speckle(4, 212, 44, 3, '#7a7466', 0.2, 50); // dust on the top tyre
-    rect(54, 232, 10, 20, C.red); rect(56, 228, 6, 4, C.red); rect(57, 225, 4, 3, '#2a2a2e');
+    speckle(x0, 205, w, 3, '#7a7466', 0.2, 50); // dust on the top tyre
+    rect(76, 232, 10, 20, C.red); rect(78, 228, 6, 4, C.red); rect(79, 225, 4, 3, '#2a2a2e'); // extinguisher, moved clear of the bigger stack
   }
 
   // ---------------------------------------------------------------- animated bits
@@ -464,6 +466,8 @@ export class GarageScene implements Scene {
 
   /** A grey cat asleep on the tyre stack. The tail flicks, and now and then it opens an eye. */
   private cat(t: number) {
+    const g0 = ctx();
+    g0.save(); g0.translate(CAT.dx, CAT.dy); // she sits on top of the stack
     const body = '#3d3d44', shade = '#2c2c33';
     ellipse(22, 208, 8, 5, body); ellipse(22, 211, 8, 2, shade);
     disc(30, 203, 4, body); rect(27, 198, 2, 3, body); rect(32, 198, 2, 3, body); rect(28, 199, 1, 1, '#c98f8f');
@@ -477,6 +481,7 @@ export class GarageScene implements Scene {
     }
     const sway = Math.round(Math.sin(t * (petting ? 5 : 2.2)) * 2);
     line(15, 209, 11, 208 + sway, body); line(11, 208 + sway, 9, 204 + sway, body);
+    g0.restore();
   }
 
   private radioLive(t: number) {
