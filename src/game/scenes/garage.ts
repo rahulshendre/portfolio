@@ -239,21 +239,19 @@ export class GarageScene implements Scene {
   /** The socials as Indian number plates in a tidy stack: yellow (commercial), black with yellow letters (rental), white (private), green (electric). */
   private signs() {
     const plate = (y: number, bg: string, fg: string, edge: string, label: string) => {
-      const x = 92, w = 66, h = 15;
+      const x = 92, w = 63, h = 13;
       rect(x + 2, y + 2, w, h, '#00000033');
       rect(x, y, w, h, edge); rect(x + 1, y + 1, w - 2, h - 2, bg);
-      rect(x + 1, y + 1, 9, h - 2, '#1d3d9a'); rect(x + 4, y + 4, 3, 3, '#f4f2ea'); rect(x + 5, y + 5, 1, 1, '#1d3d9a'); rect(x + 3, y + 9, 5, 1, '#f4f2ea'); // the blue IND strip and its chakra
-      bevel(x, y, w, h, '#ffffff44', '#00000066'); rect(x + 11, y + 2, w - 13, 1, '#00000022'); rect(x + 11, y + h - 3, w - 13, 1, '#ffffff22'); // embossed rim
-      for (const rx of [x + 12, x + w - 4]) { rect(rx, y + 2, 2, 2, '#9a958b'); rect(rx, y + 2, 1, 1, '#d8d2c4'); }                                     // rivets
-      speckle(x + 1, y + 1, w - 2, h - 2, '#00000022', 0.05, 60 + y); speckle(x + 1, y + 1, w - 2, h - 2, '#ffffff22', 0.02, 61 + y);         // road grime
-      speckle(x + 1, y + h - 5, w - 2, 4, '#6a4a2a', 0.18, 62 + y);                                                                            // splashed mud along the bottom
-      line(x + 40, y + h - 2, x + 46, y + 3, '#ffffff33');                                                                                     // a scratch
-      text(label, x + 14, y + 5, fg); // the lettering goes on last so the grime never eats it
+      rect(x + 1, y + 1, 7, h - 2, '#1d3d9a'); rect(x + 3, y + 3, 3, 3, '#f4f2ea'); rect(x + 4, y + 4, 1, 1, '#1d3d9a'); rect(x + 2, y + 8, 5, 1, '#f4f2ea'); // the blue IND strip and its chakra
+      bevel(x, y, w, h, '#ffffff44', '#00000066'); rect(x + 9, y + 2, w - 11, 1, '#00000022'); rect(x + 9, y + h - 3, w - 11, 1, '#ffffff22'); // embossed rim
+      rect(x + w - 4, y + 2, 2, 2, '#9a958b'); rect(x + w - 4, y + 2, 1, 1, '#d8d2c4');                                                            // rivet
+      speckle(x + 1, y + 1, w - 2, h - 2, '#00000022', 0.05, 60 + y); speckle(x + 1, y + h - 4, w - 2, 3, '#6a4a2a', 0.15, 62 + y);              // grime and splashed mud
+      text(label, x + 11, y + 4, fg); // the lettering goes on last so the grime never eats it
     };
     plate(24, '#f2c318', C.ink, '#3a3010', 'YOUTUBE');
-    plate(42, '#131314', '#f2c318', '#2a2a2e', 'TWITTER');
-    plate(60, '#f1eee4', C.ink, '#8f8b80', 'LINKEDIN');
-    plate(78, '#1f8a5b', '#f4f2ea', '#125536', 'GITHUB');
+    plate(40, '#131314', '#f2c318', '#2a2a2e', 'TWITTER');
+    plate(56, '#f1eee4', C.ink, '#8f8b80', 'LINKEDIN');
+    plate(72, '#1f8a5b', '#f4f2ea', '#125536', 'GITHUB');
   }
 
   /** The PipeCD poster on the left; on the right two plaques for the real PlanetRead and BookBox logos (main.ts lays the crisp images over them). */
