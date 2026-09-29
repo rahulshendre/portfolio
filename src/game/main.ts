@@ -72,7 +72,8 @@ document.getElementById('phone-term')?.addEventListener('click', () => terminal.
 async function garage() {
   const img = await images;
   const scene = new GarageScene(screen, img);
-  scene.night = loadNight() ?? isNightHour(new Date().getHours()); // until they pull the cord, the room follows their clock
+  const q = new URLSearchParams(location.search); // ?night and ?day force the lights (handy for screenshots)
+  scene.night = q.has('night') ? true : q.has('day') ? false : loadNight() ?? isNightHour(new Date().getHours()); // until they pull the cord, the room follows their clock
   scene.tried = tried;
   scene.found = found;
   scene.radioOn = radio.on;

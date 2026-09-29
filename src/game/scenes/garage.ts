@@ -54,6 +54,7 @@ export class GarageScene implements Scene {
   private bikeHalo?: Sprite;
   private touch = matchMedia('(pointer: coarse)').matches;
   private reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  private og = new URLSearchParams(location.search).has('og'); // ?og: no counter, for the share image
   // dust drifting through the tube-light beams: fixed seeds, so it looks the same every visit
   private motes = Array.from({ length: 28 }, (_, i) => ({ x: TUBES[i % 2] + ((i * 37) % 70) - 35, y: 24 + ((i * 53) % 166), k: i }));
 
@@ -497,6 +498,7 @@ export class GarageScene implements Scene {
   }
 
   private counter() {
+    if (this.og) return;
     const total = HOTSPOTS.length + CONTROLS.length, n = countFound(this.found, [...HOTSPOTS, ...CONTROLS].map((h) => h.id));
     const s = `FOUND ${n}/${total}`;
     text(s, 474 - textW(s), 5, n === total ? C.accent : '#a89d8b');
