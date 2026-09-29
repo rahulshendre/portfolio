@@ -15,7 +15,7 @@ import { idleMessage } from '../hints';
 import { istHMS, istLabel } from '../ist';
 import { tick } from '../engine/audio';
 import { countFound, type Theme, type Weather } from '../state';
-import { windowFall, windowSky } from './weather';
+import { stormFlash, windowFall, windowSky } from './weather';
 import { POSTER_AT, SUN, TUBES, benchLamp, benchLampGlow, bikeGrounding, ceilingMech, chai, chaiLive, helmetStand, compressor, compressorPuff, fanLive, fanStatic, foreground, posterFrame, POSTER, incidentBoard, ridesFrame, clockFace, clockHands, conduit, depthShading, floorDetail, floorProps, charger, chargerLive, sunSprite, sunStrength, tubeBeams } from './garageprops';
 import github from '../../data/github.json';
 
@@ -433,6 +433,7 @@ export class GarageScene implements Scene {
     }
     windowFall(ctx(), WIN.x, WIN.y, WIN.w, WIN.h, this.weather, t);
     this.sunlight(t);
+    this.mood(t);
     fanLive(t);
     chaiLive(t);
     compressorPuff(t - this.puffT);
@@ -450,6 +451,16 @@ export class GarageScene implements Scene {
     }
     g.globalAlpha = 1;
     if (Math.sin(t * 5.1) * Math.sin(t * 0.9 + 1) > 0.985) { g.globalAlpha = 0.18; rect(TUBES[1] - 44, 18, 88, 176, '#140f0a'); g.globalAlpha = 1; }
+  }
+
+  /** The weather's colour over the whole room, so a change at the window is felt everywhere, plus the thunder flash. */
+  private mood(t: number) {
+    const g = ctx(), k = 1 - this.nightT * 0.5, w = this.weather;
+    const tint = w === 'rain' ? ['#1d2a44', 0.18] : w === 'fog' ? ['#cfd6e0', 0.12] : w === 'snow' ? ['#b8c6e4', 0.08] : ['#ffdca0', 0.05];
+    g.globalAlpha = (tint[1] as number) * k; rect(0, 0, 480, 270, tint[0] as string);
+    const f = w === 'rain' ? stormFlash(t) : 0;
+    if (f > 0) { g.globalAlpha = f * 0.3; rect(0, 0, 480, 270, '#e8eeff'); }
+    g.globalAlpha = 1;
   }
 
   /** The window's light lying on the floor, with dust turning in it. It fades as the lights go off and the room takes over. */

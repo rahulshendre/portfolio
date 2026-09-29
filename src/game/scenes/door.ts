@@ -56,7 +56,7 @@ export class DoorScene implements Scene {
   private idle = 0;
   private go = false; // the scene holds on its first frame until sound is running or the visitor taps
 
-  private room!: Sprite;
+  private room?: Sprite; // painted a moment after the first frame (it is only seen once the door lifts), so the first paint stays quick
 
   constructor(private screen: Screen, private bike: HTMLImageElement, private mountains: HTMLImageElement, private makeRoom: () => Sprite, private onDone: () => void, private weather: Weather = 'clear', private theme: Theme = 'himalaya', private onChange?: (o: { weather?: Weather; theme?: Theme }) => void) {}
 
@@ -65,7 +65,7 @@ export class DoorScene implements Scene {
     this.cues = { ...CUES, thunder: this.weather === 'rain' ? THUNDER_AT : undefined };
     this.sfx.start(() => this.t, this.cues, this.weather);
     this.bg = paint(WIDE_W, 270, () => this.facade());
-    this.room = this.makeRoom();
+    setTimeout(() => { this.room ??= this.makeRoom(); }, 300);
     this.rig = paint(this.bike.width + PAD.x * 2, this.bike.height + PAD.y, () => { blit(this.bike, PAD.x, PAD.y); riderSide(PAD.x, PAD.y); });
     this.doorArt = paint(DOOR.w, DOOR.h, () => {
       paintDoor(DOOR.w, DOOR.h, this.weather);
@@ -162,7 +162,8 @@ export class DoorScene implements Scene {
     const up = ease((this.t - T_OPEN) / T_UP) * DOOR.h;
     const shake = this.t > T_SENSE + 0.3 && this.t < T_OPEN + 0.25 ? Math.round(Math.sin(this.t * 90)) : 0; // a jolt as the motor takes load
     // inside: the real garage through the doorway, lighting up as the door rises
-    g.drawImage(this.room, DOOR.x, 20, DOOR.w, DOOR.h, DOOR.x, DOOR.y, DOOR.w, DOOR.h);
+    if (this.t > T_OPEN - 0.5) this.room ??= this.makeRoom(); // never later than the moment the door starts to lift
+    if (this.room) g.drawImage(this.room, DOOR.x, 20, DOOR.w, DOOR.h, DOOR.x, DOOR.y, DOOR.w, DOOR.h);
     g.globalAlpha = 0.72 * (1 - Math.min(1, up / DOOR.h));
     rect(DOOR.x, DOOR.y, DOOR.w, DOOR.h, '#140f0a');
     g.globalAlpha = 1;

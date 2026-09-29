@@ -93,7 +93,7 @@ export function fall(g: CanvasRenderingContext2D, w: Weather, t: number) {
 
 // ---- the garage window: the same weather, seen from inside
 // Each theme's view, with the weather's tint laid over it.
-const TINT: Record<Weather, string> = { clear: '', rain: 'rgba(38,50,72,0.52)', snow: 'rgba(222,232,246,0.42)', fog: 'rgba(214,220,230,0.66)' };
+const TINT: Record<Weather, string> = { clear: 'rgba(255,226,170,0.14)', rain: 'rgba(38,50,72,0.52)', snow: 'rgba(222,232,246,0.42)', fog: 'rgba(214,220,230,0.66)' };
 
 const mix = (a: string, b: string, t: number) => {
   const p = (c: string, i: number) => parseInt(c.slice(1 + i * 2, 3 + i * 2), 16);
@@ -117,7 +117,11 @@ export function windowSky(g: CanvasRenderingContext2D, x: number, y: number, w: 
   } else { // the Himalaya at dusk, like the arrival: a warm sky, snow peaks and a dark valley
     const skyH = Math.round(h * 0.8);
     for (let r = 0; r < skyH; r++) { g.fillStyle = mix('#58739b', '#f2985e', r / (skyH - 1)); g.fillRect(x, y + r, w, 1); }
-    g.fillStyle = '#ffd49a'; g.fillRect(x + w - 11, y + h - 22, 6, 6);
+    if (wt === 'clear') { // a big low sun with a halo
+      const sx = x + w - 14, sy = y + h - 24;
+      for (const [r, a] of [[13, 0.1], [10, 0.16], [7, 0.24]]) { g.fillStyle = `rgba(255,230,170,${a})`; g.fillRect(sx - r, sy - r, r * 2 + 1, r * 2 + 1); }
+      g.fillStyle = '#fff0c4'; g.fillRect(sx - 4, sy - 4, 9, 9); g.fillStyle = '#ffe08a'; g.fillRect(sx - 3, sy - 3, 7, 7);
+    } else { g.fillStyle = '#ffd49a'; g.fillRect(x + w - 11, y + h - 22, 6, 6); }
     for (let c = 0; c < w; c++) {
       const peak = Math.abs(((c + 6) % 22) - 11) / 11, top = y + Math.round(h * 0.42 + peak * h * 0.2 + hash(Math.floor(c / 4), 4) * 3);
       g.fillStyle = '#4b415f'; g.fillRect(x + c, top, 1, y + h - top);
@@ -129,18 +133,33 @@ export function windowSky(g: CanvasRenderingContext2D, x: number, y: number, w: 
   if (wt === 'snow') { g.fillStyle = '#eef2fa'; g.fillRect(x, y + h - 5, w, 5); }
 }
 
+/** Lightning strength, 0 to 1: a bright flash, then a weaker second one, every 9 seconds. */
+export function stormFlash(t: number) {
+  const u = (t % 9) - 4;
+  return Math.max(0, 1 - Math.abs(u) / 0.1, 0.6 - Math.abs(u - 0.18) / 0.12);
+}
+
 /** The moving part of the view, clipped to the glass: rain and a flash, snow, or drifting mist. */
 export function windowFall(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, wt: Weather, t: number) {
   if (wt === 'clear') return;
   g.save(); g.beginPath(); g.rect(x, y, w, h); g.clip();
   if (wt === 'rain') {
-    g.fillStyle = 'rgba(214,226,246,0.6)';
-    for (let i = 0; i < 16; i++) {
-      const yy = (hash(i, 1) * h + t * (80 + hash(i, 2) * 40)) % (h + 8) - 4, xx = (hash(i, 3) * (w + 12) - yy * 0.2 + w + 12) % (w + 12);
-      g.fillRect(x + Math.round(xx), y + Math.round(yy), 1, 3);
+    g.fillStyle = 'rgba(214,226,246,0.75)';
+    for (let i = 0; i < 44; i++) { // slanted streaks, long and quick
+      const yy = (hash(i, 1) * h + t * (110 + hash(i, 2) * 60)) % (h + 10) - 5, xx = (hash(i, 3) * (w + 12) - yy * 0.2 + w + 12) % (w + 12);
+      g.fillRect(x + Math.round(xx), y + Math.round(yy), 1, 4); g.fillRect(x + Math.round(xx) - 1, y + Math.round(yy) + 4, 1, 2);
     }
-    const f = Math.max(0, 1 - Math.abs((t % 9) - 4) / 0.08);
-    if (f > 0) { g.fillStyle = `rgba(232,238,255,${(f * 0.6).toFixed(2)})`; g.fillRect(x, y, w, h); }
+    for (let i = 0; i < 7; i++) { // drops crawling down the glass, each with a short trail
+      const yy = (hash(i, 8) * h + t * (4 + hash(i, 9) * 5)) % h, xx = 3 + Math.floor(hash(i, 10) * (w - 6));
+      g.fillStyle = 'rgba(230,240,255,0.5)'; g.fillRect(x + xx, y + Math.round(yy) - 4, 1, 4);
+      g.fillStyle = 'rgba(255,255,255,0.85)'; g.fillRect(x + xx, y + Math.round(yy), 1, 2);
+    }
+    for (let i = 0; i < 9; i++) { // splashes bouncing on the sill
+      const ph = frac(t * 2.4 + hash(i, 11)), sx = x + Math.round(hash(i, 12) * w);
+      if (ph < 0.35) { g.fillStyle = `rgba(225,236,255,${(0.8 * (1 - ph / 0.35)).toFixed(2)})`; g.fillRect(sx - Math.round(ph * 5), y + h - 2, 3 + Math.round(ph * 10), 1); g.fillRect(sx, y + h - 3 - Math.round(ph * 8), 1, 1); }
+    }
+    const f = stormFlash(t);
+    if (f > 0) { g.fillStyle = `rgba(232,238,255,${(f * 0.85).toFixed(2)})`; g.fillRect(x, y, w, h); }
   } else if (wt === 'snow') {
     for (let i = 0; i < 26; i++) {
       const yy = (hash(i, 1) * h + t * (10 + hash(i, 2) * 12)) % (h + 4) - 2, xx = hash(i, 3) * w + Math.sin(t * 0.9 + i) * 3;
