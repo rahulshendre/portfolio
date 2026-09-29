@@ -121,3 +121,16 @@ export const milestones = [
   { top: '2026', label: 'LFX · PIPECD' },
   { top: 'PIPECD', label: '45 MERGED' },
 ] as const;
+
+// Third-party material used on the site. CC BY needs the author, the licence and a note that it was changed.
+export const credits = [
+  {
+    what: 'Door scene mountains',
+    title: 'Ama Dablam, Nepal',
+    author: 'Vyacheslav Argenberg',
+    url: 'https://commons.wikimedia.org/wiki/File:Ama_Dablam,_Nepal.jpg',
+    licence: 'CC BY 4.0',
+    licenceUrl: 'https://creativecommons.org/licenses/by/4.0/',
+    changes: 'cropped, recoloured to a dusk palette and reduced to pixel art (tools/backdrop.py)',
+  },
+] as const;

@@ -19,9 +19,9 @@ const screen = new Screen(canvas);
 const director = new Director((m) => screen.setMode(m));
 input.attach(screen);
 
-const SPRITES = ['bike-side', 'pipecd', 'pipecd-sm', 'icon-github', 'icon-x', 'icon-linkedin', 'icon-youtube'] as const;
-const images = Promise.all(SPRITES.map((n) => loadImage(`/sprites/${n}.png`))).then(([bike, pipecd, pipecdSm, github, x, linkedin, youtube]) => ({
-  bike, pipecd, icons: { pipecd: pipecdSm, github, x, linkedin, youtube },
+const SPRITES = ['mountains', 'bike-side', 'pipecd', 'pipecd-sm', 'icon-github', 'icon-x', 'icon-linkedin', 'icon-youtube'] as const;
+const images = Promise.all(SPRITES.map((n) => loadImage(`/sprites/${n}.png`))).then(([mountains, bike, pipecd, pipecdSm, github, x, linkedin, youtube]) => ({
+  mountains, bike, pipecd, icons: { pipecd: pipecdSm, github, x, linkedin, youtube },
 }));
 
 let current: GarageScene | undefined;
@@ -94,7 +94,7 @@ screen.onResize(() => { if (director.current instanceof GarageScene) requestAnim
 async function door() {
   const img = await images;
   current = undefined;
-  director.go(new DoorScene(screen, img.bike, () => new GarageScene(screen, img).roomSprite(false), garage));
+  director.go(new DoorScene(screen, img.bike, img.mountains, () => new GarageScene(screen, img).roomSprite(false), garage));
 }
 
 function mountHotspots(scene: GarageScene) {

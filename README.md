@@ -40,3 +40,7 @@ Needs Node 20+ (Astro 5). Astro 7 needs Node 22, so upgrade Node before upgradin
 - `src/game/` the canvas game: door, garage, ride. `terminal.ts` (TV commands), `panel.ts` (section panels), `hints.ts` (bottom-bar messages), `state.ts` (what the visitor has seen and found).
 - `public/og.png` the share image: a top-aligned 1200x630 crop of `/?garage&day&og` at 1280x720.
 - `tools/pixelate.py` turns a photo into a pixel sprite (see tools/README.md).
+
+## Credits
+
+- Door scene mountains: [Ama Dablam, Nepal](https://commons.wikimedia.org/wiki/File:Ama_Dablam,_Nepal.jpg) by Vyacheslav Argenberg, [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Cropped, recoloured to a dusk palette and reduced to pixel art with `tools/backdrop.py`. The source photo is not committed (`tools/reference/` is gitignored); the credit also shows in the site footer.

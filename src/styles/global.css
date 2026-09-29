@@ -127,3 +127,4 @@ main { padding-block: 3.5rem 5rem; }
 /* Inside the garage's panel: the panel supplies the chrome. */
 .embedded .site-header, .embedded .site-footer { display: none; }
 .embedded main.wrap { padding-top: 1.25rem; }
+.site-footer .credits { flex-basis: 100%; margin: 0; font-size: 0.72rem; color: var(--muted); }

@@ -18,3 +18,13 @@ python3 tools/pixelate.py my-bike.jpg public/sprites/bike-side-lg.png --width 24
 ```
 
 Flags: `--key-bg` drops a plain background, `--flip` mirrors it, `--keep-hue lo:hi --keep-box x0:x1` keeps thin coloured parts vivid (gold forks: `0.088:0.16`, `0.645:0.73`), `--recolor-orange-white` repaints orange paint white.
+
+## backdrop.py
+
+Turns a mountain photo into the door scene's dusk backdrop (`public/sprites/mountains.png`): crops, removes the blue sky, regrades to a dusk ramp and reduces the palette. Needs Pillow.
+
+```bash
+python3 tools/backdrop.py tools/reference/ama-dablam.jpg public/sprites/mountains.png --crop 617,107,1760,583 --colors 26
+```
+
+`--crop` is x0,y0,x1,y1 in source pixels (the summit ends up top left, behind the garage's left edge). If the sky removal eats into the snow, lower `--step` or raise `--sat`. Keep the credit in `src/data/site.ts` if you swap the photo, and check its licence first.

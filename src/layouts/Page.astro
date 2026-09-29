@@ -1,6 +1,6 @@
 ---
 import '../styles/global.css';
-import { site, nav } from '../data/site';
+import { site, nav, credits } from '../data/site';
 import github from '../data/github.json';
 
 interface Props {
@@ -80,6 +80,7 @@ const snapshot = new Date(github.generatedAt).toLocaleDateString('en-GB', { day:
               <li><a href="/list">Everything</a></li>
             </ul>
             <span class="mono">GitHub data as of {snapshot}</span>
+            <p class="credits mono">{credits.map((c) => <>{c.what}: <a href={c.url}>{c.title}</a> by {c.author}, <a href={c.licenceUrl}>{c.licence}</a>; {c.changes}.</>)}</p>
           </div>
         </footer>
       </>

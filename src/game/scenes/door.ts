@@ -40,7 +40,7 @@ export class DoorScene implements Scene {
 
   private room!: Sprite;
 
-  constructor(private screen: Screen, private bike: HTMLImageElement, private makeRoom: () => Sprite, private onDone: () => void) {}
+  constructor(private screen: Screen, private bike: HTMLImageElement, private mountains: HTMLImageElement, private makeRoom: () => Sprite, private onDone: () => void) {}
 
   enter() {
     this.t = 0;
@@ -116,24 +116,8 @@ export class DoorScene implements Scene {
       rect(x, y, 1, 1, t - i > bayer(x, y) ? sky[i + 1] : sky[i]);
     }
     disc(400, 176, 18, '#f6b27a'); disc(400, 176, 12, '#ffd49a');
-    // snow-capped Ladakh peaks (far) and ochre ridges (near)
-    const peak = (x: number, list: number[][]) =>
-      Math.max(0, ...list.map(([cx, w, h]) => (Math.abs(x - cx) > w ? 0 : h * (1 - Math.abs(x - cx) / w))));
-    const farPeaks = [[50, 58, 86], [175, 72, 98], [310, 68, 92], [415, 52, 76]];
-    const nearRidges = [[10, 95, 42], [155, 115, 36], [265, 105, 38], [385, 88, 44]];
-    for (let x = 0; x < 480; x++) {
-      const h1 = Math.round(peak(x, farPeaks)), h2 = Math.round(peak(x, nearRidges));
-      if (h1 > 0) {
-        const snow = Math.max(2, Math.floor(h1 * 0.24));
-        rect(x, 200 - h1, 1, h1, '#788498');
-        rect(x, 200 - h1, 1, Math.min(snow, h1), '#dde5ef');
-        for (let y = snow + 4; y < h1 - 2; y += 8) rect(x, 200 - y, 1, 1, '#6a7488');
-      }
-      if (h2 > 0) {
-        rect(x, 200 - h2, 1, h2, '#8f6f4a');
-        for (let y = 5; y < h2 - 2; y += 7) rect(x, 200 - y, 1, 1, '#765a3c');
-      }
-    }
+    // the Himalaya: a real photo, regraded to this dusk and reduced to a pixel palette (tools/backdrop.py)
+    blit(this.mountains, 0, 0);
     rect(0, 200, 480, 48, '#a8906e');
     for (let x = 0; x < 480; x += 3) if (bayer(x, 210) > 0.5) rect(x, 200 + (x % 7), 1, 2, '#958060');
     // sparse poplar left; pole and wires on the right
@@ -155,17 +139,14 @@ export class DoorScene implements Scene {
       if (d < 1 && (1 - d) * 0.45 > bayer(x, y)) rect(x, y, 1, 1, '#f3d9a6');
     }
     // building
-    rect(64, 34, 352, 8, '#b9a88c'); rect(70, 42, 340, 206, '#d9cbb2');
-    for (let y = 46; y < 246; y += 3) for (let x = 72 + (y % 7); x < 408; x += 11) if (bayer(x, y) > 0.8) rect(x, y, 1, 1, '#cbbc9f');
-    rect(70, 200, 340, 48, '#c9b99c');
+    rect(84, 34, 312, 8, '#b9a88c'); rect(90, 42, 300, 206, '#d9cbb2');
+    for (let y = 46; y < 246; y += 3) for (let x = 92 + (y % 7); x < 388; x += 11) if (bayer(x, y) > 0.8) rect(x, y, 1, 1, '#cbbc9f');
+    rect(90, 200, 300, 48, '#c9b99c');
     // sign and lamp
     rect(160, 44, 160, 16, C.ink); textC("RAHUL'S GARAGE", 240, 48, C.accent);
     rect(126, 48, 8, 6, '#2a2a2e'); disc(130, 57, 3, '#fff4c2');
-    // window with grille, no-parking sign, stencil
-    rect(80, 108, 24, 34, '#2e2a26'); rect(82, 110, 20, 30, '#56626b');
-    for (let x = 85; x < 102; x += 4) rect(x, 110, 1, 30, '#2e2a26');
-    disc(393, 120, 9, C.red); disc(393, 120, 7, '#f4f2ea'); text('P', 391, 117, '#2c5aa0'); line(387, 114, 399, 126, C.red);
-    text('JULLEY!', 362, 140, '#8a7e68');
+    // no-parking sign on the wall beside the door
+    disc(381, 112, 8, C.red); disc(381, 112, 6, '#f4f2ea'); text('P', 379, 109, '#2c5aa0'); line(376, 107, 386, 117, C.red);
     // driveway and the road kerb
     rect(0, 248, 480, 22, '#8e877c');
     for (let x = 0; x < 480; x += 16) rect(x, 264, 8, 6, C.accent), rect(x + 8, 264, 8, 6, '#222');
