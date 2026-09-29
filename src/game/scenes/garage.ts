@@ -20,7 +20,7 @@ import github from '../../data/github.json';
 const WALL = '#cbbd9f', MORTAR = '#bcad8f', LOWER = '#7f8a7a', FLOOR = '#958d80', FLOOR_DARK = '#857d71';
 const NAVY = '#293878', CYAN = '#29bdeb';
 const BENCH_DY = 0; // how far the workbench group is shifted up from its original spot
-const CAT = { dx: 12, dy: -7 }; // where her nap spot sits on the tyre stack, from where she was first drawn
+const CAT = { dx: 12, dy: -23 }; // where her nap spot sits on the tyre stack, from where she was first drawn
 const CARE = 0.3; // how battered the room looks: lived in and looked after, not abandoned (the door keeps its full wear)
 const WIN = { x: 14, y: 28, w: 56, h: 58 }; // the window, at the far left of the wall
 export const BIKE = { scale: 1.4, cx: 214, floor: 250 };
@@ -400,13 +400,13 @@ export class GarageScene implements Scene {
   private tyres() {
     const x0 = 2, w = 62, h = 18;
     ellipse(33, 254, 34, 3, '#5f584d');
-    for (const y of [205, 221, 237]) {
+    for (const y of [189, 205, 221, 237]) {
       rect(x0 + 2, y, w - 4, h, C.tyre); rect(x0, y + 3, w, h - 6, C.tyre);
       rect(x0 + 2, y + 1, w - 4, 1, '#343434'); rect(x0 + 4, y + h - 2, w - 8, 1, '#0c0c0c');
       for (let x = x0 + 4; x < x0 + w - 3; x += 5) rect(x, y + 5, 3, 8, '#262626');
       speckle(x0, y + 1, w, h - 2, '#4a4a4a', 0.05, 46 + y); rect(x0 + 8, y + 3, 16, 1, '#4d4d4d'); rect(x0 + 34, y + 3, 12, 1, '#4d4d4d'); // rubber grain, moulded lettering
     }
-    speckle(x0, 205, w, 3, '#7a7466', 0.2, 50); // dust on the top tyre
+    speckle(x0, 189, w, 3, '#7a7466', 0.2, 50); // dust on the top tyre
     rect(76, 232, 10, 20, C.red); rect(78, 228, 6, 4, C.red); rect(79, 225, 4, 3, '#2a2a2e'); // extinguisher, moved clear of the bigger stack
   }
 

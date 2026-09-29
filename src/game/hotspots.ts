@@ -48,7 +48,7 @@ export const CONTROLS: Control[] = [
   { id: 'cord', label: 'PULL CORD · LIGHTS', tag: 'LIGHTS', rect: [169, 28, 16, 26] },
   { id: 'radio', label: 'RADIO · LO-FI ON OR OFF', tag: 'RADIO', rect: [96, 108, 44, 22] },
   { id: 'window', label: 'WINDOW · CHANGE THE WEATHER', tag: 'WEATHER', rect: [9, 23, 66, 74] },
-  { id: 'cat', label: 'THE CAT · PET HER', tag: 'CAT', rect: [14, 187, 44, 24] },
+  { id: 'cat', label: 'THE CAT · PET HER', tag: 'CAT', rect: [14, 171, 44, 24] },
 ];
 
 // Bottom bar buttons, also real links.
