@@ -8,7 +8,7 @@ import { paint, type Sprite } from '../engine/sprites';
 import type { Weather } from '../state';
 
 export const TUBES = [140, 340];
-export const SUN = { x0: 104, x1: 138, y0: 78, y1: 234, px: 206, pw: 30, gap: 6 }; // window edge, and where its light lands on the floor
+export const SUN = { x0: 96, x1: 152, y0: 88, y1: 234, px: 206, pw: 30, gap: 6 }; // window edge, and where its light lands on the floor
 
 /** Corners, the wall meeting the floor and the strip under the beam go dim, so the room reads as a box with depth. Painted before the lighting pass. */
 export function depthShading() {
@@ -37,9 +37,9 @@ export function sunSprite(weather: Weather): Sprite {
     const g = ctx(), { x0, x1, y0, y1, px, pw, gap } = SUN;
     for (let y = y0; y < y1; y++) { // flat translucent bands, brighter in the middle: reads as light, not as a dot screen
       const t = (y - y0) / (y1 - y0), a = Math.round(x0 + t * (px - x0)), b = Math.round(x1 + t * (px + pw * 2 + gap - x1)), fade = 1 - t * 0.5;
-      g.globalAlpha = 0.075 * k * fade; rect(a, y, b - a, 1, col);
-      g.globalAlpha = 0.075 * k * fade; rect(a + 4, y, b - a - 8, 1, col);
-      g.globalAlpha = 0.06 * k * fade; rect(a + 9, y, b - a - 18, 1, col);
+      g.globalAlpha = 0.045 * k * fade; rect(a, y, b - a, 1, col);
+      g.globalAlpha = 0.045 * k * fade; rect(a + 4, y, b - a - 8, 1, col);
+      g.globalAlpha = 0.035 * k * fade; rect(a + 9, y, b - a - 18, 1, col);
     }
     g.globalAlpha = 0.3 * k;
     for (let y = 234; y < 254; y++) { // the window's four panes, squashed and slanted onto the floor, with the frame's cross in shadow

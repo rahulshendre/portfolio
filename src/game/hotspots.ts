@@ -47,7 +47,7 @@ export const HOTSPOTS: Hotspot[] = [
 export const CONTROLS: Control[] = [
   { id: 'cord', label: 'PULL CORD · LIGHTS', tag: 'LIGHTS', rect: [169, 28, 16, 26] },
   { id: 'radio', label: 'RADIO · LO-FI ON OR OFF', tag: 'RADIO', rect: [96, 108, 44, 22] },
-  { id: 'window', label: 'WINDOW · CHANGE THE WEATHER', tag: 'WEATHER', rect: [101, 31, 40, 54] },
+  { id: 'window', label: 'WINDOW · CHANGE THE WEATHER', tag: 'WEATHER', rect: [91, 23, 66, 74] },
   { id: 'cat', label: 'THE CAT · PET HER', tag: 'CAT', rect: [6, 196, 38, 20] },
 ];
 

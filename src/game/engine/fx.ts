@@ -16,11 +16,11 @@ void main(){
   for (int y = -3; y <= 3; y++) for (int x = -3; x <= 3; x++) {
     vec2 o = vec2(float(x), float(y)); float w = exp(-dot(o, o) / 6.);
     vec3 c = tap(o * 1.5); float l = dot(c, vec3(.299, .587, .114));
-    glow += c * smoothstep(.82, 1., l) * w; tot += w;
+    glow += c * smoothstep(.92, 1.02, l) * w; tot += w;
   }
   vec3 col = base + glow / tot * 1.3;
   vec2 d = vUv - .5; col *= 1. - dot(d, d) * .7;
-  col *= mix(vec3(1.), vec3(1.04, 1., .94), .5);
+  col *= mix(vec3(1.), vec3(1.03, 1., .96), .3);
   gl_FragColor = vec4(col, 1.);
 }`;
 

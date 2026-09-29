@@ -8,7 +8,7 @@ import { input } from '../engine/input';
 import type { Scene } from '../engine/scene';
 import type { Screen } from '../engine/screen';
 import { blit, paint, type Sprite } from '../engine/sprites';
-import { bevel, cobweb, crack, speckle, stain, streaks, woodGrain } from '../art/wear';
+import { bevel, cobweb, crack, speckle, stain, streaks, withWear, woodGrain } from '../art/wear';
 import { BAR, CONTROLS, HOTSPOTS, type Control, type Hotspot } from '../hotspots';
 import { site } from '../../data/site';
 import { idleMessage } from '../hints';
@@ -20,7 +20,8 @@ import github from '../../data/github.json';
 const WALL = '#cbbd9f', MORTAR = '#bcad8f', LOWER = '#7f8a7a', FLOOR = '#958d80', FLOOR_DARK = '#857d71';
 const NAVY = '#293878', CYAN = '#29bdeb';
 const BENCH_DY = 0; // how far the workbench group is shifted up from its original spot
-const WIN = { x: 104, y: 36, w: 34, h: 40 }; // the window, up on the left wall clear of the posters
+const CARE = 0.3; // how battered the room looks: lived in and looked after, not abandoned (the door keeps its full wear)
+const WIN = { x: 96, y: 28, w: 56, h: 58 }; // the window, up on the left wall clear of the posters
 export const BIKE = { scale: 1.4, cx: 214, floor: 250 };
 
 /** One drifting music note: a head and a stem, fading out as it rises. */
@@ -86,7 +87,7 @@ export class GarageScene implements Scene {
   }
 
   /** The static room. The door scene borrows it (without the bike) to show what's inside. */
-  roomSprite(withBike = true): Sprite { return paint(480, 270, () => this.paintRoom(withBike)); }
+  roomSprite(withBike = true): Sprite { return paint(480, 270, () => withWear(CARE, () => this.paintRoom(withBike))); }
 
   update(dt: number) {
     this.t += dt;
@@ -206,13 +207,13 @@ export class GarageScene implements Scene {
     const sm = (a: number, b: number, x: number) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
     for (let y = 0; y < 270; y++)
       for (let x = 0; x < 480; x++) {
-        let L = 0.3;
+        let L = 0.36;
         if (y > 16 && y < 198) for (const cx of TUBES) { const hw = 30 + (y - 16) * 0.6; L += 0.5 * Math.max(0, 1 - Math.abs(x - cx) / hw) * (1 - (y - 16) / 300); }
         L += 0.35 * Math.max(0, 1 - Math.hypot((x - 240) / 70, (y - 86) / 76));
         if (y >= 198) L += 0.5 * Math.max(0, 1 - Math.hypot((x - 240) / 190, (y - 232) / 34));
         const q = Math.floor(Math.min(1, L) * 10 + bayer(x, y)) / 10; // fine steps: light, not grain
-        const v = 1 - 0.42 * sm(0.55, 1.08, Math.hypot((x - 240) / 240, (y - 130) / 150));
-        const m = (0.58 + 0.55 * q) * v, o = (y * 480 + x) * 4;
+        const v = 1 - 0.3 * sm(0.55, 1.08, Math.hypot((x - 240) / 240, (y - 130) / 150));
+        const m = (0.62 + 0.5 * q) * v, o = (y * 480 + x) * 4;
         d[o] = Math.min(255, d[o] * m * 1.03); d[o + 1] = Math.min(255, d[o + 1] * m); d[o + 2] = Math.min(255, d[o + 2] * m * 0.95);
       }
     g.putImageData(im, 0, 0);

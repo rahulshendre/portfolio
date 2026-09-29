@@ -2,18 +2,26 @@
 // Everything is deterministic (seeded hashes), so a surface looks the same on every visit. Draws with the current pixel context.
 import { bayer, rect } from '../engine/pixel';
 
+// How worn everything looks: 1 is the full battered look (the door), lower is a cared-for room. Scenes set it around their painting with withWear.
+let level = 1;
+export function withWear<T>(k: number, paintIt: () => T): T {
+  const before = level;
+  level = k;
+  try { return paintIt(); } finally { level = before; }
+}
+
 const frac = (v: number) => v - Math.floor(v);
 export const hash = (i: number, s = 0) => frac(Math.sin(i * 127.1 + s * 311.7) * 43758.5453);
 const at = (x: number, y: number, s = 0) => hash(x * 57 + y * 131, s);
 
 /** Random pixels of one colour over an area: pores, grit, flecks, chipped paint. */
 export function speckle(x: number, y: number, w: number, h: number, col: string, density: number, seed = 0) {
-  for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) if (at(x + i, y + j, seed) < density) rect(x + i, y + j, 1, 1, col);
+  for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) if (at(x + i, y + j, seed) < density * level) rect(x + i, y + j, 1, 1, col);
 }
 
 /** Rain and grime streaks running down from the top edge of an area, broken up as they go. */
 export function streaks(x: number, y: number, w: number, h: number, col: string, count: number, seed = 0) {
-  for (let k = 0; k < count; k++) {
+  for (let k = 0; k < Math.ceil(count * level * level); k++) {
     const sx = x + Math.floor(hash(k, seed) * w), len = Math.floor(6 + hash(k, seed + 1) * (h - 6)), wide = hash(k, seed + 2) > 0.75 ? 2 : 1;
     for (let j = 0; j < len; j++) if (hash(k * 97 + j, seed + 3) > 0.15 + (j / len) * 0.45) rect(sx, y + j, wide, 1, col);
   }
@@ -23,12 +31,13 @@ export function streaks(x: number, y: number, w: number, h: number, col: string,
 export function stain(cx: number, cy: number, rx: number, ry: number, col: string, seed = 0, strength = 0.9) {
   for (let j = -ry; j <= ry; j++) for (let i = -rx; i <= rx; i++) {
     const d = Math.hypot(i / rx, j / ry), wob = 0.85 + 0.3 * hash(Math.floor(i / 3) * 31 + Math.floor(j / 3), seed);
-    if (d < wob && (1 - d / wob) * strength > bayer(cx + i, cy + j)) rect(cx + i, cy + j, 1, 1, col);
+    if (d < wob && (1 - d / wob) * strength * level > bayer(cx + i, cy + j)) rect(cx + i, cy + j, 1, 1, col);
   }
 }
 
 /** A jagged crack that wanders downward (dir leans it left or right), with a branch now and then. */
 export function crack(x: number, y: number, len: number, col: string, seed = 0, dir = 1) {
+  if (level < 0.5) return; // a cared-for room has no cracks
   let cx = x, cy = y;
   for (let k = 0; k < len; k++) {
     rect(cx, cy, 1, 1, col);
@@ -55,6 +64,7 @@ export function woodGrain(x: number, y: number, w: number, h: number, base: stri
 
 /** Cobweb across a corner: fine light threads from the corner point, with arcs between them. */
 export function cobweb(cx: number, cy: number, r: number, sx: number, sy: number, col: string) {
+  if (level < 0.5) return;
   for (let k = 0; k < 3; k++) {
     const a = (k / 2) * (Math.PI / 2), ex = cx + Math.round(sx * Math.cos(a) * r), ey = cy + Math.round(sy * Math.sin(a) * r);
     const n = Math.max(Math.abs(ex - cx), Math.abs(ey - cy));
