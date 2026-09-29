@@ -20,6 +20,7 @@ import { site, nav } from '../data/site';
   </div>
   <div class="phone-bar" aria-hidden="true">
     <a href="/list" tabindex="-1">LIST</a>
+    <button type="button" id="phone-term" tabindex="-1">TERMINAL</button>
     <a href="/?ride" tabindex="-1">RIDE AGAIN</a>
   </div>
   <nav class="sr-only" aria-label="Sections">
@@ -49,7 +50,7 @@ import { site, nav } from '../data/site';
     .skip-plain:focus { transform: none; }
     /* In the garage on a portrait phone the in-world bar buttons sit off-screen: mirror them here. */
     .phone-bar { display: none; position: fixed; left: 8px; right: 8px; bottom: 8px; justify-content: space-between; pointer-events: none; z-index: 5; }
-    .phone-bar a { pointer-events: auto; font: 400 12px/1 'Silkscreen', monospace; background: #1b1712; color: #fff6e0; padding: 10px 12px; text-decoration: none; box-shadow: 3px 3px 0 #e8b923; }
+    .phone-bar a, .phone-bar button { pointer-events: auto; border: 0; cursor: pointer; font: 400 12px/1 'Silkscreen', monospace; background: #1b1712; color: #fff6e0; padding: 10px 12px; text-decoration: none; box-shadow: 3px 3px 0 #e8b923; }
     @media (orientation: portrait) { body:has(.stage[data-mode='world']) .phone-bar { display: flex; } }
     .stage { transform-origin: 50% 60%; will-change: transform; }
     .hotspots button { position: absolute; pointer-events: auto; display: block; cursor: pointer; border: 0; background: none; padding: 0; border-radius: 2px; }

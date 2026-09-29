@@ -44,6 +44,8 @@ const terminal = mountTerminal({
   closed: () => (document.querySelector('a[data-action="terminal"]') as HTMLElement | null)?.focus(),
 });
 
+document.getElementById('phone-term')?.addEventListener('click', () => terminal.open()); // the TV is off-screen on a portrait phone
+
 async function garage() {
   const img = await images;
   const scene = new GarageScene(screen, img);
