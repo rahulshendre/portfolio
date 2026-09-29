@@ -155,39 +155,48 @@ export function chargerLive(t: number) {
   rect(373, 143, 3, 2, full ? '#5fdc7a' : '#1f4a2a');                                     // full light
 }
 
-/** Heavy canvas curtains on a steel rod, brass eyelets, tied back with rope and patched with rough stitching. Painted once at (0, 18) of the room and blitted over the window glass each frame. */
-export function curtainSprite(): Sprite {
-  const canvas = '#77714a', dark = '#59563a', light = '#8f8a5c', edge = '#3f3d28';
-  return paint(96, 84, () => {
-    const panel = (mirror: boolean) => {
-      const X = (x: number) => (mirror ? 92 - x : x);
-      const right = (y: number) => (y < 46 ? 34 - (12 * (y - 5)) / 41 : 22 + (6 * (y - 46)) / 32); // wide at the rod, pulled in at the tie, easing out toward the hem
-      const left = (y: number) => 8 - (y > 46 ? (2 * (y - 46)) / 32 : 0);
-      for (let y = 5; y <= 78; y++) {
-        const xl = Math.round(left(y)), xr = Math.round(right(y));
-        for (let x = xl; x < xr; x++) {
-          const f = (x - xl + Math.floor(y / 14)) % 7; // vertical folds that drift a little as they hang
-          let col = f < 2 ? dark : f > 4 ? light : canvas;
-          if (y > 74 && hash(x * 7 + y, 300) > 0.55 - (y - 74) * 0.12) continue; // frayed hem
-          if ((x + y) % 3 === 0 && hash(x * 13 + y, 301) > 0.6) col = f < 2 ? '#4c4a31' : dark; // weave
-          rect(X(x) - (mirror ? 0 : 0), y, 1, 1, col);
-        }
-        rect(X(xl), y, 1, 1, edge); rect(X(xr - 1), y, 1, 1, edge);
+/** Old burgundy curtains on a brass-ringed rod: velvet gone dull, sun-bleached at the top, water-stained and moth-eaten at the hem. The window is ajar, so they blow. */
+export const CURTAIN = { top: 23, h: 76, w: 22, lx: 8, rx: 62 }; // world position of the two hanging panels
+function panelSprite(mirror: boolean): Sprite {
+  const base = '#722733', dark = '#521a25', light: string = '#8e3c46', edge = '#35111a';
+  return paint(CURTAIN.w + 2, CURTAIN.h, () => {
+    for (let y = 0; y < CURTAIN.h; y++) {
+      const drift = Math.round(Math.sin(y * 0.09 + (mirror ? 2 : 0)) * 1.2); // the pleats wander a little as they hang
+      for (let i = 0; i < CURTAIN.w; i++) {
+        if (y > CURTAIN.h - 5 && hash(i * 9 + y + (mirror ? 50 : 0), 310) > 0.7 - (y - (CURTAIN.h - 5)) * 0.1) continue; // frayed hem
+        const f = (i + drift + 60) % 6; // pleats: shadow, body, lit fold
+        let col = f < 2 ? dark : f > 3 ? light : base;
+        if (y < 14 && hash(i * 7 + y, 311) < (14 - y) / 22) col = f > 3 ? '#a85a60' : '#8a3640'; // sun-bleached across the top
+        if ((i + y) % 3 === 0 && hash(i * 13 + y, 312) > 0.62) col = f < 2 ? '#43141d' : dark; // worn weave
+        rect(mirror ? CURTAIN.w - 1 - i : i, y, 1, 1, col);
       }
-      // brass eyelets along the top, rod threaded through
-      for (let x = 10; x < 33; x += 6) { disc(X(x), 7, 1, '#c9a043'); rect(X(x), 7, 1, 1, '#f3d47a'); }
-      // rope tie-back with a knot and a hanging end
-      const yt = 46, a = Math.round(left(yt)), b = Math.round(right(yt));
-      for (let x = a; x < b; x++) { rect(X(x), yt, 1, 3, x % 2 ? '#b08a5e' : '#8a6a44'); rect(X(x), yt, 1, 1, '#d2b07c'); }
-      disc(X(b - 1), yt + 1, 2, '#a07c50'); line(X(b - 1), yt + 3, X(b - 1) + (mirror ? -1 : 1), yt + 9, '#a07c50'); rect(X(b - 1) + (mirror ? -1 : 0), yt + 9, 2, 2, '#7a5a38');
-    };
-    panel(false); panel(true);
-    // a rough patch, stitched on, on the left panel
-    rect(12, 56, 9, 8, '#7a5a38'); rect(12, 56, 9, 1, '#96704a'); for (let i = 0; i < 9; i += 2) { rect(12 + i, 55, 1, 1, '#d8d2c4'); rect(12 + i, 64, 1, 1, '#d8d2c4'); }
-    for (let j = 0; j < 8; j += 2) { rect(11, 56 + j, 1, 1, '#d8d2c4'); rect(21, 56 + j, 1, 1, '#d8d2c4'); }
-    // the rod: steel with a lit top edge, end caps and two brackets
-    rect(2, 3, 92, 3, '#6b6f79'); rect(2, 3, 92, 1, '#a0a5aa'); rect(2, 5, 92, 1, '#3a3d42');
-    disc(2, 4, 2, '#8b9096'); disc(93, 4, 2, '#8b9096'); rect(2, 3, 1, 1, '#d8dcdf');
-    for (const x of [14, 78]) { rect(x, 5, 2, 4, '#4a4e53'); rect(x, 8, 2, 1, '#2a2c30'); }
+      rect(mirror ? CURTAIN.w - 1 : 0, y, 1, 1, edge); rect(mirror ? 0 : CURTAIN.w - 1, y, 1, 1, edge);
+    }
+    stain(CURTAIN.w / 2, CURTAIN.h - 14, 8, 6, '#3a1017', 313 + (mirror ? 1 : 0), 0.7);        // damp along the bottom
+    stain(mirror ? 6 : 15, 30, 3, 8, '#8a4a50', 314 + (mirror ? 1 : 0), 0.5);                  // a faded streak
+    for (const [x, y] of mirror ? [[5, 52], [12, 60], [7, 66]] : [[14, 44], [8, 57], [16, 63]]) { rect(x, y, 2, 2, '#160609'); rect(x, y, 1, 1, '#2a0c12'); } // moth holes
+    for (let i = 3; i < CURTAIN.w - 2; i += 5) { rect(i, 1, 2, 1, '#c9a043'); rect(i, 2, 2, 1, '#8a6a20'); }                                                // brass rings
   });
+}
+export const curtainPanels = () => ({ left: panelSprite(false), right: panelSprite(true) });
+
+/** The rod itself: steel, with brass end caps and two brackets. Painted once with the room. */
+export function curtainRod() {
+  const y = CURTAIN.top - 2;
+  rect(2, y, 92, 3, '#6b6f79'); rect(2, y, 92, 1, '#a0a5aa'); rect(2, y + 2, 92, 1, '#3a3d42');
+  disc(2, y + 1, 2, '#c9a043'); disc(93, y + 1, 2, '#c9a043'); rect(1, y, 1, 1, '#f3d47a'); rect(92, y, 1, 1, '#f3d47a');
+  for (const x of [14, 78]) { rect(x, y + 3, 2, 4, '#4a4e53'); rect(x, y + 6, 2, 1, '#2a2c30'); }
+}
+
+/** Wind strength by weather: a gust swells and drops, and the hem flutters on top of it. k is 0 for no motion. */
+export const windFor = (w: Weather) => (w === 'rain' ? 1 : w === 'snow' ? 0.8 : w === 'fog' ? 0.5 : 0.7);
+export function drawCurtains(g: CanvasRenderingContext2D, panels: { left: Sprite; right: Sprite }, t: number, k: number) {
+  const gust = Math.max(0, 0.55 + 0.45 * Math.sin(t * 0.9 + Math.sin(t * 0.37) * 2)) * k;
+  for (let y = 0; y < CURTAIN.h; y++) {
+    const amp = Math.pow(y / CURTAIN.h, 1.4); // the top is on the rod; the hem moves most
+    const flutter = Math.sin(t * 3.1 + y * 0.18) * 1.3 * k, flutter2 = Math.sin(t * 2.6 + y * 0.15 + 1.7) * 1.3 * k;
+    const l = Math.round((gust * 9 + flutter) * amp), r = Math.round((gust * 9 * 0.85 + flutter2) * amp);
+    g.drawImage(panels.left, 0, y, CURTAIN.w + 2, 1, CURTAIN.lx + l, CURTAIN.top + y, CURTAIN.w + 2, 1);
+    g.drawImage(panels.right, 0, y, CURTAIN.w + 2, 1, CURTAIN.rx - r, CURTAIN.top + y, CURTAIN.w + 2, 1);
+  }
 }

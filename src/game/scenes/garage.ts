@@ -14,7 +14,7 @@ import { site } from '../../data/site';
 import { idleMessage } from '../hints';
 import { countFound, type Theme, type Weather } from '../state';
 import { windowFall, windowSky } from './weather';
-import { SUN, TUBES, bikeGrounding, clockFace, clockHands, conduit, depthShading, floorDetail, floorProps, fuseBox, charger, chargerLive, curtainSprite, sunSprite, sunStrength, tubeBeams } from './garageprops';
+import { SUN, TUBES, bikeGrounding, clockFace, clockHands, conduit, depthShading, floorDetail, floorProps, fuseBox, charger, chargerLive, curtainPanels, curtainRod, drawCurtains, windFor, sunSprite, sunStrength, tubeBeams } from './garageprops';
 import github from '../../data/github.json';
 
 const WALL = '#cbbd9f', MORTAR = '#bcad8f', LOWER = '#7f8a7a', FLOOR = '#958d80', FLOOR_DARK = '#857d71';
@@ -58,7 +58,7 @@ export class GarageScene implements Scene {
   private glow = 0;           // 0..1, eases in and out as you point at things
   private glowId: string | null = null;
   private bikeHalo?: Sprite;
-  private curtain?: Sprite; // the window curtains, drawn over the glass and the weather outside it
+  private curtains?: ReturnType<typeof curtainPanels>; // the two curtain panels, drawn each frame over the glass so they can blow
   private sun?: Sprite; // the window's light on the floor, rebuilt when the weather changes
   private touch = matchMedia('(pointer: coarse)').matches;
   private reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -71,7 +71,7 @@ export class GarageScene implements Scene {
   enter() {
     this.bg = this.roomSprite();
     this.sun = sunSprite(this.weather);
-    this.curtain = curtainSprite();
+    this.curtains = curtainPanels();
     this.t = 0;
     this.nightT = this.night ? 1 : 0;
   }
@@ -198,6 +198,7 @@ export class GarageScene implements Scene {
     this.light();
     tubeBeams();
     this.window();
+    curtainRod();
     // things that glow are painted after the light so the lighting never dims them
     for (const x of TUBES) { rect(x - 30, 13, 60, 3, '#fff8e0'); rect(x - 30, 16, 60, 1, '#e8dcb8'); }
     for (const x of [200, 280]) { rect(x - 4, 18, 8, 4, '#2a2a2e'); rect(x - 2, 22, 4, 1, '#fff4c2'); }
@@ -431,7 +432,7 @@ export class GarageScene implements Scene {
       rect(159 + Math.round(Math.sin((p + k) * 6) * 2), 148 + BENCH_DY - p * 14, 1, 2, '#f4f2ea');
     }
     windowFall(ctx(), WIN.x, WIN.y, WIN.w, WIN.h, this.weather, t);
-    if (this.curtain) ctx().drawImage(this.curtain, 0, 18);
+    if (this.curtains) drawCurtains(ctx(), this.curtains, this.t, this.lowFx || this.reduced ? 0 : windFor(this.weather));
     this.sunlight(t);
     clockHands(new Date());
     chargerLive(t);
