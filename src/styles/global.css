@@ -128,3 +128,6 @@ main { padding-block: 3.5rem 5rem; }
 .embedded .site-header, .embedded .site-footer { display: none; }
 .embedded main.wrap { padding-top: 1.25rem; }
 .site-footer .credits { flex-basis: 100%; margin: 0; font-size: 0.72rem; color: var(--muted); }
+
+/* Page to page: the browser cross-fades instead of flashing white. No JavaScript involved. */
+@media (prefers-reduced-motion: no-preference) { @view-transition { navigation: auto; } }

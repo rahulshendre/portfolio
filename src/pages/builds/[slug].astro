@@ -1,0 +1,28 @@
+---
+import { getCollection, render } from 'astro:content';
+import Page from '../../layouts/Page.astro';
+
+export async function getStaticPaths() {
+  const builds = await getCollection('builds', (b) => b.data.problem || b.data.decision || b.data.result);
+  return builds.map((b) => ({ params: { slug: b.id }, props: { b } }));
+}
+const { b } = Astro.props;
+const { Content } = await render(b);
+const { title, summary, for: org, year, stack, metric, links, problem, decision, result } = b.data;
+const parts = [['The problem', problem], ['What I decided, and why', decision], ['What came of it', result]].filter(([, t]) => t);
+---
+<Page title={title} description={summary}>
+  <header class="page-head">
+    <span class="kicker">Case study · {[org, year].filter(Boolean).join(' · ')}</span>
+    <h1>{title}</h1>
+    <p class="lede">{summary}</p>
+    {metric && <p class="mono">→ {metric}</p>}
+  </header>
+  <div class="read">
+    <Content />
+    {parts.map(([h, t]) => <><h2>{h}</h2><p>{t}</p></>)}
+    {stack.length > 0 && <ul class="tags">{stack.map((s) => <li class="tag">{s}</li>)}</ul>}
+    {links.length > 0 && <p class="links">{links.map((l) => <><a href={l.url}>{l.label} ↗</a>{' '}</>)}</p>}
+    <p><a href="/builds">← All builds</a></p>
+  </div>
+</Page>

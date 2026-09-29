@@ -1,8 +1,8 @@
 ---
 import { getCollection, render } from 'astro:content';
-import Page from '../layouts/Page.astro';
-import ProjectCard from '../components/ProjectCard.astro';
-import { ownRepos } from '../lib/github';
+import Page from '../../layouts/Page.astro';
+import ProjectCard from '../../components/ProjectCard.astro';
+import { ownRepos } from '../../lib/github';
 
 const builds = (await getCollection('builds')).sort((a, b) => a.data.order - b.data.order);
 const featuredRepos = builds.flatMap((b) => b.data.links.map((l) => l.url.split('github.com/rahulshendre/')[1]).filter(Boolean));
@@ -25,6 +25,7 @@ const rendered = await Promise.all(builds.map(async (b) => ({ b, Content: (await
         stack={b.data.stack}
         links={b.data.links}
         metric={b.data.metric}
+        more={b.data.problem || b.data.decision || b.data.result ? `/builds/${b.id}` : undefined}
       >
         <Content />
       </ProjectCard>

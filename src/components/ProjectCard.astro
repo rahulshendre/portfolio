@@ -6,8 +6,9 @@ interface Props {
   stack?: string[];
   links?: { label: string; url: string }[];
   metric?: string;
+  more?: string;
 }
-const { title, summary, meta, stack = [], links = [], metric } = Astro.props;
+const { title, summary, meta, stack = [], links = [], metric, more } = Astro.props;
 ---
 <article class="card">
   {meta && <div class="meta">{meta}</div>}
@@ -16,5 +17,6 @@ const { title, summary, meta, stack = [], links = [], metric } = Astro.props;
   {metric && <p class="mono">→ {metric}</p>}
   <slot />
   {stack.length > 0 && <ul class="tags">{stack.map((s) => <li class="tag">{s}</li>)}</ul>}
+  {more && <p class="mono"><a href={more}>Read the case study →</a></p>}
   {links.length > 0 && <div class="links">{links.map((l) => <a href={l.url}>{l.label} ↗</a>)}</div>}
 </article>

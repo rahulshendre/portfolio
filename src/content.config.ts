@@ -15,6 +15,10 @@ const builds = defineCollection({
     metric: z.string().optional(),
     links: z.array(link).default([]),
     order: z.number().default(100),
+    // Case study fields. Fill any of these in and the project gets its own page at /builds/<file name>.
+    problem: z.string().optional(),
+    decision: z.string().optional(),
+    result: z.string().optional(),
   }),
 });
 
