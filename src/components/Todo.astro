@@ -1,6 +1,6 @@
 ---
-// Visible marker for facts Rahul still needs to fill in.
+// Notes to self for facts Rahul still has to fill in. Shown while developing, gone from the live site (text included).
 interface Props { label?: string }
 const { label = 'TODO' } = Astro.props;
 ---
-<span class="todo" title="Rahul: fill this in">{label}</span> <slot />
+{import.meta.env.DEV && <><span class="todo" title="Rahul: fill this in">{label}</span> <slot /></>}

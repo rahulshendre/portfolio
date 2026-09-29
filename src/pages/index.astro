@@ -24,6 +24,7 @@ import { site, nav } from '../data/site';
       <iframe id="panel-frame" title="Section from the garage"></iframe>
     </div>
   </div>
+  <button type="button" class="sound" id="sound" aria-pressed="true">SOUND ON</button>
   <div class="phone-bar" aria-hidden="true">
     <a href="/list" tabindex="-1">LIST</a>
     <button type="button" id="phone-term" tabindex="-1">TERMINAL</button>
@@ -44,7 +45,14 @@ import { site, nav } from '../data/site';
     html, body { height: 100%; overflow: hidden; background: #1b1712; }
     .viewport { position: fixed; inset: 0; display: grid; place-items: center; overflow: hidden; }
     .viewport:has(.stage[data-mode='world']), .viewport:has(.stage[data-mode='wide']) { overflow-x: auto; overflow-y: hidden; justify-items: safe center; overscroll-behavior-x: contain; }
-    .stage { position: relative; flex: none; }
+    .stage { position: relative; flex: none; opacity: 0; }
+    .viewport.ready .stage { opacity: 1; transition: opacity 0.35s; }
+    /* Until the first frame is painted: the garage as a still, so the page is never a blank box and nothing shifts. */
+    .viewport::before { content: ''; position: absolute; inset: 0; background: #1b1712 url('/sprites/poster.png') center / contain no-repeat; image-rendering: pixelated; transition: opacity 0.35s; }
+    .viewport.ready::before { opacity: 0; pointer-events: none; }
+    .sound { position: fixed; top: 8px; left: 8px; z-index: 6; border: 0; cursor: pointer; font: 400 12px/1 'Silkscreen', monospace; background: #1b1712; color: #fff6e0; padding: 9px 11px; box-shadow: 3px 3px 0 #e8b923; }
+    .sound[aria-pressed='false'] { color: #a89d8b; box-shadow: 3px 3px 0 #6b5518; }
+    .sound:focus-visible { outline: 3px solid #e8b923; outline-offset: 2px; }
     .stage canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; touch-action: none; }
     .stage[data-mode='world'] canvas, .stage[data-mode='wide'] canvas { touch-action: pan-x; }
     .hotspots { position: absolute; inset: 0; pointer-events: none; }

@@ -1,3 +1,17 @@
+// One switch for all sound: every audio context is created here, so muting suspends them all and nothing can start them again until unmuted.
+const contexts = new Set<AudioContext>();
+let muted = false;
+const newCtx = () => { const c = new AudioContext(); contexts.add(c); if (muted) void c.suspend(); return c; };
+const wake = (c: AudioContext) => (muted ? Promise.resolve() : c.resume());
+export const isMuted = () => muted;
+export function setMuted(m: boolean) {
+  muted = m;
+  for (const c of contexts) {
+    if (c.state === 'closed') { contexts.delete(c); continue; }
+    (m ? c.suspend() : c.resume()).catch(() => {});
+  }
+}
+
 // A tiny synthesised single-cylinder engine. Off by default; browsers only allow audio after a gesture anyway.
 export class EngineSound {
   on = false;
@@ -16,7 +30,7 @@ export class EngineSound {
 
   private start() {
     if (!this.ctx) {
-      const ctx = new AudioContext();
+      const ctx = newCtx();
       const gain = ctx.createGain(); gain.gain.value = 0;
       const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.value = 600; filter.Q.value = 4;
       const body = ctx.createOscillator(); body.type = 'sawtooth'; body.frequency.value = 42;
@@ -26,7 +40,7 @@ export class EngineSound {
       body.start(); thump.start();
       Object.assign(this, { ctx, gain, filter, body, thump });
     }
-    void this.ctx!.resume();
+    void wake(this.ctx!);
     this.gain!.gain.setTargetAtTime(0.06, this.ctx!.currentTime, 0.1);
   }
 
@@ -72,13 +86,13 @@ export class RadioSound {
     this.start();
     const c = this.ctx!;
     if (c.state === 'running') return;
-    const unlock = () => { void c.resume(); removeEventListener('pointerdown', unlock); removeEventListener('keydown', unlock); };
+    const unlock = () => { void wake(c); removeEventListener('pointerdown', unlock); removeEventListener('keydown', unlock); };
     addEventListener('pointerdown', unlock); addEventListener('keydown', unlock);
   }
 
   private start() {
     if (!this.ctx) {
-      this.ctx = new AudioContext();
+      this.ctx = newCtx();
       this.master = this.ctx.createGain();
       this.master.gain.value = 0;
       const lp = this.ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 1800;
@@ -87,7 +101,7 @@ export class RadioSound {
       for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
       this.noise = buf;
     }
-    void this.ctx.resume();
+    void wake(this.ctx);
     this.master!.gain.setTargetAtTime(0.5, this.ctx.currentTime, 0.2);
     this.next = this.ctx.currentTime + 0.1;
     this.step = 0;
@@ -136,7 +150,7 @@ export class RadioSound {
 
   /** Pause with the tab so it never plays to an empty room. */
   suspend() { if (this.on) void this.ctx?.suspend(); }
-  resume() { if (this.on) void this.ctx?.resume(); }
+  resume() { if (this.on && this.ctx) void wake(this.ctx); }
 }
 
 export const radio = new RadioSound();
@@ -156,9 +170,9 @@ export class DoorSound {
   start(now: () => number, cues: DoorCues, weather = 'clear') {
     if (this.running || this.dead) return;
     this.weather = weather;
-    try { this.ctx ??= new AudioContext(); } catch { return; }
+    try { this.ctx ??= newCtx(); } catch { return; }
     const c = this.ctx;
-    void c.resume().then(() => {
+    void wake(c).then(() => {
       if (c.state !== 'running' || this.running || this.dead) return;
       this.running = true;
       this.build(now(), cues);
@@ -269,7 +283,7 @@ export async function preloadMeow() {
   if (meowBuf !== undefined) return;
   meowBuf = null;
   try {
-    meowCtx ??= new AudioContext();
+    meowCtx ??= newCtx();
     const r = await fetch('/sounds/meow.mp3');
     if (!r.ok) return;
     meowBuf = await meowCtx.decodeAudioData(await r.arrayBuffer());
@@ -280,9 +294,9 @@ export function meow() {
   const now = performance.now() / 1000;
   if (!meowAllowed(lastMeow, now)) return;
   lastMeow = now;
-  try { meowCtx ??= new AudioContext(); } catch { return; }
+  try { meowCtx ??= newCtx(); } catch { return; }
   const c = meowCtx;
-  void c.resume();
+  void wake(c);
   if (meowBuf) {
     const src = c.createBufferSource(), g = c.createGain();
     src.buffer = meowBuf; g.gain.value = 0.9;

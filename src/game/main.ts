@@ -7,8 +7,8 @@ import { RideScene } from './scenes/ride';
 import { DoorScene } from './scenes/door';
 import { GarageScene } from './scenes/garage';
 import { BAR, CONTROLS, HOTSPOTS, toPct } from './hotspots';
-import { WEATHERS, hasVisited, isNightHour, loadFound, loadNight, loadRadio, loadTried, markVisited, pickStart, pickTheme, pickWeather, saveFound, saveNight, saveRadio, saveTried } from './state';
-import { meow, preloadMeow, radio } from './engine/audio';
+import { WEATHERS, hasVisited, isNightHour, loadFound, loadMute, saveMute, loadNight, loadRadio, loadTried, markVisited, pickStart, pickTheme, pickWeather, saveFound, saveNight, saveRadio, saveTried } from './state';
+import { meow, preloadMeow, radio, setMuted } from './engine/audio';
 import { mountTerminal } from './terminal-ui';
 import { isPanelHref, mountPanel, parsePanelHash, titleFor } from './panel';
 
@@ -71,6 +71,12 @@ const terminal = mountTerminal({
   ride: () => ride(),
   closed: () => (document.querySelector('a[data-action="terminal"]') as HTMLElement | null)?.focus(),
 });
+
+// The speaker button: one switch for every sound (radio, door, engine, cat). The choice is remembered.
+const soundBtn = document.getElementById('sound') as HTMLButtonElement | null;
+const showMute = (m: boolean) => { if (soundBtn) { soundBtn.setAttribute('aria-pressed', String(!m)); soundBtn.textContent = m ? 'SOUND OFF' : 'SOUND ON'; } };
+setMuted(loadMute()); showMute(loadMute());
+soundBtn?.addEventListener('click', () => { const m = soundBtn.getAttribute('aria-pressed') === 'true'; setMuted(m); saveMute(m); showMute(m); });
 
 document.getElementById('phone-term')?.addEventListener('click', () => terminal.open()); // the TV is off-screen on a portrait phone
 
@@ -222,7 +228,7 @@ function frame(now: number) {
   const dt = Math.min(0.05, (now - last) / 1000);
   last = now;
   const s = director.current;
-  if (s) { s.update(dt); s.draw(); }
+  if (s) { s.update(dt); s.draw(); if (!viewport.classList.contains('ready')) viewport.classList.add('ready'); } // first real frame: the poster steps aside
   if (s instanceof DoorScene && viewport.scrollWidth > viewport.clientWidth) { // phone: pan along with the bike
     const want = (s.focus / WIDE_W) * viewport.scrollWidth - viewport.clientWidth / 2;
     viewport.scrollLeft += (want - viewport.scrollLeft) * Math.min(1, dt * 5);

@@ -10,7 +10,7 @@ import { site, pipecd, planetread } from '../data/site';
   </header>
 
   <div class="prose">
-    <p class="draft-banner"><span class="todo">DRAFT</span> Written from public facts (GitHub, pipecd.dev, my profile README). Rahul: rewrite this in your own words.</p>
+    {import.meta.env.DEV && <p class="draft-banner"><span class="todo">DRAFT</span> Written from public facts (GitHub, pipecd.dev, my profile README). Rahul: rewrite this in your own words.</p>}
 
     <p>I'm a computer science student in Pune. My first GitHub repo went up in September 2023 with the commit message energy of someone who had just discovered Git. Through 2024 I learned the web by building small things: shopping page layouts, a to-do app in React, a real estate site with Tailwind.</p>
 

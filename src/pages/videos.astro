@@ -1,5 +1,6 @@
 ---
 import Page from '../layouts/Page.astro';
+import Todo from '../components/Todo.astro';
 import { site } from '../data/site';
 ---
 <Page title="Videos" description="Videos on Kubernetes, DevOps and PipeCD by Rahul Shendre. Starting October 2026.">
@@ -23,6 +24,6 @@ import { site } from '../data/site';
       <li><b>Things I'm learning</b>, in public, mistakes included.</li>
     </ul>
     <p>Follow along on <a href={site.links.x}>X {site.links.xHandle}</a>.</p>
-    <p><span class="todo">TODO</span> Add each video to this page (title, date, link) as they go live.</p>
+    <Todo>Add each video to this page (title, date, link) as they go live.</Todo>
   </div>
 </Page>

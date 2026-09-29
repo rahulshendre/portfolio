@@ -12,7 +12,7 @@ More screenshots in `docs/screenshots/` (door, night with the bike lit, the TV t
 - Point at anything: it glows. Click: sections open in a panel over the garage (Esc or Back closes it, "Full page" opens the plain page). Outside links open in a new tab.
 - The CRT TV is a terminal (`help`, `about`, `pipecd`, `open builds`, `night`, `radio`, `ride`). `/` or `` ` `` opens it from anywhere.
 - Pull the cord for lights on or off. It follows the visitor's clock (dark from 7pm to 6am) until they choose, and remembers the choice.
-- Click the radio for lo-fi (off by default). Pet the cat. A counter on the ceiling beam tracks what you have found.
+- Click the radio for lo-fi (on by default, your choice is remembered). The SOUND button top left mutes everything. Pet the cat. A counter on the ceiling beam tracks what you have found.
 - Everything is also a plain link: no JavaScript, Ctrl-click and screen readers all work. "List view" is the one-page version.
 
 ## Controls
@@ -30,7 +30,7 @@ pnpm test       # unit tests for the game logic
 pnpm build      # static site in dist/
 ```
 
-Needs Node 20+ (Astro 5). Astro 7 needs Node 22, so upgrade Node before upgrading Astro.
+Needs Node 20+ (Astro 5). Set `SITE_URL` when deploying to your own domain (canonical links, share card and sitemap use it; on Vercel it is picked up automatically). CI (`.github/workflows/ci.yml`) runs type check, tests, build and the link check. Astro 7 needs Node 22, so upgrade Node before upgrading Astro.
 
 ## Where things live
 

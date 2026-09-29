@@ -80,3 +80,12 @@ export function loadRadio(): boolean {
 export function saveRadio(on: boolean) {
   try { localStorage.setItem('rs:radio', on ? '1' : '0'); } catch { /* fine */ }
 }
+
+// Master sound switch (the speaker button). Off by default so nothing changes for people who never touch it.
+export function loadMute(): boolean {
+  try { return localStorage.getItem('rs:mute') === '1'; } catch { return false; }
+}
+
+export function saveMute(on: boolean) {
+  try { localStorage.setItem('rs:mute', on ? '1' : '0'); } catch { /* fine */ }
+}
