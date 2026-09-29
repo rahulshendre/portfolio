@@ -30,6 +30,13 @@ describe('computeSize', () => {
     expect(s.cssW).toBeLessThan(2560);
   });
 
+  it('wide scenes are 640 wide and letterbox the same way', () => {
+    const s = computeSize('wide', 3000, 1080);
+    expect([s.W, s.H]).toEqual([640, 270]);
+    expect(s.cssH).toBeCloseTo(1080);
+    expect(s.cssW).toBeCloseTo(2560);
+  });
+
   it('world scenes fill height and overflow sideways on phones', () => {
     const s = computeSize('world', 390, 844);
     expect(s.cssH).toBeCloseTo(844);

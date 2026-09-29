@@ -24,7 +24,7 @@ Flags: `--key-bg` drops a plain background, `--flip` mirrors it, `--keep-hue lo:
 Turns a mountain photo into the door scene's dusk backdrop (`public/sprites/mountains.png`): crops, removes the blue sky, regrades to a dusk ramp and reduces the palette. Needs Pillow.
 
 ```bash
-python3 tools/backdrop.py tools/reference/ama-dablam.jpg public/sprites/mountains.png --crop 617,107,1760,583 --colors 26
+python3 tools/backdrop.py tools/reference/ama-dablam.jpg public/sprites/mountains.png --crop 396,107,1920,583 --width 640 --colors 26
 ```
 
 `--crop` is x0,y0,x1,y1 in source pixels (the summit ends up top left, behind the garage's left edge). If the sky removal eats into the snow, lower `--step` or raise `--sat`. Keep the credit in `src/data/site.ts` if you swap the photo, and check its licence first.
