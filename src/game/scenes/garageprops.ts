@@ -198,7 +198,8 @@ export function fanLive(t: number) {
 }
 
 /** One frame for everything hung on the poster wall, so they all read as the same size. */
-export const POSTER = { w: 52, h: 50 };
+export const POSTER = { w: 44, h: 42 };
+export const POSTER_AT = { x0: 194, x1: 242, y0: 39, y1: 85 }; // the 2 by 2 grid, centred on the wall between the fan and the pegboard
 export function posterFrame(x: number, y: number) {
   const { w, h } = POSTER;
   rect(x + 3, y + 3, w, h, '#00000033');
@@ -225,13 +226,13 @@ function microText(str: string, cx: number, y: number, col: string) {
 
 /** The fourth frame on the poster wall is kept empty for the rides page: blank paper with dashed lines top and bottom, taped up, saying it is a work in progress. */
 export function ridesFrame() {
-  const fx = 244, fy = 84;
+  const fx = POSTER_AT.x1, fy = POSTER_AT.y1;
   posterFrame(fx, fy);
   rect(fx + 3, fy + 3, POSTER.w - 6, POSTER.h - 6, '#f0ead8');
   for (let x = fx + 5; x < fx + POSTER.w - 5; x += 3) { rect(x, fy + 5, 2, 1, '#b8b09a'); rect(x, fy + POSTER.h - 6, 2, 1, '#b8b09a'); }
   const mid = fx + POSTER.w / 2;
-  microText('WORK IN', mid, fy + 19, '#5a4636'); microText('PROGRESS', mid, fy + 27, '#5a4636');
-  rect(mid - 10, fy + 36, 20, 1, '#c9c0a8');
+  microText('WORK IN', mid, fy + 15, '#5a4636'); microText('PROGRESS', mid, fy + 23, '#5a4636');
+  rect(mid - 10, fy + 31, 20, 1, '#c9c0a8');
   rect(fx + 4, fy + 2, 8, 3, '#e8d9a8aa'); rect(fx + POSTER.w - 12, fy + 2, 8, 3, '#e8d9a8aa'); // tape at the top corners
 }
 

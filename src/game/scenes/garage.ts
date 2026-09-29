@@ -16,7 +16,7 @@ import { istHMS, istLabel } from '../ist';
 import { tick } from '../engine/audio';
 import { countFound, type Theme, type Weather } from '../state';
 import { windowFall, windowSky } from './weather';
-import { SUN, TUBES, benchLamp, benchLampGlow, bikeGrounding, ceilingMech, chai, chaiLive, helmetStand, compressor, compressorPuff, fanLive, fanStatic, foreground, posterFrame, POSTER, incidentBoard, ridesFrame, clockFace, clockHands, conduit, depthShading, floorDetail, floorProps, charger, chargerLive, sunSprite, sunStrength, tubeBeams } from './garageprops';
+import { POSTER_AT, SUN, TUBES, benchLamp, benchLampGlow, bikeGrounding, ceilingMech, chai, chaiLive, helmetStand, compressor, compressorPuff, fanLive, fanStatic, foreground, posterFrame, POSTER, incidentBoard, ridesFrame, clockFace, clockHands, conduit, depthShading, floorDetail, floorProps, charger, chargerLive, sunSprite, sunStrength, tubeBeams } from './garageprops';
 import github from '../../data/github.json';
 
 const WALL = '#cbbd9f', MORTAR = '#bcad8f', LOWER = '#7f8a7a', FLOOR = '#958d80', FLOOR_DARK = '#857d71';
@@ -270,11 +270,11 @@ export class GarageScene implements Scene {
 
   /** The PipeCD poster on the left; on the right two plaques for the real PlanetRead and BookBox logos (main.ts lays the crisp images over them). */
   private pipecdSign() {
-    posterFrame(188, 30); // PipeCD
+    posterFrame(POSTER_AT.x0, POSTER_AT.y0); // PipeCD
     const im = this.img.pipecd, k = Math.min((POSTER.w - 6) / im.width, (POSTER.h - 6) / im.height), pw = Math.round(im.width * k), ph = Math.round(im.height * k);
-    blit(im, 188 + Math.round((POSTER.w - pw) / 2), 30 + Math.round((POSTER.h - ph) / 2), pw, ph);
-    posterFrame(244, 30); // PlanetRead and BookBox: main.ts lays the crisp logos over these plaques
-    posterFrame(188, 84);
+    blit(im, POSTER_AT.x0 + Math.round((POSTER.w - pw) / 2), POSTER_AT.y0 + Math.round((POSTER.h - ph) / 2), pw, ph);
+    posterFrame(POSTER_AT.x1, POSTER_AT.y0); // PlanetRead and BookBox: main.ts lays the crisp logos over these plaques
+    posterFrame(POSTER_AT.x0, POSTER_AT.y1);
   }
 
   private workbench() {

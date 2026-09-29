@@ -24,9 +24,9 @@ export interface Control {
 const yt = site.links.youtube;
 
 export const HOTSPOTS: Hotspot[] = [
-  { id: 'pipecd', label: 'PIPECD POSTER · OPEN SOURCE', tag: 'PIPECD', href: '/open-source', rect: [188, 30, 52, 50] },
-  { id: 'planetread', label: 'PLANETREAD POSTER · SUBTITLES AND APPS', tag: 'PLANETREAD', href: '/planetread', rect: [244, 30, 52, 50] },
-  { id: 'bookbox', label: 'BOOKBOX · THE REACT NATIVE APP', tag: 'BOOKBOX', href: '/planetread#bookbox', rect: [188, 84, 52, 50] },
+  { id: 'pipecd', label: 'PIPECD POSTER · OPEN SOURCE', tag: 'PIPECD', href: '/open-source', rect: [194, 39, 44, 42] },
+  { id: 'planetread', label: 'PLANETREAD POSTER · SUBTITLES AND APPS', tag: 'PLANETREAD', href: '/planetread', rect: [242, 39, 44, 42] },
+  { id: 'bookbox', label: 'BOOKBOX · THE REACT NATIVE APP', tag: 'BOOKBOX', href: '/planetread#bookbox', rect: [194, 85, 44, 42] },
   { id: 'bike', label: 'THE SCRAMBLER 400X', tag: 'THE BIKE', href: '/garage', rect: [108, 146, 214, 106] },
   // enamel signs: the socials
   { id: 'youtube', label: yt ? 'YOUTUBE · MY CHANNEL' : 'YOUTUBE · VIDEOS FROM OCT', tag: 'YOUTUBE', href: yt || '/videos', rect: [92, 30, 63, 13], external: !!yt },
@@ -41,7 +41,7 @@ export const HOTSPOTS: Hotspot[] = [
   { id: 'calendar', label: 'CALENDAR · PR LOG', tag: 'PR LOG', href: '/open-source#log', rect: [304, 82, 30, 42] },
   { id: 'clipboard', label: 'CLIPBOARD · RESUME', tag: 'RESUME', href: '/resume', rect: [348, 82, 26, 36] },
   { id: 'toolbox', label: 'TOOLBOX STICKERS · PROJECTS', tag: 'PROJECTS', href: '/open-source#projects', rect: [322, 146, 62, 88] },
-  { id: 'map', label: 'RIDES · WORK IN PROGRESS', tag: 'RIDES', href: '/garage', rect: [244, 84, 52, 50] },
+  { id: 'map', label: 'RIDES · WORK IN PROGRESS', tag: 'RIDES', href: '/garage', rect: [242, 85, 44, 42] },
   { id: 'board', label: 'PR BOARD · DAYS SINCE MY LAST PR', tag: 'PR BOARD', href: '/open-source#log', rect: [290, 154, 26, 26] },
   { id: 'shelf', label: 'PARTS SHELF · BUILDS', tag: 'BUILDS', href: '/builds', rect: [390, 86, 86, 112] },
 ];
