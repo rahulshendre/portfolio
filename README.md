@@ -1,6 +1,6 @@
 # Rahul Shendre
 
-Personal site, built as a pixel-art garage. You arrive on a white Scrambler 400X, the roller door lifts, and every object in the garage opens a real part of the site: work, open source, videos, writing, about, resume. The ride down a highway to Ladakh is one click away.
+Personal site, built as a pixel-art garage. You arrive on a white Scrambler 400X, the sectional steel door lifts, and every object in the garage opens a real part of the site: work, open source, videos, writing, about, resume. The ride down a highway to Ladakh is one click away.
 
 ![Garage](docs/screenshots/10-garage.png)
 
