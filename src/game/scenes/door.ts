@@ -1,7 +1,7 @@
 // Outside the garage at dusk: the bike pulls up, the tagged roller door rattles and rolls up.
 import { C } from '../art/palette';
 import { graffitiTag } from '../art/sprites';
-import { bind, bayer, disc, ellipse, line, poly, rect } from '../engine/pixel';
+import { bind, bayer, ctx, disc, ellipse, line, poly, rect } from '../engine/pixel';
 import { text, textC } from '../engine/font';
 import { input } from '../engine/input';
 import type { Scene } from '../engine/scene';
@@ -55,6 +55,7 @@ export class DoorScene implements Scene {
       line(52, 46, 56, 40, C.accent); line(56, 40, 60, 46, C.accent); line(60, 46, 64, 40, C.accent); line(64, 40, 68, 46, C.accent);
       text('MH-12', 200, 150, '#2a2a2e');
       rect(DOOR.w / 2 - 12, DOOR.h - 8, 24, 3, '#3a3d42');
+      this.duskLight(0, 0, DOOR.w, DOOR.h); // the shutter catches the same dusk as the wall
     });
   }
 
@@ -107,6 +108,21 @@ export class DoorScene implements Scene {
     if (fade > 0) { g.globalAlpha = fade; rect(0, 0, 480, 270, '#f4e6c8'); g.globalAlpha = 1; }
   }
 
+  /** Multiply a painted area by a dusk tint: cool violet on the left, warm orange on the right, darker toward the ground. Stepped, so it stays pixel art. */
+  private duskLight(x0: number, y0: number, w: number, h: number) {
+    const g = ctx(), im = g.getImageData(x0, y0, w, h), d = im.data;
+    for (let y = 0; y < h; y++)
+      for (let x = 0; x < w; x++) {
+        const t = x / w, v = 1 - 0.2 * (y / h);
+        const q = Math.floor((v * 10) + bayer(x + x0, y + y0) * 0.9) / 10; // fine steps
+        const o = (y * w + x) * 4;
+        d[o] = Math.min(255, d[o] * q * (0.78 + 0.24 * t));
+        d[o + 1] = Math.min(255, d[o + 1] * q * (0.8 + 0.1 * t));
+        d[o + 2] = Math.min(255, d[o + 2] * q * (0.94 - 0.2 * t));
+      }
+    g.putImageData(im, x0, y0);
+  }
+
   private facade() {
     // whole backdrop first, so nothing ever shows through (the bike would leave trails)
     // same dusk the ride ends in
@@ -118,8 +134,22 @@ export class DoorScene implements Scene {
     disc(400, 176, 18, '#f6b27a'); disc(400, 176, 12, '#ffd49a');
     // the Himalaya: a real photo, regraded to this dusk and reduced to a pixel palette (tools/backdrop.py)
     blit(this.mountains, 0, 0);
-    rect(0, 200, 480, 48, '#a8906e');
-    for (let x = 0; x < 480; x += 3) if (bayer(x, 210) > 0.5) rect(x, 200 + (x % 7), 1, 2, '#958060');
+    // haze: the mountains melt into the dusk light where they meet the valley
+    for (let y = 120; y < 200; y++) for (let x = 0; x < 480; x++) if (Math.pow((y - 120) / 80, 2.2) * 0.65 > bayer(x, y)) rect(x, y, 1, 1, '#eca676');
+    // foothills either side of the garage, in the same indigo as the shadowed faces
+    const hill = (x: number, cx: number, w: number, h: number) => Math.max(0, h * (1 - Math.abs(x - cx) / w));
+    for (let x = 0; x < 480; x++) {
+      const h = Math.round(Math.max(hill(x, 20, 90, 22), hill(x, 130, 70, 12), hill(x, 440, 80, 20), hill(x, 340, 60, 10)));
+      if (h > 0) { rect(x, 200 - h, 1, h + 1, '#4b415f'); if (h > 3) rect(x, 200 - h, 1, 2, '#6a5876'); }
+    }
+    // valley floor: warm dusk ochre, darker toward the road, with scree
+    const soil = ['#a58a6f', '#977c64', '#87705b', '#75604f'];
+    for (let y = 200; y < 248; y++) for (let x = 0; x < 480; x++) {
+      const t = ((y - 200) / 48) * (soil.length - 1), i = Math.min(soil.length - 2, Math.floor(t));
+      rect(x, y, 1, 1, t - i > bayer(x, y) ? soil[i + 1] : soil[i]);
+    }
+    for (let x = 0; x < 480; x += 3) if (bayer(x, 210) > 0.5) rect(x, 202 + (x % 7) * 5, 2, 1, '#6a5747');
+    for (let x = 1; x < 480; x += 5) if (bayer(x, 77) > 0.6) rect(x, 206 + (x * 7) % 34, 1, 1, '#b79c80');
     // sparse poplar left; pole and wires on the right
     rect(32, 118, 4, 132, '#5a4530');
     disc(34, 102, 7, '#9aa858'); disc(34, 92, 5, '#7a8840');
@@ -138,17 +168,22 @@ export class DoorScene implements Scene {
       const d = Math.hypot((x - 436) / 34, (y - 72) / 36);
       if (d < 1 && (1 - d) * 0.45 > bayer(x, y)) rect(x, y, 1, 1, '#f3d9a6');
     }
-    // building
+    // building: painted plain, then lit by the dusk (cool on the left, warm from the sun side), so it sits in the scene
     rect(84, 34, 312, 8, '#b9a88c'); rect(90, 42, 300, 206, '#d9cbb2');
     for (let y = 46; y < 246; y += 3) for (let x = 92 + (y % 7); x < 388; x += 11) if (bayer(x, y) > 0.8) rect(x, y, 1, 1, '#cbbc9f');
     rect(90, 200, 300, 48, '#c9b99c');
+    rect(90, 42, 300, 3, '#a8917c'); rect(90, 45, 300, 1, '#bba58f'); // shadow under the roof lip
+    rect(90, 238, 300, 10, '#a3927f'); rect(90, 238, 300, 1, '#8c7b69'); // plinth
+    this.duskLight(90, 42, 300, 206);
+    rect(90, 42, 2, 206, '#5d5470'); rect(388, 42, 2, 206, '#f3c48e'); // dark left edge, sun-catching right edge
+    ellipse(240, 250, 160, 3, '#3a3040'); // the garage's shadow on the driveway
     // sign and lamp
     rect(160, 44, 160, 16, C.ink); textC("RAHUL'S GARAGE", 240, 48, C.accent);
     rect(126, 48, 8, 6, '#2a2a2e'); disc(130, 57, 3, '#fff4c2');
     // no-parking sign on the wall beside the door
     disc(381, 112, 8, C.red); disc(381, 112, 6, '#f4f2ea'); text('P', 379, 109, '#2c5aa0'); line(376, 107, 386, 117, C.red);
     // driveway and the road kerb
-    rect(0, 248, 480, 22, '#8e877c');
+    rect(0, 248, 480, 22, '#767079');
     for (let x = 0; x < 480; x += 16) rect(x, 264, 8, 6, C.accent), rect(x + 8, 264, 8, 6, '#222');
   }
 }
