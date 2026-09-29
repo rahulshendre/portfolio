@@ -19,8 +19,10 @@ class Input {
     });
     addEventListener('keyup', (e) => this.down.delete(e.code));
     addEventListener('blur', () => this.down.clear());
-    const stage = screen.canvas;
+    // Listen on the stage, not the canvas: with the lighting pass on, the game canvas is hidden and the effects canvas ignores the pointer, so a click lands on the stage itself.
+    const stage = screen.canvas.parentElement ?? screen.canvas;
     stage.addEventListener('pointerdown', (e) => {
+      if (e.target instanceof Element && e.target.closest('.hotspots > *')) return; // links and buttons over the art handle their own clicks
       this.pointerDown = true;
       this.tapped = true;
       const p = screen.toCanvas(e.clientX, e.clientY);
