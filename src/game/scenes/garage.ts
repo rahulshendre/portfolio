@@ -14,7 +14,7 @@ import { site } from '../../data/site';
 import { idleMessage } from '../hints';
 import { countFound, type Theme, type Weather } from '../state';
 import { windowFall, windowSky } from './weather';
-import { SUN, TUBES, bikeGrounding, clockFace, clockHands, conduit, depthShading, floorDetail, floorProps, fuseBox, charger, chargerLive, sunSprite, sunStrength, tubeBeams } from './garageprops';
+import { SUN, TUBES, bikeGrounding, clockFace, clockHands, conduit, depthShading, floorDetail, floorProps, fuseBox, charger, chargerLive, curtainSprite, sunSprite, sunStrength, tubeBeams } from './garageprops';
 import github from '../../data/github.json';
 
 const WALL = '#cbbd9f', MORTAR = '#bcad8f', LOWER = '#7f8a7a', FLOOR = '#958d80', FLOOR_DARK = '#857d71';
@@ -58,6 +58,7 @@ export class GarageScene implements Scene {
   private glow = 0;           // 0..1, eases in and out as you point at things
   private glowId: string | null = null;
   private bikeHalo?: Sprite;
+  private curtain?: Sprite; // the window curtains, drawn over the glass and the weather outside it
   private sun?: Sprite; // the window's light on the floor, rebuilt when the weather changes
   private touch = matchMedia('(pointer: coarse)').matches;
   private reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -70,6 +71,7 @@ export class GarageScene implements Scene {
   enter() {
     this.bg = this.roomSprite();
     this.sun = sunSprite(this.weather);
+    this.curtain = curtainSprite();
     this.t = 0;
     this.nightT = this.night ? 1 : 0;
   }
@@ -429,6 +431,7 @@ export class GarageScene implements Scene {
       rect(159 + Math.round(Math.sin((p + k) * 6) * 2), 148 + BENCH_DY - p * 14, 1, 2, '#f4f2ea');
     }
     windowFall(ctx(), WIN.x, WIN.y, WIN.w, WIN.h, this.weather, t);
+    if (this.curtain) ctx().drawImage(this.curtain, 0, 18);
     this.sunlight(t);
     clockHands(new Date());
     chargerLive(t);

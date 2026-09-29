@@ -154,3 +154,40 @@ export function chargerLive(t: number) {
   rect(373, 139, 3, 2, full ? '#3a3d42' : Math.floor(t * 2) % 2 ? '#f5a623' : '#7a4e10'); // charging light
   rect(373, 143, 3, 2, full ? '#5fdc7a' : '#1f4a2a');                                     // full light
 }
+
+/** Heavy canvas curtains on a steel rod, brass eyelets, tied back with rope and patched with rough stitching. Painted once at (0, 18) of the room and blitted over the window glass each frame. */
+export function curtainSprite(): Sprite {
+  const canvas = '#77714a', dark = '#59563a', light = '#8f8a5c', edge = '#3f3d28';
+  return paint(96, 84, () => {
+    const panel = (mirror: boolean) => {
+      const X = (x: number) => (mirror ? 92 - x : x);
+      const right = (y: number) => (y < 46 ? 34 - (12 * (y - 5)) / 41 : 22 + (6 * (y - 46)) / 32); // wide at the rod, pulled in at the tie, easing out toward the hem
+      const left = (y: number) => 8 - (y > 46 ? (2 * (y - 46)) / 32 : 0);
+      for (let y = 5; y <= 78; y++) {
+        const xl = Math.round(left(y)), xr = Math.round(right(y));
+        for (let x = xl; x < xr; x++) {
+          const f = (x - xl + Math.floor(y / 14)) % 7; // vertical folds that drift a little as they hang
+          let col = f < 2 ? dark : f > 4 ? light : canvas;
+          if (y > 74 && hash(x * 7 + y, 300) > 0.55 - (y - 74) * 0.12) continue; // frayed hem
+          if ((x + y) % 3 === 0 && hash(x * 13 + y, 301) > 0.6) col = f < 2 ? '#4c4a31' : dark; // weave
+          rect(X(x) - (mirror ? 0 : 0), y, 1, 1, col);
+        }
+        rect(X(xl), y, 1, 1, edge); rect(X(xr - 1), y, 1, 1, edge);
+      }
+      // brass eyelets along the top, rod threaded through
+      for (let x = 10; x < 33; x += 6) { disc(X(x), 7, 1, '#c9a043'); rect(X(x), 7, 1, 1, '#f3d47a'); }
+      // rope tie-back with a knot and a hanging end
+      const yt = 46, a = Math.round(left(yt)), b = Math.round(right(yt));
+      for (let x = a; x < b; x++) { rect(X(x), yt, 1, 3, x % 2 ? '#b08a5e' : '#8a6a44'); rect(X(x), yt, 1, 1, '#d2b07c'); }
+      disc(X(b - 1), yt + 1, 2, '#a07c50'); line(X(b - 1), yt + 3, X(b - 1) + (mirror ? -1 : 1), yt + 9, '#a07c50'); rect(X(b - 1) + (mirror ? -1 : 0), yt + 9, 2, 2, '#7a5a38');
+    };
+    panel(false); panel(true);
+    // a rough patch, stitched on, on the left panel
+    rect(12, 56, 9, 8, '#7a5a38'); rect(12, 56, 9, 1, '#96704a'); for (let i = 0; i < 9; i += 2) { rect(12 + i, 55, 1, 1, '#d8d2c4'); rect(12 + i, 64, 1, 1, '#d8d2c4'); }
+    for (let j = 0; j < 8; j += 2) { rect(11, 56 + j, 1, 1, '#d8d2c4'); rect(21, 56 + j, 1, 1, '#d8d2c4'); }
+    // the rod: steel with a lit top edge, end caps and two brackets
+    rect(2, 3, 92, 3, '#6b6f79'); rect(2, 3, 92, 1, '#a0a5aa'); rect(2, 5, 92, 1, '#3a3d42');
+    disc(2, 4, 2, '#8b9096'); disc(93, 4, 2, '#8b9096'); rect(2, 3, 1, 1, '#d8dcdf');
+    for (const x of [14, 78]) { rect(x, 5, 2, 4, '#4a4e53'); rect(x, 8, 2, 1, '#2a2c30'); }
+  });
+}
