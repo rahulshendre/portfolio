@@ -255,7 +255,7 @@ export class DoorSound {
   }
 }
 
-// The cat's meow: a voiced tone that glides up and back down through a vowel-like band, about half a second.
+// The cat's meow: a throat buzz with a vowel that slides from a nasal "mee" through "ah" to "ow" (formant filters), pitch rising then falling.
 export const meowAllowed = (last: number, now: number, gap = 1.5) => now - last >= gap;
 
 let meowCtx: AudioContext | undefined;
@@ -268,14 +268,22 @@ export function meow() {
   try { meowCtx ??= new AudioContext(); } catch { return; }
   const c = meowCtx;
   void c.resume();
-  const t = c.currentTime, dur = 0.55;
-  const o = c.createOscillator(); o.type = 'sawtooth';
-  o.frequency.setValueAtTime(520, t); o.frequency.exponentialRampToValueAtTime(880, t + 0.18); o.frequency.exponentialRampToValueAtTime(560, t + dur);
-  const vib = c.createOscillator(), vg = c.createGain(); vib.frequency.value = 7; vg.gain.value = 12; vib.connect(vg).connect(o.frequency);
-  const band = c.createBiquadFilter(); band.type = 'bandpass'; band.Q.value = 6;
-  band.frequency.setValueAtTime(700, t); band.frequency.linearRampToValueAtTime(1500, t + 0.2); band.frequency.linearRampToValueAtTime(900, t + dur);
-  const g = c.createGain();
-  g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.35, t + 0.05); g.gain.setValueAtTime(0.3, t + 0.3); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-  o.connect(band).connect(g).connect(c.destination);
-  o.start(t); vib.start(t); o.stop(t + dur + 0.05); vib.stop(t + dur + 0.05);
+  const t = c.currentTime, dur = 0.8;
+  const buzz = c.createOscillator(); buzz.type = 'sawtooth';
+  buzz.frequency.setValueAtTime(390, t); buzz.frequency.exponentialRampToValueAtTime(640, t + 0.14);
+  buzz.frequency.exponentialRampToValueAtTime(700, t + 0.3); buzz.frequency.exponentialRampToValueAtTime(420, t + dur);
+  const vib = c.createOscillator(), vg = c.createGain(); vib.frequency.value = 5.5; vg.gain.setValueAtTime(0, t); vg.gain.linearRampToValueAtTime(10, t + 0.35); vib.connect(vg).connect(buzz.frequency);
+  const out = c.createGain();
+  out.gain.setValueAtTime(0.0001, t); out.gain.exponentialRampToValueAtTime(0.5, t + 0.07); out.gain.setValueAtTime(0.5, t + 0.45); out.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  out.connect(c.destination);
+  // three formants (the resonances of the mouth) that move from "ee" to "ah" to "oo"
+  const formant = (f0: number, f1: number, f2: number, q: number, vol: number) => {
+    const f = c.createBiquadFilter(), g = c.createGain(); f.type = 'bandpass'; f.Q.value = q; g.gain.value = vol;
+    f.frequency.setValueAtTime(f0, t); f.frequency.linearRampToValueAtTime(f1, t + 0.3); f.frequency.linearRampToValueAtTime(f2, t + dur);
+    buzz.connect(f).connect(g).connect(out);
+  };
+  formant(380, 780, 480, 6, 1.0);
+  formant(2300, 1500, 950, 7, 0.7);
+  formant(3100, 2900, 2600, 8, 0.25);
+  buzz.start(t); vib.start(t); buzz.stop(t + dur + 0.05); vib.stop(t + dur + 0.05);
 }

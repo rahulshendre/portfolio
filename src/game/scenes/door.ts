@@ -7,7 +7,7 @@ import { input } from '../engine/input';
 import { DoorSound } from '../engine/audio';
 import { glow } from '../engine/light';
 import { BEAM, THUNDER_AT, fall, grade, ground } from './weather';
-import { PANELS, paintDoor, paintFrame, wallWear } from './garagedoor';
+import { PANELS, paintDoor, paintFrame, sprayPaint, wallWear } from './garagedoor';
 import { panelSlots } from './doorlift';
 import { THEMES, WEATHERS, type Theme, type Weather } from '../state';
 import type { Scene } from '../engine/scene';
@@ -69,11 +69,16 @@ export class DoorScene implements Scene {
     this.rig = paint(this.bike.width + PAD.x * 2, this.bike.height + PAD.y, () => { blit(this.bike, PAD.x, PAD.y); riderSide(PAD.x, PAD.y); });
     this.doorArt = paint(DOOR.w, DOOR.h, () => {
       paintDoor(DOOR.w, DOOR.h, this.weather);
-      text('GIT PUSH >', 14, 16, '#f4f2ea');
-      graffitiTag(48, 50, 2);
-      for (const [x, y] of [[36, 44], [224, 40], [216, 100]]) { line(x - 3, y, x + 3, y, '#f4f2ea'); line(x, y - 3, x, y + 3, '#f4f2ea'); }
-      line(52, 46, 56, 40, C.accent); line(56, 40, 60, 46, C.accent); line(60, 46, 64, 40, C.accent); line(64, 40, 68, 46, C.accent);
-      text('MH-12', 200, 150, '#2a2a2e');
+      // the tag is sprayed on and weathered; the small stencil text and marks wear less so they stay readable
+      const tag = paint(DOOR.w, DOOR.h, () => graffitiTag(48, 50, 2));
+      const marks = paint(DOOR.w, DOOR.h, () => {
+        text('GIT PUSH >', 14, 16, '#f4f2ea');
+        for (const [x, y] of [[36, 44], [224, 40], [216, 100]]) { line(x - 3, y, x + 3, y, '#f4f2ea'); line(x, y - 3, x, y + 3, '#f4f2ea'); }
+        line(52, 46, 56, 40, C.accent); line(56, 40, 60, 46, C.accent); line(60, 46, 64, 40, C.accent); line(64, 40, 68, 46, C.accent);
+        text('MH-12', 200, 150, '#2a2a2e');
+      });
+      sprayPaint(tag, DOOR.w, DOOR.h);
+      sprayPaint(marks, DOOR.w, DOOR.h, 0.3);
       if (this.theme === 'himalaya') this.duskLight(0, 0, DOOR.w, DOOR.h); // the door catches the same dusk as the wall
     });
     this.frameArt = paint(FRAME.w, FRAME.h, () => paintFrame(DOOR.x - FRAME.x, DOOR.y - FRAME.y, DOOR.w, DOOR.h));

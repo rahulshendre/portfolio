@@ -1,6 +1,6 @@
 // The garage door, painted in code: steel panels with recesses, hinges, wear and weather; the frame around it; wear on the wall.
 // Each function draws with the current pixel context, so call them inside paint(...).
-import { bayer, disc, line, rect } from '../engine/pixel';
+import { bayer, ctx, disc, line, rect } from '../engine/pixel';
 import type { Weather } from '../state';
 
 export const PANELS = 4;
@@ -87,4 +87,35 @@ export function wallWear(x0: number, y0: number, w: number, h: number) {
     rect(x, y, 2 + Math.round(hash(k, 16) * 3), 1, '#b8a88c');
   }
   for (let k = 0; k < 6; k++) { const x = x0 + Math.round(hash(k, 17) * w), y = y0 + 20 + Math.round(hash(k, 18) * (h - 50)); rect(x, y, 3, 2, '#bfae93'); rect(x, y + 2, 3, 1, '#a89882'); } // chipped plaster
+}
+
+/**
+ * Lay a decal layer (tag, stencil text, marks) onto the door as spray paint, not a sticker. It takes the steel's shading, so panel
+ * bevels and dents show through it; it thins out in the seams, flakes and wears in patches, dirties toward the bottom, and has a
+ * faint overspray halo. Call inside paint(...) after the door is drawn; `layer` is a sprite the same size as the door.
+ */
+export function sprayPaint(layer: HTMLCanvasElement, w: number, h: number, wear = 1) {
+  const g = ctx(), base = g.getImageData(0, 0, w, h), src = layer.getContext('2d')!.getImageData(0, 0, w, h), B = base.data, S = src.data;
+  const ph = h / PANELS, at = (x: number, y: number) => (x < 0 || y < 0 || x >= w || y >= h ? -1 : (y * w + x) * 4);
+  const around = [[-1, 0], [1, 0], [0, -1], [0, 1], [-2, 0], [2, 0], [0, -2], [0, 2]];
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const i = (y * w + x) * 4;
+    if (S[i + 3] > 0) {
+      const seam = Math.min(y % ph, ph - (y % ph));
+      let k = 1;
+      if (hash(x * 3 + y * 5, 21) < 0.07 * wear) k = 0;                                     // flaked off: bare steel shows through
+      else if (y > 2 && y < h - 2 && seam < 2) k = 1 - 0.5 * wear;                                // thin where the panels meet
+      else if (hash(Math.floor(x / 5) + Math.floor(y / 5) * 97, 22) < 0.2 * wear) k = 1 - 0.28 * wear;   // worn patches
+      if (k < 1 && bayer(x, y) >= k) continue;
+      const lum = Math.min(1.2, Math.max(0.55, (B[i] + B[i + 1] + B[i + 2]) / 3 / 150)); // the steel's own light and shadow pass through
+      const dirt = 1 - 0.22 * (Math.floor(y / ph) + 1) / PANELS;                       // a little dirtier lower down
+      B[i] = Math.min(255, S[i] * lum * dirt); B[i + 1] = Math.min(255, S[i + 1] * lum * dirt); B[i + 2] = Math.min(255, S[i + 2] * lum * dirt);
+    } else if (hash(x * 11 + y * 17, 23) < 0.28) { // overspray: a faint dithered halo in the colour of the paint next to it
+      for (const [dx, dy] of around) {
+        const j = at(x + dx, y + dy);
+        if (j >= 0 && S[j + 3] > 0) { for (let c = 0; c < 3; c++) B[i + c] = B[i + c] * 0.7 + S[j + c] * 0.3; break; }
+      }
+    }
+  }
+  g.putImageData(base, 0, 0);
 }
