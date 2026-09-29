@@ -7,8 +7,8 @@ import { RideScene } from './scenes/ride';
 import { DoorScene } from './scenes/door';
 import { GarageScene } from './scenes/garage';
 import { BAR, CONTROLS, HOTSPOTS, toPct } from './hotspots';
-import { WEATHERS, hasVisited, isNightHour, loadFound, loadNight, loadTried, markVisited, pickStart, pickTheme, pickWeather, saveFound, saveNight, saveTried } from './state';
-import { radio } from './engine/audio';
+import { WEATHERS, hasVisited, isNightHour, loadFound, loadNight, loadRadio, loadTried, markVisited, pickStart, pickTheme, pickWeather, saveFound, saveNight, saveRadio, saveTried } from './state';
+import { meow, radio } from './engine/audio';
 import { mountTerminal } from './terminal-ui';
 import { isPanelHref, mountPanel, parsePanelHash, titleFor } from './panel';
 
@@ -48,6 +48,7 @@ function toggleNight() {
 
 function toggleRadio() {
   const on = radio.toggle();
+  saveRadio(on);
   markTried('radio');
   if (current) current.radioOn = on;
   document.querySelector('[data-control="radio"]')?.setAttribute('aria-pressed', String(on));
@@ -80,6 +81,7 @@ async function garage() {
   scene.night = q.has('night') ? true : q.has('day') ? false : loadNight() ?? isNightHour(new Date().getHours()); // until they pull the cord, the room follows their clock
   scene.tried = tried;
   scene.found = found;
+  if (loadRadio() && !radio.on) radio.autostart(); // the radio plays unless the visitor turned it off last time
   scene.radioOn = radio.on;
   current = scene;
   director.go(scene);
@@ -116,7 +118,7 @@ function mountHotspots(scene: GarageScene) {
       if (c.id === 'cord') { toggleNight(); b.setAttribute('aria-pressed', String(scene.night)); }
       else if (c.id === 'radio') toggleRadio();
       else if (c.id === 'window') { weather = WEATHERS[(WEATHERS.indexOf(weather) + 1) % WEATHERS.length]; scene.setWeather(weather); }
-      else scene.pet();
+      else { scene.pet(); meow(); }
     });
     hoverable(b, c.id, scene);
     layer.append(b);

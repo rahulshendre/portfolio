@@ -44,7 +44,7 @@ export class EngineSound {
 
 export const engine = new EngineSound();
 
-// A tiny lo-fi radio for the garage: soft chords, a lazy beat and vinyl crackle, all synthesised. Off by default.
+// A tiny lo-fi radio for the garage: soft chords, a lazy beat and vinyl crackle, all synthesised. Plays by default (see autostart), unless the visitor turned it off.
 const CHORDS = [[57, 60, 64, 67], [53, 57, 60, 64], [48, 52, 55, 59], [55, 59, 62, 65]]; // Am7 Fmaj7 Cmaj7 G6
 const mtof = (m: number) => 440 * 2 ** ((m - 69) / 12);
 
@@ -63,6 +63,17 @@ export class RadioSound {
     if (this.on) this.start();
     else this.stop();
     return this.on;
+  }
+
+  /** Play as soon as the browser allows: now if audio is unlocked, otherwise on the first press or key. */
+  autostart() {
+    if (this.on) return;
+    this.on = true;
+    this.start();
+    const c = this.ctx!;
+    if (c.state === 'running') return;
+    const unlock = () => { void c.resume(); removeEventListener('pointerdown', unlock); removeEventListener('keydown', unlock); };
+    addEventListener('pointerdown', unlock); addEventListener('keydown', unlock);
   }
 
   private start() {
@@ -224,6 +235,7 @@ export class DoorSound {
     // sensor sees the bike: two beeps, then the relay clicks and the door wakes up
     beep(q.sense); beep(q.sense + 0.16);
     burst(q.sense + 0.35, 0.03, 3000, 0.2, 'highpass');
+    thunk(q.sense + 0.42, 0.18); burst(q.sense + 0.42, 0.05, 1400, 0.16); // the lock bolt drawing back
     for (let s = q.sense + 0.3; s < q.open; s += 0.06) burst(s, 0.03, 900, 0.03 + Math.random() * 0.03); // shutter jitters
 
     // motor and rattling slats while it climbs
@@ -235,5 +247,35 @@ export class DoorSound {
     mg.gain.setValueAtTime(0.07, at(q.open + q.up - 0.1)); mg.gain.linearRampToValueAtTime(0, at(q.open + q.up + 0.15));
     for (let s = q.open + 0.1; s < q.open + q.up; s += 0.055) burst(s, 0.035, 1100 + Math.random() * 900, 0.05 + Math.random() * 0.05);
     thunk(q.open + q.up, 0.3); burst(q.open + q.up, 0.25, 260, 0.2, 'lowpass'); // hits the housing
+    // each panel knocks as it goes over the curve. The lift eases out cubically (see ease() in door.ts), so invert that to time them.
+    for (const x of [0.25, 0.5, 0.75]) {
+      const at2 = q.open + q.up * (1 - Math.cbrt(1 - x));
+      burst(at2, 0.07, 700, 0.14); thunk(at2, 0.1);
+    }
   }
+}
+
+// The cat's meow: a voiced tone that glides up and back down through a vowel-like band, about half a second.
+export const meowAllowed = (last: number, now: number, gap = 1.5) => now - last >= gap;
+
+let meowCtx: AudioContext | undefined;
+let lastMeow = -Infinity;
+
+export function meow() {
+  const now = performance.now() / 1000;
+  if (!meowAllowed(lastMeow, now)) return;
+  lastMeow = now;
+  try { meowCtx ??= new AudioContext(); } catch { return; }
+  const c = meowCtx;
+  void c.resume();
+  const t = c.currentTime, dur = 0.55;
+  const o = c.createOscillator(); o.type = 'sawtooth';
+  o.frequency.setValueAtTime(520, t); o.frequency.exponentialRampToValueAtTime(880, t + 0.18); o.frequency.exponentialRampToValueAtTime(560, t + dur);
+  const vib = c.createOscillator(), vg = c.createGain(); vib.frequency.value = 7; vg.gain.value = 12; vib.connect(vg).connect(o.frequency);
+  const band = c.createBiquadFilter(); band.type = 'bandpass'; band.Q.value = 6;
+  band.frequency.setValueAtTime(700, t); band.frequency.linearRampToValueAtTime(1500, t + 0.2); band.frequency.linearRampToValueAtTime(900, t + dur);
+  const g = c.createGain();
+  g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.35, t + 0.05); g.gain.setValueAtTime(0.3, t + 0.3); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(band).connect(g).connect(c.destination);
+  o.start(t); vib.start(t); o.stop(t + dur + 0.05); vib.stop(t + dur + 0.05);
 }

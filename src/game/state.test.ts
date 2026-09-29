@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { countFound, isNightHour, pickStart, pickWeather } from './state';
+import { countFound, isNightHour, pickStart, pickWeather, radioWanted } from './state';
 
 describe('pickStart', () => {
   it('first visit sees the arrival at the door', () => expect(pickStart('', false, false)).toBe('door'));
@@ -36,4 +36,10 @@ describe('pickWeather', () => {
     expect(pickWeather('', () => 0.7)).toBe('snow');
     expect(pickWeather('', () => 0.95)).toBe('fog');
   });
+});
+
+describe('radioWanted', () => {
+  it('plays by default', () => expect(radioWanted(null)).toBe(true));
+  it('plays if it was left on', () => expect(radioWanted('1')).toBe(true));
+  it('stays off only if the visitor turned it off', () => expect(radioWanted('0')).toBe(false));
 });

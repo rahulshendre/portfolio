@@ -69,3 +69,14 @@ export function saveFound(list: string[]) {
 }
 
 export const countFound = (found: Iterable<string>, valid: readonly string[]) => valid.filter((id) => new Set(found).has(id)).length;
+
+// The radio plays by default. Only a visitor turning it off keeps it quiet on later visits.
+export const radioWanted = (saved: string | null) => saved !== '0';
+
+export function loadRadio(): boolean {
+  try { return radioWanted(localStorage.getItem('rs:radio')); } catch { return true; }
+}
+
+export function saveRadio(on: boolean) {
+  try { localStorage.setItem('rs:radio', on ? '1' : '0'); } catch { /* fine */ }
+}
