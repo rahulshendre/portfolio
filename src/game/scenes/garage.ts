@@ -8,6 +8,7 @@ import { input } from '../engine/input';
 import type { Scene } from '../engine/scene';
 import type { Screen } from '../engine/screen';
 import { blit, paint, type Sprite } from '../engine/sprites';
+import { bevel, cobweb, crack, speckle, stain, streaks, woodGrain } from '../art/wear';
 import { BAR, CONTROLS, HOTSPOTS, type Control, type Hotspot } from '../hotspots';
 import { site } from '../../data/site';
 import { idleMessage } from '../hints';
@@ -116,27 +117,52 @@ export class GarageScene implements Scene {
 
   // ---------------------------------------------------------------- the room, painted once
   private paintRoom(withBike: boolean) {
-    // wall: painted concrete blocks, hazard line, darker lower half
+    // wall: painted concrete blocks. Each block has its own tone, a lit top and a shadowed bottom edge; pores, damp, streaks and cracks on top.
     rect(0, 0, 480, 198, WALL);
+    const tones = ['#cbbd9f', '#c5b798', '#d0c3a6', '#c1b395'];
+    for (let y = 16; y < 150; y += 12) {
+      const off = (y / 12) % 2 ? 12 : 0;
+      for (let x = off - 24; x < 480; x += 24) {
+        const bx = Math.max(0, x + 1), bw = Math.min(480, x + 24) - bx, t = tones[Math.floor((((x * 7 + y * 13) % 17) + 17) % 17 / 17 * 4)];
+        rect(bx, y + 1, bw, 11, t); rect(bx, y + 1, bw, 1, '#ddd0b4'); rect(bx, y + 11, bw, 1, '#b3a488');
+      }
+    }
     for (let y = 16; y < 150; y += 12) {
       rect(0, y, 480, 1, MORTAR);
       for (let x = (y / 12) % 2 ? 12 : 0; x < 480; x += 24) rect(x, y, 1, 12, MORTAR);
     }
-    rect(0, 146, 480, 4, C.accent); rect(0, 150, 480, 48, LOWER); rect(0, 150, 480, 1, '#6c7667');
+    speckle(0, 17, 480, 130, '#a89a7c', 0.05, 1); speckle(0, 17, 480, 130, '#dccfb2', 0.03, 2);
+    streaks(0, 18, 480, 80, '#b3a487', 34, 3);                       // rain and grime running down from the beam
+    stain(58, 148, 60, 12, '#a99b80', 4, 0.8); stain(300, 146, 46, 9, '#a99b80', 5, 0.7); stain(450, 145, 40, 10, '#a99b80', 6, 0.7); // damp along the bottom
+    crack(112, 90, 26, '#8f8168', 7, 1); crack(292, 126, 18, '#8f8168', 8, -1); crack(386, 30, 22, '#8f8168', 9, 1);
+    // hazard line with black chevrons, worn, over a darker painted lower half
+    rect(0, 146, 480, 4, C.accent);
+    for (let x = 0; x < 480; x += 14) for (let k = 0; k < 4; k++) rect(x + k, 146 + k, 4, 1, '#2c2a26');
+    speckle(0, 146, 480, 4, '#a07f10', 0.18, 10);
+    rect(0, 150, 480, 48, LOWER); rect(0, 150, 480, 1, '#6c7667'); rect(0, 151, 480, 1, '#93a08f');
+    for (let x = 48; x < 480; x += 48) { rect(x, 152, 1, 46, '#6c7667'); rect(x + 1, 152, 1, 46, '#8a9585'); } // painted panel seams
+    speckle(0, 152, 480, 46, '#97a493', 0.018, 11); speckle(0, 152, 480, 46, '#67715f', 0.03, 12);           // scuffs and chips
     for (let x = 0; x < 480; x += 3) if (bayer(x, 170) > 0.7) rect(x, 188 + (x % 5), 1, 2, '#707a6b'); // scuffs
+    streaks(0, 152, 480, 44, '#6b5a44', 8, 13);                                                       // rust runs from the bolts
     // corners fold away for a bit of depth
     poly([[0, 16], [12, 22], [12, 196], [0, 206]], '#b3a587'); poly([[480, 16], [468, 22], [468, 196], [480, 206]], '#b3a587');
     // ceiling beam and tube-light fittings
-    rect(0, 0, 480, 16, '#3e3127'); rect(0, 16, 480, 2, '#2e241c');
+    woodGrain(0, 0, 480, 16, '#3e3127', '#2e241c', '#4d3d30', 2); rect(0, 16, 480, 2, '#2e241c'); rect(0, 18, 480, 1, '#00000033');
+    for (const x of [30, 150, 330, 450]) { rect(x, 6, 4, 4, '#1f1f22'); rect(x, 6, 4, 1, '#4a4a50'); rect(x + 1, 7, 1, 1, '#6b6b72'); } // beam bolts
+    cobweb(0, 18, 24, 1, 1, '#d8d2c455'); cobweb(480, 18, 24, -1, 1, '#d8d2c455');
     for (const x of TUBES) rect(x - 32, 12, 64, 4, '#5a5a5e');
 
-    // floor: joints running to a vanishing point, oil stains, the lamp's pool comes from the lighting pass
+    // floor: a concrete slab. Joints run to a vanishing point; grit, oil with a sheen, tyre marks, a crack and dark edges.
     for (let y = 198; y < 270; y++) for (let x = 0; x < 480; x++) rect(x, y, 1, 1, (y - 198) / 72 > bayer(x, y) ? FLOOR_DARK : FLOOR);
-    rect(0, 196, 480, 3, '#5e574c');
+    speckle(0, 199, 480, 57, '#756e63', 0.05, 20); speckle(0, 199, 480, 57, '#a8a092', 0.03, 21);
+    rect(0, 196, 480, 3, '#5e574c'); rect(0, 199, 480, 1, '#a39b8c');
     for (let k = -7; k <= 7; k++) line(240 + k * 34, 199, 240 + k * 118, 256, '#8a8276');
-    for (const y of [206, 219, 238]) rect(0, y, 480, 1, '#8a8276');
-    ellipse(96, 232, 22, 3, '#827a6e'); ellipse(400, 246, 16, 2, '#827a6e');
-
+    for (const y of [206, 219, 238]) { rect(0, y, 480, 1, '#8a8276'); rect(0, y + 1, 480, 1, '#a39b8c33'); }
+    stain(96, 232, 26, 4, '#6a6357', 22, 0.95); stain(400, 246, 18, 3, '#6a6357', 23, 0.95); stain(214, 246, 30, 3, '#655e52', 24, 0.7); // oil
+    for (const [x, y] of [[90, 231], [98, 232], [404, 246]]) rect(x, y, 3, 1, '#8b86a0');                                                // sheen on the wet oil
+    for (let k = 0; k < 46; k++) { rect(120 + k * 2, 248 - Math.round(Math.sin(k * 0.14) * 3), 2, 1, '#6a6459'); rect(300 + k * 2, 244 - Math.round(Math.sin(k * 0.1 + 1) * 4), 2, 1, '#6a6459'); } // tyre marks
+    crack(322, 205, 44, '#5a5449', 25, 1);
+    rect(0, 196, 480, 1, '#00000022');
     this.signs();
     this.pipecdSign();
     this.workbench();
