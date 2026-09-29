@@ -10,6 +10,8 @@ import { blit, paint, type Sprite } from '../engine/sprites';
 
 const DOOR = { x: 110, y: 70, w: 260, h: 176 };
 const T_ARRIVE = 1.6, T_OPEN = 2.0, T_UP = 1.5, T_END = 4.4;
+// Same size as the bike in the garage, so it does not shrink or grow between the two scenes.
+const BIKE_K = 1.4, PAD = { x: 8, y: 24 };
 const ease = (p: number) => 1 - Math.pow(1 - Math.min(1, Math.max(0, p)), 3);
 
 /** Rahul on the bike, side view, facing right. (x, y) is the bike sprite's top-left. */
@@ -33,6 +35,7 @@ export class DoorScene implements Scene {
   private t = 0;
   private bg!: Sprite;
   private doorArt!: Sprite;
+  private rig!: Sprite; // bike and rider drawn together at native size, then scaled as one
   private finished = false;
 
   private room!: Sprite;
@@ -43,6 +46,7 @@ export class DoorScene implements Scene {
     this.t = 0;
     this.bg = paint(480, 270, () => this.facade());
     this.room = this.makeRoom();
+    this.rig = paint(this.bike.width + PAD.x * 2, this.bike.height + PAD.y, () => { blit(this.bike, PAD.x, PAD.y); riderSide(PAD.x, PAD.y); });
     this.doorArt = paint(DOOR.w, DOOR.h, () => {
       for (let y = 0; y < DOOR.h; y += 6) { rect(0, y, DOOR.w, 5, '#8b8f94'); rect(0, y + 5, DOOR.w, 1, '#6f7378'); rect(0, y, DOOR.w, 1, '#a3a7ab'); }
       text('GIT PUSH >', 14, 16, '#f4f2ea');
@@ -87,11 +91,12 @@ export class DoorScene implements Scene {
         if (d < 1 && k * (1 - d) * 0.8 > bayer(x, y)) rect(x, y, 1, 1, '#b3a58c');
       }
     }
-    // the bike rolling in from the left
-    const bx = -170 + ease(this.t / T_ARRIVE) * 320;
-    if (this.t < T_ARRIVE) for (let k = 0; k < 3; k++) { const p = (this.t * 3 + k / 3) % 1; disc(bx + 6 - p * 26, 244 - p * 6, 2 + p * 3, '#b8ad98'); }
-    blit(this.bike, bx, 251 - this.bike.height);
-    riderSide(bx, 251 - this.bike.height + (this.t < T_ARRIVE ? Math.round(Math.sin(this.t * 30) * 0.6) : 0));
+    // the bike rolling in from the left, and stopping just inside the doorway
+    const k = BIKE_K, rw = Math.round(this.rig.width * k), rh = Math.round(this.rig.height * k);
+    const bx = -280 + ease(this.t / T_ARRIVE) * 400; // left edge of the bike itself
+    const bob = this.t < T_ARRIVE ? Math.round(Math.sin(this.t * 30) * 0.8) : 0;
+    if (this.t < T_ARRIVE) for (let p, i = 0; i < 3; i++) { p = (this.t * 3 + i / 3) % 1; disc(bx + 8 - p * 30, 244 - p * 6, 2 + p * 3, '#b8ad98'); }
+    blit(this.rig, Math.round(bx - PAD.x * k), 251 - rh + bob, rw, rh);
     // the street dog wakes up a little when you pull in
     const wag = this.t > T_ARRIVE ? Math.round(Math.sin(this.t * 14) * 2) : 0;
     ellipse(346, 244, 12, 4, '#9c6d45'); disc(357, 240, 4, '#9c6d45'); rect(358, 236, 2, 3, '#7a5234');
