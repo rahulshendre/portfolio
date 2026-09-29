@@ -249,10 +249,10 @@ export class GarageScene implements Scene {
       speckle(x + 1, y + 1, w - 2, h - 2, '#00000022', 0.05, 60 + y); speckle(x + 1, y + h - 4, w - 2, 3, '#6a4a2a', 0.15, 62 + y);              // grime and splashed mud
       text(label, x + 11, y + 4, fg); // the lettering goes on last so the grime never eats it
     };
-    plate(24, '#f2c318', C.ink, '#3a3010', 'YOUTUBE');
-    plate(40, '#131314', '#f2c318', '#2a2a2e', 'TWITTER');
-    plate(56, '#f1eee4', C.ink, '#8f8b80', 'LINKEDIN');
-    plate(72, '#1f8a5b', '#f4f2ea', '#125536', 'GITHUB');
+    plate(30, '#f2c318', C.ink, '#3a3010', 'YOUTUBE');
+    plate(46, '#131314', '#f2c318', '#2a2a2e', 'TWITTER');
+    plate(62, '#f1eee4', C.ink, '#8f8b80', 'LINKEDIN');
+    plate(78, '#1f8a5b', '#f4f2ea', '#125536', 'GITHUB');
   }
 
   /** The PipeCD poster on the left; on the right two plaques for the real PlanetRead and BookBox logos (main.ts lays the crisp images over them). */
