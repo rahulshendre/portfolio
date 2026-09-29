@@ -376,15 +376,15 @@ export class GarageScene implements Scene {
     if (h.id === 'bike') { this.bikeGlow(g); return; }
     const [x, y, w, hh] = h.rect, pulse = 0.9 + 0.1 * Math.sin(this.t * 5), a = this.glow * pulse * Math.min(1, 9000 / (w * hh)); // big areas (the bike) glow softer
     g.globalCompositeOperation = 'lighter';
-    g.globalAlpha = 0.6 * a;
+    g.globalAlpha = 0.28 * a;
     g.drawImage(this.bg, x, y, w, hh, x, y, w, hh);           // the object itself, brighter
     for (let i = 1; i <= 5; i++) {                              // warm halo, fading outward in steps
-      g.globalAlpha = (0.32 / i) * a;
+      g.globalAlpha = (0.15 / i) * a;
       const o = i * 2;
       rect(x - o, y - o, w + o * 2, 2, '#ffc94d'); rect(x - o, y + hh + o - 2, w + o * 2, 2, '#ffc94d');
       rect(x - o, y - o + 2, 2, hh + o * 2 - 4, '#ffc94d'); rect(x + w + o - 2, y - o + 2, 2, hh + o * 2 - 4, '#ffc94d');
     }
-    g.globalAlpha = 0.07 * a; rect(x, y, w, hh, '#ffd76a'); // a touch of warmth inside
+    g.globalAlpha = 0.03 * a; rect(x, y, w, hh, '#ffd76a'); // a touch of warmth inside
     g.globalCompositeOperation = 'source-over';
     g.globalAlpha = 1;
   }
@@ -409,9 +409,9 @@ export class GarageScene implements Scene {
       this.bikeHalo = halo;
     }
     g.globalCompositeOperation = 'lighter';
-    g.globalAlpha = this.glow * (0.9 + 0.1 * Math.sin(this.t * 5));
+    g.globalAlpha = this.glow * 0.5 * (0.9 + 0.1 * Math.sin(this.t * 5));
     g.drawImage(this.bikeHalo, bx - R, by - R);
-    g.globalAlpha *= 0.3;
+    g.globalAlpha = this.glow * 0.1;
     g.drawImage(this.img.bike, bx, by, bw, bh);                 // the bike itself, brighter
     const hx = Math.round(bx + 50 * k), hy = Math.round(by + 23 * k), hr = Math.round(6.1 * k) + 1;
     g.drawImage(this.bg, hx - hr, hy - hr, hr * 2 + 1, hr * 2 + 1, hx - hr, hy - hr, hr * 2 + 1, hr * 2 + 1); // and the helmet on it
