@@ -111,6 +111,7 @@ export class GarageScene implements Scene {
     const hot = all.find((h) => h.id === this.hover);
     if (hot && hot.id !== 'bike' && !('href' in hot && (hot === BAR.list || hot === BAR.ride))) this.brackets(hot);
     if (this.touch || this.t < 3.2) for (const h of [...HOTSPOTS, ...CONTROLS]) if (!['coffee', 'shelf', 'youtube', 'x', 'linkedin', 'github'].includes(h.id)) this.tagFor(h);
+    if (hot?.tag) this.tagFor(hot); // whatever you point at gets its name on top, along with the glow
     this.bar(hot);
     this.counter();
   }
