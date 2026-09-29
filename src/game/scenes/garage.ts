@@ -23,7 +23,7 @@ const BENCH_DY = 0; // how far the workbench group is shifted up from its origin
 const CAT = { dx: 12, dy: -23 }; // where her nap spot sits on the tyre stack, from where she was first drawn
 const CARE = 0.3; // how battered the room looks: lived in and looked after, not abandoned (the door keeps its full wear)
 const WIN = { x: 10, y: 24, w: 72, h: 70 }; // the window, at the far left of the wall
-export const BIKE = { scale: 1.4, cx: 214, floor: 250 };
+export const BIKE = { scale: 1.55, cx: 214, floor: 250 };
 
 /** One drifting music note: a head and a stem, fading out as it rises. */
 function drawNote(x: number, y: number, a: number) {
@@ -187,10 +187,10 @@ export class GarageScene implements Scene {
       // Part of the room's personality, not its focus: mid-size, a little left of centre so the toolbox and PipeCD sign stay clear.
       const k = BIKE.scale, bw = Math.round(this.img.bike.width * k), bh = Math.round(this.img.bike.height * k);
       const bx = Math.round(BIKE.cx - bw / 2), by = BIKE.floor - bh;
-      bikeGrounding(this.img.bike, bx, by, bw, bh);
+      bikeGrounding(this.img.bike, bx, by, bw, bh, k);
       blit(this.img.bike, bx, by, bw, bh);
       const hx = Math.round(bx + 50 * k), hy = Math.round(by + 23 * k), hr = Math.round(6.1 * k); // white helmet on the seat
-      disc(hx, hy, hr + 1, C.ink); disc(hx, hy, hr, C.white); rect(hx + 2, hy + 1, Math.round(hr / 2), Math.round(hr * 0.6), C.whiteShade); rect(hx - hr / 2, hy - hr / 1.5, Math.round(hr / 2.5), 3, '#ffffff');
+      disc(hx, hy, hr + 1, '#0a0a0c'); disc(hx, hy, hr, '#1d1d22'); rect(hx + 2, hy + 1, Math.round(hr / 2), Math.round(hr * 0.6), '#2c2c33'); rect(hx - hr / 2, hy - hr / 1.5, Math.round(hr / 2.5), 3, '#6b6b78'); // black helmet with a glossy highlight
     }
 
     this.light();

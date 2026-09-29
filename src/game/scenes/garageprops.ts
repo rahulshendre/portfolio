@@ -52,7 +52,7 @@ export function sunSprite(weather: Weather): Sprite {
 }
 
 /** A rubber stall mat under the bike, a shadow of the bike thrown on the wall behind it, and dark contact patches under the wheels. */
-export function bikeGrounding(bike: HTMLImageElement, bx: number, by: number, bw: number, bh: number) {
+export function bikeGrounding(bike: HTMLImageElement, bx: number, by: number, bw: number, bh: number, k = 1.4) {
   poly([[132, 238], [292, 238], [302, 254], [122, 254]], '#33323a');
   rect(132, 238, 160, 1, '#4c4b54'); rect(122, 254, 180, 1, '#1f1f24');
   for (let y = 240; y < 254; y += 3) rect(126 + (y - 238) / 2, y, 170 - (y - 238), 1, '#3b3a43'); // ribs
@@ -62,8 +62,8 @@ export function bikeGrounding(bike: HTMLImageElement, bx: number, by: number, bw
   sg.drawImage(bike, 0, 0, bw, bh); sg.globalCompositeOperation = 'source-in'; sg.fillStyle = '#20180f'; sg.fillRect(0, 0, bw, bh);
   const g = ctx();
   g.save(); g.beginPath(); g.rect(0, 20, 480, 178); g.clip(); g.globalAlpha = 0.28; g.drawImage(sil, bx + 12, by - 3); g.restore(); // on the wall, not the floor
-  const cy = by + 97;
-  for (const cx of [bx + 60, bx + 155]) { ellipse(cx, cy, 20, 3, '#00000066'); ellipse(cx, cy, 14, 2, '#00000066'); }
+  const cy = by + Math.round(69 * k); // the wheels touch down at row 69 of the sprite, at columns 43 and 111
+  for (const cx of [bx + Math.round(43 * k), bx + Math.round(111 * k)]) { ellipse(cx, cy, 20, 3, '#00000066'); ellipse(cx, cy, 14, 2, '#00000066'); }
 }
 
 /** Slab tones, a patched repair, a drain, a puddle that catches the tube light, and a drum and bucket to the right. */

@@ -27,7 +27,7 @@ export const HOTSPOTS: Hotspot[] = [
   { id: 'pipecd', label: 'PIPECD POSTER · OPEN SOURCE', tag: 'PIPECD', href: '/open-source', rect: [192, 38, 44, 72] },
   { id: 'planetread', label: 'PLANETREAD POSTER · SUBTITLES AND APPS', tag: 'PLANETREAD', href: '/planetread', rect: [244, 33, 54, 42] },
   { id: 'bookbox', label: 'BOOKBOX · THE REACT NATIVE APP', tag: 'BOOKBOX', href: '/planetread#bookbox', rect: [244, 79, 54, 36] },
-  { id: 'bike', label: 'THE SCRAMBLER 400X', tag: 'THE BIKE', href: '/garage', rect: [108, 146, 214, 106] },
+  { id: 'bike', label: 'THE SCRAMBLER 400X', tag: 'THE BIKE', href: '/garage', rect: [100, 140, 222, 110] },
   // enamel signs: the socials
   { id: 'youtube', label: yt ? 'YOUTUBE · MY CHANNEL' : 'YOUTUBE · VIDEOS FROM OCT', tag: 'YOUTUBE', href: yt || '/videos', rect: [92, 24, 63, 13], external: !!yt },
   { id: 'x', label: `TWITTER · ${site.links.xHandle.toUpperCase()}`, tag: 'X', href: site.links.x, rect: [92, 40, 63, 13], external: true },
