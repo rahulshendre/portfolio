@@ -197,7 +197,7 @@ export class GarageScene implements Scene {
       this.bikeBox = { bx, by, bw, bh };
       blit(this.img.bike, bx, by, bw, bh);
       const hx = Math.round(bx + 50 * k), hy = Math.round(by + 23 * k), hr = Math.round(6.1 * k); // white helmet on the seat
-      disc(hx, hy, hr + 1, '#0a0a0c'); disc(hx, hy, hr, '#1d1d22'); rect(hx + 2, hy + 1, Math.round(hr / 2), Math.round(hr * 0.6), '#2c2c33'); rect(hx - hr / 2, hy - hr / 1.5, Math.round(hr / 2.5), 3, '#6b6b78'); // black helmet with a glossy highlight
+      disc(hx, hy, hr + 1, C.ink); disc(hx, hy, hr, C.white); rect(hx + 2, hy + 1, Math.round(hr / 2), Math.round(hr * 0.6), C.whiteShade); rect(hx - hr / 2, hy - hr / 1.5, Math.round(hr / 2.5), 3, '#ffffff'); // white helmet
     }
 
     foreground();
