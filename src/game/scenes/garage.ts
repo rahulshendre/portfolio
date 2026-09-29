@@ -122,11 +122,12 @@ export class GarageScene implements Scene {
     g.drawImage(this.bg, 0, 0);
     this.animate();
     this.nightPass(g);
+    this.nightWindow(g);
     this.hoverGlow(g);
     const all: (Hotspot | Control)[] = [...HOTSPOTS, ...CONTROLS, BAR.list, BAR.ride];
     const hot = all.find((h) => h.id === this.hover);
     if (hot && hot.id !== 'bike' && !('href' in hot && (hot === BAR.list || hot === BAR.ride))) this.brackets(hot);
-    if (this.touch || this.t < 3.2) for (const h of [...HOTSPOTS, ...CONTROLS]) if (!['coffee', 'shelf', 'youtube', 'x', 'linkedin', 'github', 'clock'].includes(h.id)) this.tagFor(h);
+    if (this.touch || this.t < 3.2) { const placed: number[][] = []; for (const h of [...HOTSPOTS, ...CONTROLS]) if (!['coffee', 'shelf', 'youtube', 'x', 'linkedin', 'github', 'clock'].includes(h.id)) this.tagFor(h, placed); }
     if (hot?.tag && !SELF_EXPLAINING.includes(hot.id)) this.tagFor(hot); // whatever you point at gets its name on top, along with the glow (the number plates already say their name)
     this.bar(hot);
     this.counter();
@@ -585,9 +586,30 @@ export class GarageScene implements Scene {
     g.globalAlpha = 1;
   }
 
+  /** At night the window is the one soft blue light in the room: a dark sky with stars and a moon, and the weather still visible in it. */
+  private nightWindow(g: CanvasRenderingContext2D) {
+    if (this.nightT < 0.01) return;
+    const { x, y, w, h } = WIN;
+    g.save(); g.beginPath(); g.rect(x, y, w, h); g.clip();
+    g.globalAlpha = this.nightT; windowSky(g, x, y, w, h, this.weather, this.theme);
+    g.globalAlpha = this.nightT * 0.62; rect(x, y, w, h, '#0a1230');
+    g.globalAlpha = this.nightT;
+    if (this.weather === 'clear' || this.weather === 'snow') {
+      for (let i = 0; i < 16; i++) { // stars, twinkling
+        const sx = x + 4 + Math.floor((i * 37) % (w - 8)), sy = y + 3 + Math.floor((i * 23) % Math.round(h * 0.4));
+        g.globalAlpha = this.nightT * (0.4 + 0.6 * Math.sin(this.t * 1.4 + i * 2.1) ** 2); rect(sx, sy, 1, 1, '#f4f2ea');
+      }
+      g.globalAlpha = this.nightT; disc(x + w - 16, y + 14, 5, '#e8e6d4'); disc(x + w - 14, y + 13, 4, '#0d1636'); // a crescent
+    }
+    windowFall(g, x, y, w, h, this.weather, this.t);
+    g.restore();
+    g.globalAlpha = this.nightT; rect(x + w / 2 - 1, y, 2, h, '#3e3127'); rect(x, y + Math.round(h * 0.45), w, 2, '#3e3127'); g.globalAlpha = 1;
+  }
+
   private buildNight() {
     const src = [
       { x: 240, y: 9, r: 100, c: [255, 150, 120] },   // neon sign
+      { x: 46, y: 59, r: 62, c: [150, 180, 255] },    // the window: moonlight
       { x: 244, y: 78, r: 66, c: [255, 236, 190] },   // the two posters, spotlit
       { x: 51, y: 134, r: 56, c: [120, 255, 170] },   // CRT
       { x: 365, y: 141, r: 26, c: [130, 255, 170] },  // charger lights
@@ -626,10 +648,24 @@ export class GarageScene implements Scene {
     }
   }
 
-  private tagFor(h: Hotspot | Control) {
+  /** A name on top of an object. Tags drawn in the same pass (the intro shows them all) are kept from overlapping: a clashing one hops above the others, then below its object. */
+  private tagFor(h: Hotspot | Control, placed?: number[][]) {
     const label = h.id === 'clock' ? istLabel(new Date(), this.clock24) : h.tag; // the clock's tag is the live time
-    const [x, y, w] = h.rect, tw = textW(label) + 6;
-    const tx = Math.round(Math.min(480 - tw - 2, Math.max(2, x + w / 2 - tw / 2))), ty = Math.max(18, y - 11);
+    const [x, y, w, hh] = h.rect, tw = textW(label) + 6;
+    let tx = Math.round(Math.min(480 - tw - 2, Math.max(2, x + w / 2 - tw / 2)));
+    let ty = Math.max(18, y - 11);
+    const below = ['bookbox', 'map'].includes(h.id); // the poster grid is tight: the lower frames name themselves underneath
+    if (below) ty = y + hh + 1;
+    if (h.id === 'board') tx = x; // start at its own left edge, clear of the frame beside it
+    if (h.id === 'bike') ty = y + 16; // over the tank, clear of the poster names above
+    if (placed) {
+      const clash = (xx: number, yy: number) => placed.some(([px, py, pw]) => xx < px + pw + 1 && px < xx + tw + 1 && Math.abs(py - yy) < 11);
+      const hit = placed.find(([px, py, pw]) => tx < px + pw + 1 && px < tx + tw + 1 && Math.abs(py - ty) < 11);
+      if (hit && hit[0] < tx + tw / 2 && hit[0] + hit[2] + 1 - tx < 30) tx = hit[0] + hit[2] + 1; // a neighbour is in the way: slide along, keeping the tag over its own object
+      for (let i = 0; i < 3 && clash(tx, ty); i++) ty += below ? 11 : -11;
+      if (ty < 18) ty = y + hh + 1;
+      placed.push([tx, ty, tw]);
+    }
     rect(tx, ty, tw, 10, C.ink);
     text(label, tx + 3, ty + 2, C.accent);
   }
