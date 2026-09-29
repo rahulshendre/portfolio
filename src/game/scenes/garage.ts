@@ -14,11 +14,11 @@ import { site } from '../../data/site';
 import { idleMessage } from '../hints';
 import { countFound, type Theme, type Weather } from '../state';
 import { windowFall, windowSky } from './weather';
+import { SUN, TUBES, bikeGrounding, certificate, clockFace, clockHands, conduit, depthShading, floorDetail, floorProps, fuseBox, jacket, laptop, laptopLive, sunSprite, sunStrength, tubeBeams } from './garageprops';
 import github from '../../data/github.json';
 
 const WALL = '#cbbd9f', MORTAR = '#bcad8f', LOWER = '#7f8a7a', FLOOR = '#958d80', FLOOR_DARK = '#857d71';
 const NAVY = '#293878', CYAN = '#29bdeb';
-const TUBES = [140, 340];
 const BENCH_DY = 0; // how far the workbench group is shifted up from its original spot
 const WIN = { x: 152, y: 92, w: 34, h: 40 }; // the window between the radio and the posters
 export const BIKE = { scale: 1.4, cx: 214, floor: 250 };
@@ -56,6 +56,7 @@ export class GarageScene implements Scene {
   private glow = 0;           // 0..1, eases in and out as you point at things
   private glowId: string | null = null;
   private bikeHalo?: Sprite;
+  private sun?: Sprite; // the window's light on the floor, rebuilt when the weather changes
   private touch = matchMedia('(pointer: coarse)').matches;
   private reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
   private og = new URLSearchParams(location.search).has('og'); // ?og: no counter, for the share image
@@ -66,12 +67,13 @@ export class GarageScene implements Scene {
 
   enter() {
     this.bg = this.roomSprite();
+    this.sun = sunSprite(this.weather);
     this.t = 0;
     this.nightT = this.night ? 1 : 0;
   }
 
   /** Change what is outside the window (repaints the room, since the sky is part of the still picture). */
-  setWeather(w: Weather) { this.weather = w; this.bg = this.roomSprite(); }
+  setWeather(w: Weather) { this.weather = w; this.bg = this.roomSprite(); this.sun = sunSprite(w); }
 
   pet() { this.petT = this.t; }
   /** Everything found: the bar says so for a few seconds. */
@@ -164,6 +166,8 @@ export class GarageScene implements Scene {
     for (let k = 0; k < 46; k++) { rect(120 + k * 2, 248 - Math.round(Math.sin(k * 0.14) * 3), 2, 1, '#6a6459'); rect(300 + k * 2, 244 - Math.round(Math.sin(k * 0.1 + 1) * 4), 2, 1, '#6a6459'); } // tyre marks
     crack(322, 205, 44, '#5a5449', 25, 1);
     rect(0, 196, 480, 1, '#00000022');
+    floorDetail();
+    depthShading();
     this.signs();
     this.pipecdSign();
     this.workbench();
@@ -175,18 +179,20 @@ export class GarageScene implements Scene {
     this.toolbox();
     this.tyres();
     this.radioBox();
+    conduit(); fuseBox(); clockFace(); jacket(); certificate(); laptop(); floorProps();
 
     if (withBike) {
       // Part of the room's personality, not its focus: mid-size, a little left of centre so the toolbox and PipeCD sign stay clear.
       const k = BIKE.scale, bw = Math.round(this.img.bike.width * k), bh = Math.round(this.img.bike.height * k);
       const bx = Math.round(BIKE.cx - bw / 2), by = BIKE.floor - bh;
-      ellipse(BIKE.cx, BIKE.floor, bw * 0.48, 5, '#5f584d');
+      bikeGrounding(this.img.bike, bx, by, bw, bh);
       blit(this.img.bike, bx, by, bw, bh);
       const hx = Math.round(bx + 50 * k), hy = Math.round(by + 23 * k), hr = Math.round(6.1 * k); // white helmet on the seat
       disc(hx, hy, hr + 1, C.ink); disc(hx, hy, hr, C.white); rect(hx + 2, hy + 1, Math.round(hr / 2), Math.round(hr * 0.6), C.whiteShade); rect(hx - hr / 2, hy - hr / 1.5, Math.round(hr / 2.5), 3, '#ffffff');
     }
 
     this.light();
+    tubeBeams();
     this.window();
     // things that glow are painted after the light so the lighting never dims them
     for (const x of TUBES) { rect(x - 30, 13, 60, 3, '#fff8e0'); rect(x - 30, 16, 60, 1, '#e8dcb8'); }
@@ -422,6 +428,9 @@ export class GarageScene implements Scene {
       rect(159 + Math.round(Math.sin((p + k) * 6) * 2), 148 + BENCH_DY - p * 14, 1, 2, '#f4f2ea');
     }
     windowFall(ctx(), WIN.x, WIN.y, WIN.w, WIN.h, this.weather, t);
+    this.sunlight(t);
+    clockHands(new Date());
+    laptopLive(t);
     this.cat(t);
     this.radioLive(t);
     this.cord();
@@ -434,6 +443,24 @@ export class GarageScene implements Scene {
     }
     g.globalAlpha = 1;
     if (Math.sin(t * 5.1) * Math.sin(t * 0.9 + 1) > 0.985) { g.globalAlpha = 0.18; rect(TUBES[1] - 44, 18, 88, 176, '#140f0a'); g.globalAlpha = 1; }
+  }
+
+  /** The window's light lying on the floor, with dust turning in it. It fades as the lights go off and the room takes over. */
+  private sunlight(t: number) {
+    if (!this.sun) return;
+    const g = ctx(), k = 1 - this.nightT;
+    if (k < 0.02) return;
+    g.globalCompositeOperation = 'lighter'; g.globalAlpha = k; g.drawImage(this.sun, 0, 0);
+    if (!this.lowFx) {
+      const a = sunStrength(this.weather) * k;
+      for (let i = 0; i < 12; i++) {
+        const p = (i * 0.083 + t * (0.012 + (i % 3) * 0.004)) % 1, wob = Math.sin(t * 0.8 + i * 2) * 2.5;
+        g.globalAlpha = a * (0.4 + 0.5 * Math.sin(t * 1.7 + i * 3) ** 2);
+        const lo = SUN.x0 + p * (SUN.px - SUN.x0), hi = SUN.x1 + p * (SUN.px + SUN.pw * 2 + SUN.gap - SUN.x1);
+        rect(lo + (hi - lo) * ((i * 0.37) % 1) + wob, SUN.y0 + p * (SUN.y1 - SUN.y0), 1, 1, '#fff6d8');
+      }
+    }
+    g.globalAlpha = 1; g.globalCompositeOperation = 'source-over';
   }
 
   /** A grey cat asleep on the tyre stack. The tail flicks, and now and then it opens an eye. */
@@ -539,6 +566,7 @@ export class GarageScene implements Scene {
       { x: 240, y: 9, r: 100, c: [255, 150, 120] },   // neon sign
       { x: 244, y: 78, r: 66, c: [255, 236, 190] },   // the two posters, spotlit
       { x: 51, y: 134, r: 56, c: [120, 255, 170] },   // CRT
+      { x: 365, y: 140, r: 30, c: [120, 255, 170] },  // laptop
       { x: 118, y: 119, r: 36, c: [255, 196, 110] },  // radio
       { x: 214, y: 205, r: 92, c: [255, 226, 170] },  // work lamp over the bike
     ];
