@@ -29,10 +29,10 @@ export const HOTSPOTS: Hotspot[] = [
   { id: 'bookbox', label: 'BOOKBOX · THE REACT NATIVE APP', tag: 'BOOKBOX', href: '/planetread#bookbox', rect: [244, 79, 54, 36] },
   { id: 'bike', label: 'THE SCRAMBLER 400X', tag: 'THE BIKE', href: '/garage', rect: [108, 146, 214, 106] },
   // enamel signs: the socials
-  { id: 'youtube', label: yt ? 'YOUTUBE · MY CHANNEL' : 'YOUTUBE · VIDEOS FROM OCT', tag: 'YOUTUBE', href: yt || '/videos', rect: [14, 24, 66, 15], external: !!yt },
-  { id: 'x', label: `TWITTER · ${site.links.xHandle.toUpperCase()}`, tag: 'X', href: site.links.x, rect: [14, 42, 66, 15], external: true },
-  { id: 'linkedin', label: 'LINKEDIN · RAHUL SHENDRE', tag: 'LINKEDIN', href: site.links.linkedin, rect: [14, 60, 66, 15], external: true },
-  { id: 'github', label: 'GITHUB · RAHULSHENDRE', tag: 'GITHUB', href: site.links.github, rect: [14, 78, 66, 15], external: true },
+  { id: 'youtube', label: yt ? 'YOUTUBE · MY CHANNEL' : 'YOUTUBE · VIDEOS FROM OCT', tag: 'YOUTUBE', href: yt || '/videos', rect: [92, 24, 66, 15], external: !!yt },
+  { id: 'x', label: `TWITTER · ${site.links.xHandle.toUpperCase()}`, tag: 'X', href: site.links.x, rect: [92, 42, 66, 15], external: true },
+  { id: 'linkedin', label: 'LINKEDIN · RAHUL SHENDRE', tag: 'LINKEDIN', href: site.links.linkedin, rect: [92, 60, 66, 15], external: true },
+  { id: 'github', label: 'GITHUB · RAHULSHENDRE', tag: 'GITHUB', href: site.links.github, rect: [92, 78, 66, 15], external: true },
   { id: 'tv', label: 'CRT TV · OPEN THE TERMINAL', tag: 'TERMINAL', href: '/videos', rect: [18, 96, 66, 64], action: 'terminal' },
   { id: 'binders', label: 'BINDERS · WRITING AND DOCS', tag: 'WRITING', href: '/writing', rect: [90, 128, 58, 32] },
   { id: 'coffee', label: 'COFFEE · ABOUT ME', tag: 'COFFEE', href: '/about', rect: [152, 140, 20, 20] },
@@ -47,7 +47,7 @@ export const HOTSPOTS: Hotspot[] = [
 export const CONTROLS: Control[] = [
   { id: 'cord', label: 'PULL CORD · LIGHTS', tag: 'LIGHTS', rect: [169, 28, 16, 26] },
   { id: 'radio', label: 'RADIO · LO-FI ON OR OFF', tag: 'RADIO', rect: [96, 108, 44, 22] },
-  { id: 'window', label: 'WINDOW · CHANGE THE WEATHER', tag: 'WEATHER', rect: [91, 23, 66, 74] },
+  { id: 'window', label: 'WINDOW · CHANGE THE WEATHER', tag: 'WEATHER', rect: [9, 23, 66, 74] },
   { id: 'cat', label: 'THE CAT · PET HER', tag: 'CAT', rect: [6, 196, 38, 20] },
 ];
 

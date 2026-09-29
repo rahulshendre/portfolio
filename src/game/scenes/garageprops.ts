@@ -8,7 +8,7 @@ import { paint, type Sprite } from '../engine/sprites';
 import type { Weather } from '../state';
 
 export const TUBES = [140, 340];
-export const SUN = { x0: 96, x1: 152, y0: 88, y1: 234, px: 206, pw: 30, gap: 6 }; // window edge, and where its light lands on the floor
+export const SUN = { x0: 14, x1: 70, y0: 88, y1: 234, px: 206, pw: 30, gap: 6 }; // window edge, and where its light lands on the floor
 
 /** Corners, the wall meeting the floor and the strip under the beam go dim, so the room reads as a box with depth. Painted before the lighting pass. */
 export function depthShading() {
@@ -135,20 +135,6 @@ export function clockHands(d: Date) {
   const { x, y } = CLOCK, s = d.getSeconds(), m = d.getMinutes() + s / 60, h = (d.getHours() % 12) + m / 60;
   const hand = (turn: number, len: number, col: string) => line(x, y, Math.round(x + Math.sin(turn * Math.PI * 2) * len), Math.round(y - Math.cos(turn * Math.PI * 2) * len), col);
   hand(h / 12, 4, '#2a2a2e'); hand(m / 60, 6, '#2a2a2e'); hand(s / 60, 7, C.red); disc(x, y, 1, '#2a2a2e');
-}
-
-/** A riding jacket on a hook rail, with a pair of gloves beside it. */
-export function jacket() {
-  woodGrain(194, 118, 44, 3, C.wood, C.woodDark, '#a5764a', 160);
-  for (const x of [208, 232]) { rect(x, 120, 2, 3, C.steel); }
-  rect(204, 126, 18, 3, '#00000033');
-  poly([[203, 123], [209, 121], [215, 121], [221, 123], [225, 128], [225, 146], [220, 146], [220, 133], [217, 146], [207, 146], [204, 133], [204, 146], [199, 146], [199, 128]], C.jacket);
-  poly([[209, 121], [212, 125], [215, 121]], '#15161a');                                                             // collar
-  rect(211, 125, 2, 21, '#15161a'); rect(199, 128, 5, 1, C.jacketLight); rect(220, 128, 5, 1, C.jacketLight);         // zip and shoulder highlights
-  rect(200, 136, 4, 2, C.reflector); rect(220, 136, 4, 2, C.reflector);                                              // reflective sleeve bands
-  rect(205, 132, 5, 6, C.jacketLight); rect(214, 132, 5, 6, C.jacketLight);                                          // armour panels
-  speckle(199, 121, 26, 25, '#00000044', 0.08, 161); speckle(199, 121, 26, 25, '#ffffff22', 0.03, 162);
-  poly([[229, 123], [235, 123], [236, 133], [233, 135], [229, 133]], '#3a2a1e'); rect(229, 123, 6, 1, '#5a3d2b');    // gloves
 }
 
 /** An open laptop on top of the toolbox. The screen is redrawn each frame by laptopLive. */

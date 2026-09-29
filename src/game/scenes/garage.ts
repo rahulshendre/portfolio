@@ -14,14 +14,14 @@ import { site } from '../../data/site';
 import { idleMessage } from '../hints';
 import { countFound, type Theme, type Weather } from '../state';
 import { windowFall, windowSky } from './weather';
-import { SUN, TUBES, bikeGrounding, clockFace, clockHands, conduit, depthShading, floorDetail, floorProps, fuseBox, jacket, laptop, laptopLive, sunSprite, sunStrength, tubeBeams } from './garageprops';
+import { SUN, TUBES, bikeGrounding, clockFace, clockHands, conduit, depthShading, floorDetail, floorProps, fuseBox, laptop, laptopLive, sunSprite, sunStrength, tubeBeams } from './garageprops';
 import github from '../../data/github.json';
 
 const WALL = '#cbbd9f', MORTAR = '#bcad8f', LOWER = '#7f8a7a', FLOOR = '#958d80', FLOOR_DARK = '#857d71';
 const NAVY = '#293878', CYAN = '#29bdeb';
 const BENCH_DY = 0; // how far the workbench group is shifted up from its original spot
 const CARE = 0.3; // how battered the room looks: lived in and looked after, not abandoned (the door keeps its full wear)
-const WIN = { x: 96, y: 28, w: 56, h: 58 }; // the window, up on the left wall clear of the posters
+const WIN = { x: 14, y: 28, w: 56, h: 58 }; // the window, at the far left of the wall
 export const BIKE = { scale: 1.4, cx: 214, floor: 250 };
 
 /** One drifting music note: a head and a stem, fading out as it rises. */
@@ -180,7 +180,7 @@ export class GarageScene implements Scene {
     this.toolbox();
     this.tyres();
     this.radioBox();
-    conduit(); fuseBox(); clockFace(); jacket(); laptop(); floorProps();
+    conduit(); fuseBox(); clockFace(); laptop(); floorProps();
 
     if (withBike) {
       // Part of the room's personality, not its focus: mid-size, a little left of centre so the toolbox and PipeCD sign stay clear.
@@ -239,7 +239,7 @@ export class GarageScene implements Scene {
   /** The socials as Indian number plates in a tidy stack: yellow (commercial), black with yellow letters (rental), white (private), green (electric). */
   private signs() {
     const plate = (y: number, bg: string, fg: string, edge: string, label: string) => {
-      const x = 14, w = 66, h = 15;
+      const x = 92, w = 66, h = 15;
       rect(x + 2, y + 2, w, h, '#00000033');
       rect(x, y, w, h, edge); rect(x + 1, y + 1, w - 2, h - 2, bg);
       rect(x + 1, y + 1, 9, h - 2, '#1d3d9a'); rect(x + 4, y + 4, 3, 3, '#f4f2ea'); rect(x + 5, y + 5, 1, 1, '#1d3d9a'); rect(x + 3, y + 9, 5, 1, '#f4f2ea'); // the blue IND strip and its chakra
