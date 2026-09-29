@@ -15,7 +15,7 @@ import github from '../../data/github.json';
 const WALL = '#cbbd9f', MORTAR = '#bcad8f', LOWER = '#7f8a7a', FLOOR = '#958d80', FLOOR_DARK = '#857d71';
 const NAVY = '#293878', CYAN = '#29bdeb';
 const TUBES = [140, 340];
-export const BIKE = { scale: 1.7, cx: 208, floor: 250 };
+export const BIKE = { scale: 1.4, cx: 214, floor: 250 };
 
 /** One drifting music note: a head and a stem, fading out as it rises. */
 function drawNote(x: number, y: number, a: number) {
@@ -123,7 +123,7 @@ export class GarageScene implements Scene {
     this.radioBox();
 
     if (withBike) {
-      // The star of the room: big, and a little left of centre so the toolbox and the PipeCD sign stay in view.
+      // Part of the room's personality, not its focus: mid-size, a little left of centre so the toolbox and PipeCD sign stay clear.
       const k = BIKE.scale, bw = Math.round(this.img.bike.width * k), bh = Math.round(this.img.bike.height * k);
       const bx = Math.round(BIKE.cx - bw / 2), by = BIKE.floor - bh;
       ellipse(BIKE.cx, BIKE.floor, bw * 0.48, 5, '#5f584d');
@@ -381,7 +381,7 @@ export class GarageScene implements Scene {
       { x: 240, y: 86, r: 62, c: [255, 236, 190] },   // PipeCD sign, spotlit
       { x: 51, y: 134, r: 56, c: [120, 255, 170] },   // CRT
       { x: 118, y: 119, r: 36, c: [255, 196, 110] },  // radio
-      { x: 208, y: 200, r: 110, c: [255, 226, 170] },  // work lamp over the bike
+      { x: 214, y: 205, r: 92, c: [255, 226, 170] },  // work lamp over the bike
     ];
     const mk = () => { const c = document.createElement('canvas'); c.width = 480; c.height = 270; return c; };
     const dark = mk(), glow = mk();

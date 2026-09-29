@@ -25,7 +25,7 @@ const yt = site.links.youtube;
 
 export const HOTSPOTS: Hotspot[] = [
   { id: 'pipecd', label: 'PIPECD SIGN · OPEN SOURCE', tag: 'OPEN SOURCE', href: '/open-source', rect: [195, 33, 90, 104] },
-  { id: 'bike', label: 'THE SCRAMBLER 400X', tag: 'THE BIKE', href: '/garage', rect: [80, 140, 258, 112] },
+  { id: 'bike', label: 'THE SCRAMBLER 400X', tag: 'THE BIKE', href: '/garage', rect: [108, 146, 214, 106] },
   // enamel signs: the socials
   { id: 'youtube', label: yt ? 'YOUTUBE · MY CHANNEL' : 'YOUTUBE · VIDEOS FROM OCT', tag: 'YOUTUBE', href: yt || '/videos', rect: [12, 24, 78, 28], external: !!yt },
   { id: 'x', label: `TWITTER · ${site.links.xHandle.toUpperCase()}`, tag: 'X', href: site.links.x, rect: [96, 24, 78, 28], external: true },
@@ -38,7 +38,7 @@ export const HOTSPOTS: Hotspot[] = [
   { id: 'whiteboard', label: 'WHITEBOARD · ABOUT ME', tag: 'ABOUT', href: '/about', rect: [392, 22, 84, 62] },
   { id: 'calendar', label: 'CALENDAR · PR LOG', tag: 'PR LOG', href: '/open-source#log', rect: [304, 82, 30, 42] },
   { id: 'clipboard', label: 'CLIPBOARD · RESUME', tag: 'RESUME', href: '/resume', rect: [348, 82, 26, 36] },
-  { id: 'toolbox', label: 'TOOLBOX STICKERS · PROJECTS', tag: 'PROJECTS', href: '/open-source#projects', rect: [338, 146, 46, 88] },
+  { id: 'toolbox', label: 'TOOLBOX STICKERS · PROJECTS', tag: 'PROJECTS', href: '/open-source#projects', rect: [322, 146, 62, 88] },
   { id: 'shelf', label: 'PARTS SHELF · BUILDS', tag: 'BUILDS', href: '/builds', rect: [390, 86, 86, 112] },
 ];
 
