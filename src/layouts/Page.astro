@@ -42,6 +42,19 @@ const snapshot = new Date(github.generatedAt).toLocaleDateString('en-GB', { day:
       href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;1,9..144,400&family=IBM+Plex+Mono:wght@400&family=IBM+Plex+Sans:ital,wght@0,400;0,600;1,400&family=Silkscreen&display=swap"
     />
     <slot name="head" />
+    <script is:inline>
+      // Shown inside the garage's panel? Drop the site chrome (the panel has its own bar) and keep the game from loading inside itself.
+      if (window.top !== window.self) {
+        document.documentElement.classList.add('embedded');
+        document.addEventListener('click', function (e) {
+          var a = e.target && e.target.closest && e.target.closest('a[href]');
+          if (!a) return;
+          var u = new URL(a.href, location.href);
+          if (u.origin !== location.origin) { a.target = '_blank'; a.rel = 'noopener'; return; }
+          if (u.pathname === '/') { e.preventDefault(); window.parent.postMessage({ rs: 'close-panel' }, location.origin); }
+        }, true);
+      }
+    </script>
   </head>
   <body>
     {bare ? <slot /> : (

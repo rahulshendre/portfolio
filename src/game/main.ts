@@ -10,6 +10,7 @@ import { BAR, CONTROLS, HOTSPOTS, toPct } from './hotspots';
 import { hasVisited, isNightHour, loadNight, loadTried, markVisited, pickStart, saveNight, saveTried } from './state';
 import { radio } from './engine/audio';
 import { mountTerminal } from './terminal-ui';
+import { isPanelHref, mountPanel, parsePanelHash, titleFor } from './panel';
 
 const canvas = document.getElementById('game') as HTMLCanvasElement;
 const layer = document.getElementById('hotspots') as HTMLElement;
@@ -41,8 +42,18 @@ function toggleRadio() {
   document.querySelector('[data-control="radio"]')?.setAttribute('aria-pressed', String(on));
 }
 
+const panel = mountPanel({
+  closed: () => (document.activeElement as HTMLElement | null)?.blur?.(),
+});
+
 const terminal = mountTerminal({
   opened: () => markTried('tv'),
+  go: (href) => {
+    if (!isPanelHref(href)) return false;
+    terminal.close(true); // the panel takes over the same history entry
+    panel.open(href, titleFor(href));
+    return true;
+  },
   night: toggleNight,
   radio: toggleRadio,
   ride: () => ride(),
@@ -63,6 +74,8 @@ async function garage() {
   mountHotspots(scene);
   requestAnimationFrame(centre);
   if (location.hash === '#terminal') terminal.open();
+  const deep = parsePanelHash(location.hash);
+  if (deep) panel.open(deep, titleFor(deep));
 }
 
 // On phones the garage is wider than the screen: keep it centred on the bike (also after rotating).
@@ -93,6 +106,9 @@ function mountHotspots(scene: GarageScene) {
   for (const h of [...HOTSPOTS, BAR.list, BAR.ride]) {
     const a = document.createElement('a');
     a.href = h.href;
+    if (isPanelHref(h.href) && !h.external && !('action' in h && h.action) && h.id !== 'list' && h.id !== 'ride') {
+      a.addEventListener('click', (e) => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.button) return; e.preventDefault(); panel.open(h.href, h.tag || titleFor(h.href), a); });
+    }
     if ('action' in h && h.action) {
       a.dataset.action = h.action;
       a.addEventListener('click', (e) => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.button) return; e.preventDefault(); terminal.open(); });
@@ -120,14 +136,14 @@ async function ride() {
 }
 
 const start = pickStart(location.search, hasVisited(), reduced);
-if (location.hash === '#terminal') garage();
+if (location.hash === '#terminal' || parsePanelHash(location.hash)) garage();
 else if (start === 'ride') ride();
 else if (start === 'door') door();
 else garage();
 
 // "/" or "`" opens the terminal from anywhere in the garage, like a real one.
 addEventListener('keydown', (e) => {
-  if ((e.key !== '/' && e.key !== '`') || e.metaKey || e.ctrlKey || e.altKey || terminal.isOpen) return;
+  if ((e.key !== '/' && e.key !== '`') || e.metaKey || e.ctrlKey || e.altKey || terminal.isOpen || panel.isOpen) return;
   if (!(director.current instanceof GarageScene) || (e.target as HTMLElement)?.closest?.('input,textarea')) return;
   e.preventDefault();
   terminal.open();
@@ -159,7 +175,7 @@ function zoomStep(dt: number) {
 
 function leanStage(dt: number) {
   zoomStep(dt);
-  const on = canLean && director.current instanceof GarageScene && !terminal.isOpen && !(current?.lowFx);
+  const on = canLean && director.current instanceof GarageScene && !terminal.isOpen && !panel.isOpen && !(current?.lowFx);
   const k = Math.min(1, dt * 6), tx = on ? aim.x : 0, ty = on ? aim.y : 0;
   lean = { x: lean.x + (tx - lean.x) * k, y: lean.y + (ty - lean.y) * k };
   if (zoom > 0) {

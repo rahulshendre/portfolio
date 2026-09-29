@@ -3,6 +3,8 @@ import { BOOT, complete, run, type Effect, type Line } from './terminal';
 
 export interface TerminalHooks {
   opened?(): void;
+  /** Open an internal page in the garage panel. Return false to fall back to a normal navigation. */
+  go?(href: string): boolean;
   night(): void;
   radio(): void;
   ride(): void;
@@ -64,7 +66,7 @@ export function mountTerminal(hooks: TerminalHooks) {
     else if (effect === 'radio') hooks.radio();
     else if (effect === 'ride') { close(); hooks.ride(); }
     else if (effect.external) window.open(effect.go, '_blank', 'noopener');
-    else location.href = effect.go;
+    else if (!hooks.go?.(effect.go)) location.href = effect.go;
   }
 
   form.addEventListener('submit', (e) => {
