@@ -111,21 +111,36 @@ export class DoorScene implements Scene {
       rect(x, y, 1, 1, t - i > bayer(x, y) ? sky[i + 1] : sky[i]);
     }
     disc(400, 176, 18, '#f6b27a'); disc(400, 176, 12, '#ffd49a');
-    // flat-topped Sahyadri mesas behind the building
-    const mesa = (x: number, list: number[][]) =>
-      Math.max(10, ...list.map(([a, b, h]) => h * Math.min(1, Math.max(0, (Math.min(x - a, b - x) + 16) / 16))));
-    const far = [[-20, 120, 74], [150, 270, 58], [300, 430, 70], [440, 520, 52]], near = [[20, 90, 40], [210, 330, 34], [370, 470, 44]];
+    // snow-capped Ladakh peaks (far) and ochre ridges (near)
+    const peak = (x: number, list: number[][]) =>
+      Math.max(0, ...list.map(([cx, w, h]) => (Math.abs(x - cx) > w ? 0 : h * (1 - Math.abs(x - cx) / w))));
+    const farPeaks = [[50, 58, 86], [175, 72, 98], [310, 68, 92], [415, 52, 76]];
+    const nearRidges = [[10, 95, 42], [155, 115, 36], [265, 105, 38], [385, 88, 44]];
     for (let x = 0; x < 480; x++) {
-      const h1 = Math.round(mesa(x, far)), h2 = Math.round(mesa(x, near));
-      rect(x, 200 - h1, 1, h1, '#737596');
-      for (let y = 8; y < h1 - 2; y += 7) rect(x, 200 - y, 1, 1, '#66688a');
-      rect(x, 200 - h2, 1, h2, '#586379');
+      const h1 = Math.round(peak(x, farPeaks)), h2 = Math.round(peak(x, nearRidges));
+      if (h1 > 0) {
+        const snow = Math.max(2, Math.floor(h1 * 0.24));
+        rect(x, 200 - h1, 1, h1, '#788498');
+        rect(x, 200 - h1, 1, Math.min(snow, h1), '#dde5ef');
+        for (let y = snow + 4; y < h1 - 2; y += 8) rect(x, 200 - y, 1, 1, '#6a7488');
+      }
+      if (h2 > 0) {
+        rect(x, 200 - h2, 1, h2, '#8f6f4a');
+        for (let y = 5; y < h2 - 2; y += 7) rect(x, 200 - y, 1, 1, '#765a3c');
+      }
     }
-    rect(0, 200, 480, 48, '#7c8a52');
-    for (let x = 0; x < 480; x += 3) if (bayer(x, 210) > 0.5) rect(x, 200 + (x % 7), 1, 2, '#6f7d48');
-    // neem on the left, pole and wires on the right
-    rect(30, 90, 8, 160, '#4a3526');
-    disc(34, 70, 34, '#3c5a33'); disc(12, 88, 20, '#3c5a33'); disc(56, 86, 20, '#3c5a33'); disc(30, 60, 18, '#4f7040');
+    rect(0, 200, 480, 48, '#a8906e');
+    for (let x = 0; x < 480; x += 3) if (bayer(x, 210) > 0.5) rect(x, 200 + (x % 7), 1, 2, '#958060');
+    // sparse poplar left; pole and wires on the right
+    rect(32, 118, 4, 132, '#5a4530');
+    disc(34, 102, 7, '#9aa858'); disc(34, 92, 5, '#7a8840');
+    line(38, 48, 426, 36, '#3a3632');
+    const flagCol = ['#b83a3a', '#d4a820', '#2a5aa8', '#f0ece4', '#2a7a48'];
+    for (let i = 0; i < 10; i++) {
+      const fx = 48 + i * 36, fy = 46 - Math.round((fx - 38) * 10 / 388);
+      line(fx + 4, fy, fx + 4, fy + 2, '#3a3632');
+      rect(fx, fy + 2, 9, 7, flagCol[i % 5]);
+    }
     rect(448, 20, 5, 230, '#4a4038'); rect(430, 26, 40, 3, '#4a4038');
     line(0, 34, 430, 28, '#2e2a26'); line(0, 40, 432, 30, '#2e2a26');
     // streetlight on the pole, already on at dusk, with a dithered glow
@@ -145,7 +160,7 @@ export class DoorScene implements Scene {
     rect(80, 108, 24, 34, '#2e2a26'); rect(82, 110, 20, 30, '#56626b');
     for (let x = 85; x < 102; x += 4) rect(x, 110, 1, 30, '#2e2a26');
     disc(393, 120, 9, C.red); disc(393, 120, 7, '#f4f2ea'); text('P', 391, 117, '#2c5aa0'); line(387, 114, 399, 126, C.red);
-    text('PUNE', 378, 140, '#8a7e68');
+    text('JULLEY!', 362, 140, '#8a7e68');
     // driveway and the road kerb
     rect(0, 248, 480, 22, '#8e877c');
     for (let x = 0; x < 480; x += 16) rect(x, 264, 8, 6, C.accent), rect(x + 8, 264, 8, 6, '#222');

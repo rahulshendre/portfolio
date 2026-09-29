@@ -14,8 +14,8 @@ export interface Hotspot {
 const yt = site.links.youtube;
 
 export const HOTSPOTS: Hotspot[] = [
-  { id: 'pipecd', label: 'PIPECD SIGN · OPEN SOURCE', tag: 'OPEN SOURCE', href: '/open-source', rect: [186, 22, 108, 130] },
-  { id: 'bike', label: 'THE SCRAMBLER 400X', tag: 'THE BIKE', href: '/garage', rect: [164, 172, 152, 78] },
+  { id: 'pipecd', label: 'PIPECD SIGN · OPEN SOURCE', tag: 'OPEN SOURCE', href: '/open-source', rect: [195, 33, 90, 104] },
+  { id: 'bike', label: 'THE SCRAMBLER 400X', tag: 'THE BIKE', href: '/garage', rect: [150, 160, 180, 90] },
   // enamel signs: the socials
   { id: 'youtube', label: yt ? 'YOUTUBE · MY CHANNEL' : 'YOUTUBE · VIDEOS FROM OCT', tag: 'YOUTUBE', href: yt || '/videos', rect: [12, 24, 78, 28], external: !!yt },
   { id: 'x', label: `TWITTER · ${site.links.xHandle.toUpperCase()}`, tag: 'X', href: site.links.x, rect: [96, 24, 78, 28], external: true },

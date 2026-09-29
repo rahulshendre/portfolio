@@ -83,9 +83,12 @@ export class GarageScene implements Scene {
     this.tyres();
 
     if (withBike) {
-      ellipse(240, 249, 72, 4, '#5f584d');
-      blit(this.img.bike, 164, 249 - this.img.bike.height);
-      disc(236, 198, 7, C.ink); disc(236, 198, 6, C.white); rect(238, 199, 3, 4, C.whiteShade); rect(232, 194, 3, 2, '#ffffff'); // white helmet on the seat
+      const bikeScale = 1.14;
+      const bw = Math.round(this.img.bike.width * bikeScale), bh = Math.round(this.img.bike.height * bikeScale);
+      const bx = Math.round(240 - bw / 2);
+      ellipse(240, 249, 82, 4, '#5f584d');
+      blit(this.img.bike, bx, 249 - bh, bw, bh);
+      disc(236, 191, 7, C.ink); disc(236, 191, 6, C.white); rect(238, 192, 3, 4, C.whiteShade); rect(232, 187, 3, 2, '#ffffff'); // white helmet on the seat
     }
 
     this.light();
@@ -137,10 +140,11 @@ export class GarageScene implements Scene {
   }
 
   private pipecdSign() {
-    rect(189, 25, 108, 126, '#00000033');
-    rect(186, 22, 108, 126, '#2a2a2e'); rect(188, 24, 104, 122, '#f4f2ea');
-    for (const [x, y] of [[191, 27], [287, 27], [191, 141], [287, 141]]) rect(x, y, 2, 2, '#9a958b');
-    blit(this.img.pipecd, 205, 38);
+    rect(198, 36, 90, 104, '#00000033');
+    rect(195, 33, 90, 104, '#2a2a2e'); rect(197, 35, 86, 100, '#f4f2ea');
+    for (const [x, y] of [[200, 38], [278, 38], [200, 130], [278, 130]]) rect(x, y, 2, 2, '#9a958b');
+    const pw = Math.round(this.img.pipecd.width * 90 / 108), ph = Math.round(this.img.pipecd.height * 104 / 126);
+    blit(this.img.pipecd, 211, 47, pw, ph);
   }
 
   private workbench() {

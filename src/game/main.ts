@@ -58,7 +58,7 @@ function mountHotspots(scene: GarageScene) {
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 async function ride() {
   const img = await images;
-  director.go(new RideScene(screen, img.icons, door, garage));
+  director.go(new RideScene(screen, door, garage));
 }
 
 if (new URLSearchParams(location.search).has('door')) door(); // handy for testing the door on its own
