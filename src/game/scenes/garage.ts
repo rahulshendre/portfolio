@@ -16,7 +16,7 @@ import { istHMS, istLabel } from '../ist';
 import { tick } from '../engine/audio';
 import { countFound, type Theme, type Weather } from '../state';
 import { windowFall, windowSky } from './weather';
-import { SUN, TUBES, benchLamp, benchLampGlow, bikeGrounding, ceilingMech, chai, chaiLive, helmetStand, compressor, compressorPuff, fanLive, fanStatic, foreground, incidentBoard, mapArt, shelfPlant, speakerLive, clockFace, clockHands, conduit, depthShading, floorDetail, floorProps, fuseBox, charger, chargerLive, sunSprite, sunStrength, tubeBeams } from './garageprops';
+import { SUN, TUBES, benchLamp, benchLampGlow, bikeGrounding, ceilingMech, chai, chaiLive, helmetStand, compressor, compressorPuff, fanLive, fanStatic, foreground, posterFrame, POSTER, incidentBoard, mapArt, clockFace, clockHands, conduit, depthShading, floorDetail, floorProps, charger, chargerLive, sunSprite, sunStrength, tubeBeams } from './garageprops';
 import github from '../../data/github.json';
 
 const WALL = '#cbbd9f', MORTAR = '#bcad8f', LOWER = '#7f8a7a', FLOOR = '#958d80', FLOOR_DARK = '#857d71';
@@ -193,8 +193,8 @@ export class GarageScene implements Scene {
     this.toolbox();
     this.tyres();
     this.radioBox();
-    conduit(); fuseBox(); clockFace(); charger(); floorProps(); benchLamp();
-    helmetStand(); ceilingMech(); fanStatic(); shelfPlant(); mapArt(); incidentBoard(DAYS_SINCE_PR); compressor(); chai();
+    conduit(); clockFace(); charger(); floorProps(); benchLamp();
+    helmetStand(); ceilingMech(); fanStatic(); mapArt(); incidentBoard(DAYS_SINCE_PR); compressor(); chai();
 
     if (withBike) {
       // Part of the room's personality, not its focus: mid-size, a little left of centre so the toolbox and PipeCD sign stay clear.
@@ -270,20 +270,11 @@ export class GarageScene implements Scene {
 
   /** The PipeCD poster on the left; on the right two plaques for the real PlanetRead and BookBox logos (main.ts lays the crisp images over them). */
   private pipecdSign() {
-    const frame = (x: number, y: number, w: number, h: number) => {
-      rect(x + 3, y + 3, w, h, '#00000033');
-      woodGrain(x, y, w, h, C.wood, C.woodDark, '#a5764a', 70 + x); rect(x, y, w, 1, '#c9a577'); rect(x, y + h - 1, w, 1, '#5e3c24');
-      rect(x + 2, y + 2, w - 4, h - 4, '#f4f2ea'); bevel(x + 2, y + 2, w - 4, h - 4, '#d3ccb8', '#fbf9f2');              // paper set into the frame, edge in shadow
-      speckle(x + 3, y + 3, w - 6, h - 6, '#e2dcc9', 0.05, 71 + x);                                                      // yellowing and foxing
-    };
-    frame(192, 38, 44, 72);
-    for (const [dx, dy] of [[4, 43], [36, 43], [4, 101], [36, 101]]) rect(192 + dx - 2, dy - 3, 2, 2, '#9a958b');
-    const k = 0.53, pw = Math.round(this.img.pipecd.width * k), ph = Math.round(this.img.pipecd.height * k);
-    blit(this.img.pipecd, 192 + Math.round((44 - pw) / 2), 48, pw, ph);
-    rect(194, 74, 40, 1, '#00000018'); rect(194, 75, 40, 1, '#ffffff22'); // a fold crease across the poster
-    rect(192, 34, 6, 3, '#e8d9a8aa'); rect(230, 34, 6, 3, '#e8d9a8aa');      // tape at the top corners
-    frame(244, 33, 54, 42);
-    frame(244, 79, 54, 36);
+    posterFrame(188, 30); // PipeCD
+    const im = this.img.pipecd, k = Math.min((POSTER.w - 6) / im.width, (POSTER.h - 6) / im.height), pw = Math.round(im.width * k), ph = Math.round(im.height * k);
+    blit(im, 188 + Math.round((POSTER.w - pw) / 2), 30 + Math.round((POSTER.h - ph) / 2), pw, ph);
+    posterFrame(244, 30); // PlanetRead and BookBox: main.ts lays the crisp logos over these plaques
+    posterFrame(188, 84);
   }
 
   private workbench() {
@@ -444,7 +435,6 @@ export class GarageScene implements Scene {
     windowFall(ctx(), WIN.x, WIN.y, WIN.w, WIN.h, this.weather, t);
     this.sunlight(t);
     fanLive(t);
-    speakerLive(t, this.radioOn);
     chaiLive(t);
     compressorPuff(t - this.puffT);
     clockHands(istHMS(new Date()));

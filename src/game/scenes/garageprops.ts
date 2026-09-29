@@ -97,29 +97,12 @@ export function floorProps() {
   for (let k = 0; k < 6; k++) line(394 + k, 231, 392 + k * 2, 236, '#d8d2c4');
 }
 
-/** Conduit along the top of the wall, with a drop to the fuse box, clipped to the plaster every so often. */
+/** Conduit along the top of the wall, clipped to the plaster every so often. */
 export function conduit() {
   const pipe = '#8b9096', hi = '#b4b9be', lo = '#4a4e53', clip = '#3a3d42';
   rect(298, 19, 182, 3, pipe); rect(298, 19, 182, 1, hi); rect(298, 21, 182, 1, lo);
-  rect(298, 19, 2, 99, pipe); rect(298, 19, 1, 99, hi); rect(299, 19, 1, 99, lo);
   for (let x = 312; x < 480; x += 26) { rect(x, 18, 3, 5, clip); rect(x, 18, 3, 1, '#6b6f79'); }
-  for (let y = 38; y < 116; y += 20) { rect(297, y, 4, 2, clip); rect(297, y, 4, 1, '#6b6f79'); }
   rect(342, 16, 10, 7, '#7d8288'); bevel(342, 16, 10, 7, '#a0a5aa', '#4a4e53'); rect(346, 19, 2, 1, '#2a2c30'); // junction box
-  stain(300, 60, 3, 30, '#6b5a44', 150, 0.5);
-}
-
-/** A breaker panel with its door hanging open, a warning sticker, and three wires running down into the wall. */
-export function fuseBox() {
-  rect(276, 120, 22, 26, '#7d8288'); bevel(276, 120, 22, 26, '#a0a5aa', '#4a4e53');
-  rect(279, 123, 16, 20, '#17181b'); bevel(279, 123, 16, 20, '#0a0a0c', '#34363c');
-  for (let r = 0; r < 2; r++) for (let i = 0; i < 4; i++) {
-    const x = 281 + i * 3.6, y = 125 + r * 9;
-    rect(x, y, 3, 6, '#2a2c30'); rect(x, y + (i + r) % 2 * 3, 3, 3, '#d8d2c4'); rect(x, y + 6, 3, 1, (i + r) % 3 ? '#3d8b4f' : C.red);
-  }
-  poly([[271, 119], [276, 121], [276, 143], [271, 146]], '#8f949a'); rect(271, 119, 1, 27, '#b4b9be');            // the door, swung open
-  poly([[286, 137], [290, 137], [288, 140]], C.accent); rect(288, 138, 1, 1, '#17181b');                           // warning triangle
-  for (const [x, c] of [[282, C.red], [286, '#2c5aa0'], [290, C.accent]] as const) { rect(x, 146, 1, 8, c); rect(x + 1, 152, 1, 3, c); }
-  speckle(276, 120, 22, 26, '#5a4a38', 0.06, 151);
 }
 
 /** A wall clock face; the hands are drawn each frame by clockHands. */
@@ -155,30 +138,12 @@ export function chargerLive(t: number) {
   rect(373, 143, 3, 2, full ? '#5fdc7a' : '#1f4a2a');                                     // full light
 }
 
-/** Things lying on the floor in front of the bike: a drip pan, a spanner, a parts tray, a creeper board and an extension lead. */
+/** A drip pan on the floor in front of the bike. */
 export function foreground() {
   // oil drip pan under the engine
   ellipse(227, 254, 26, 2, '#00000040');
   poly([[205, 248], [249, 248], [254, 254], [200, 254]], '#5a5f66'); rect(205, 248, 44, 1, '#8b9096'); rect(201, 253, 52, 1, '#3a3d42');
   ellipse(227, 251, 19, 2, '#17120e'); rect(216, 250, 6, 1, '#6d6690'); rect(233, 251, 3, 1, '#6d6690'); // dark oil with a sheen
-  // spanner on the floor
-  line(160, 251, 181, 254, '#00000044'); line(160, 250, 181, 253, C.steel); line(160, 249, 181, 252, '#dfe3e6');
-  disc(159, 250, 2, C.steel); disc(159, 250, 1, '#6b6f79');
-  // magnetic parts tray with bolts
-  rect(98, 250, 22, 5, '#00000040'); rect(97, 249, 22, 4, '#3a3d42'); bevel(97, 249, 22, 4, '#5a5d66', '#1b1c20');
-  for (const [x, c] of [[100, '#c9a043'], [103, '#b8bcc2'], [107, '#c9a043'], [111, '#b8bcc2'], [114, '#c9a043']] as const) rect(x, 250, 2, 2, c);
-  // wheel chocks, yellow and black, either side of the bike
-  poly([[136, 251], [147, 251], [147, 246]], C.accent); poly([[283, 246], [283, 251], [294, 251]], C.accent); rect(141, 249, 2, 2, '#2a2c30'); rect(288, 249, 2, 2, '#2a2c30');
-  // creeper board
-  ellipse(347, 255, 38, 2, '#00000040');
-  woodGrain(312, 248, 70, 5, C.wood, C.woodDark, '#a5764a', 190); rect(312, 248, 16, 5, '#26262a'); bevel(312, 248, 16, 5, '#4a4d55', '#101114');
-  for (const x of [316, 336, 360, 378]) { rect(x, 253, 3, 2, '#151515'); rect(x, 253, 1, 1, '#4a4d55'); }
-  // extension lead, orange, snaking across the floor
-  for (let x = 388; x < 440; x++) {
-    const y = 252 + Math.round(Math.sin((x - 388) * 0.22) * 1.5);
-    rect(x, y + 1, 1, 1, '#00000040'); rect(x, y, 1, 2, '#e8641f'); rect(x, y, 1, 1, '#f39a5c');
-  }
-  rect(384, 250, 6, 5, '#1b1712'); rect(384, 250, 6, 1, '#4a4d55'); rect(385, 252, 1, 2, '#c9a043'); rect(388, 252, 1, 2, '#c9a043'); // the plug
 }
 
 /** A gooseneck work lamp on the bench, warm against the cool tube light. */
@@ -208,53 +173,52 @@ export function ceilingMech() {
   for (const x of [46, 176, 286]) { rect(x, 17, 3, 7, '#3a3d42'); rect(x, 17, 3, 1, '#6b6f79'); }                                                   // brackets
 }
 
-/** A round extractor fan set into a square housing above the PipeCD poster. The blades are drawn each frame by fanLive. */
-export const FAN = { x: 225, y: 30 };
+/** A wall extractor fan: a square steel plate, a round bezel, a wire guard and four blades that turn. Big enough to read as a real one. */
+export const FAN = { x: 174, y: 72, half: 14 };
 export function fanStatic() {
-  const { x, y } = FAN;
-  rect(x - 9, y - 9, 18, 18, '#8b9096'); bevel(x - 9, y - 9, 18, 18, '#b4b9be', '#4a4e53');
-  disc(x, y, 7, '#2a2c30'); disc(x, y, 6, '#101114');
-  for (const [dx, dy] of [[-7, -7], [6, -7], [-7, 6], [6, 6]]) rect(x + dx, y + dy, 1, 1, '#4a4e53'); // screws
+  const { x, y, half } = FAN;
+  rect(x - half + 2, y - half + 2, half * 2, half * 2, '#00000033');
+  rect(x - half, y - half, half * 2, half * 2, '#9aa0a6'); bevel(x - half, y - half, half * 2, half * 2, '#c9ced2', '#565b61'); speckle(x - half, y - half, half * 2, half * 2, '#7c8087', 0.04, 240);
+  for (const [dx, dy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]] as const) { disc(x + dx * (half - 3), y + dy * (half - 3), 1, '#565b61'); rect(x + dx * (half - 3), y + dy * (half - 3), 1, 1, '#d8dcdf'); } // corner screws
+  disc(x, y, 12, '#565b61'); disc(x, y, 11, '#17181b');                                                                       // bezel and the dark tunnel
+  rect(x - 9, y + half - 2, 18, 1, '#7c8087');
 }
 export function fanLive(t: number) {
-  const { x, y } = FAN, a = t * 9;
-  for (let k = 0; k < 4; k++) {
+  const { x, y } = FAN, a = t * 7;
+  for (let k = 0; k < 4; k++) { // each blade is a wide paddle; a fainter copy trailing behind gives the blur
     const r = a + (k * Math.PI) / 2;
-    line(x, y, Math.round(x + Math.cos(r) * 5), Math.round(y + Math.sin(r) * 5), '#b4b9be');
-    line(x, y, Math.round(x + Math.cos(r + 0.35) * 4), Math.round(y + Math.sin(r + 0.35) * 4), '#6b6f79');
+    for (const [lag, col] of [[-0.28, '#3a3d42'], [0, '#8b9096']] as const) {
+      const ang = r + lag;
+      poly([[x, y], [Math.round(x + Math.cos(ang - 0.28) * 9), Math.round(y + Math.sin(ang - 0.28) * 9)], [Math.round(x + Math.cos(ang + 0.28) * 9), Math.round(y + Math.sin(ang + 0.28) * 9)]], col);
+    }
   }
-  disc(x, y, 1, '#d8dcdf');
+  disc(x, y, 2, '#d8dcdf'); disc(x, y, 1, '#565b61');
+  for (const rad of [5, 8, 11]) for (let k = 0; k < 24; k++) { const ang = (k / 24) * Math.PI * 2; rect(Math.round(x + Math.cos(ang) * rad), Math.round(y + Math.sin(ang) * rad), 1, 1, '#b4b9be'); } // the wire guard: rings
+  for (let k = 0; k < 8; k++) { const ang = (k / 8) * Math.PI * 2 + 0.2; line(x, y, Math.round(x + Math.cos(ang) * 11), Math.round(y + Math.sin(ang) * 11), '#9aa0a6'); }                        // and spokes
 }
 
-/** A wall shelf with a trailing money plant and a small desk speaker. */
-export function shelfPlant() {
-  rect(158, 69, 32, 2, '#00000033');
-  woodGrain(158, 66, 32, 3, C.wood, C.woodDark, '#a5764a', 200);
-  for (const x of [161, 185]) { rect(x, 69, 2, 5, '#4a4e53'); rect(x, 69, 2, 1, '#6b6f79'); }
-  poly([[160, 58], [169, 58], [168, 66], [161, 66]], '#b3563a'); rect(160, 58, 9, 1, '#d17a5a'); rect(161, 62, 7, 1, '#8f3f28'); // terracotta pot
-  disc(164, 54, 4, '#3f7a3a'); disc(160, 56, 3, '#4f9247'); disc(168, 55, 3, '#3a6d34'); disc(165, 52, 2, '#6bab52');
-  for (const [x, y] of [[159, 70], [158, 73], [159, 76], [158, 79], [160, 82]] as const) { rect(x, y, 2, 2, '#4f9247'); rect(x, y, 1, 1, '#6bab52'); } // a vine trailing down
-  rect(177, 53, 12, 13, '#2a2c30'); bevel(177, 53, 12, 13, '#4a4d55', '#101114');
-  for (let y = 55; y < 65; y += 2) for (let x = 179; x < 188; x += 2) rect(x, y, 1, 1, '#17181b');
-}
-export function speakerLive(t: number, on: boolean) {
-  const pulse = on && Math.floor(t * 4.4) % 2 === 0;
-  disc(183, 61, pulse ? 4 : 3, '#17181b'); disc(183, 61, 1, '#3a3d42');
-  rect(186, 55, 2, 1, on ? '#5fdc7a' : '#7a2f24');
+/** One frame for everything hung on the poster wall, so they all read as the same size. */
+export const POSTER = { w: 52, h: 50 };
+export function posterFrame(x: number, y: number) {
+  const { w, h } = POSTER;
+  rect(x + 3, y + 3, w, h, '#00000033');
+  woodGrain(x, y, w, h, C.wood, C.woodDark, '#a5764a', 70 + x); rect(x, y, w, 1, '#c9a577'); rect(x, y + h - 1, w, 1, '#5e3c24');
+  rect(x + 2, y + 2, w - 4, h - 4, '#f4f2ea'); bevel(x + 2, y + 2, w - 4, h - 4, '#d3ccb8', '#fbf9f2');
+  speckle(x + 3, y + 3, w - 6, h - 6, '#e2dcc9', 0.03, 71 + x);
 }
 
-/** A framed map of India with the ride to Leh dotted in red, pins at Pune, Manali and Leh. */
+/** A framed map of India with the ride to Leh dotted in red, pins at Pune, Manali and Leh. Same frame as the posters. */
 export function mapArt() {
-  rect(238, 118, 36, 28, '#00000033');
-  rect(236, 116, 36, 28, '#3e3127'); bevel(236, 116, 36, 28, '#5a4636', '#241a12');
-  rect(238, 118, 32, 24, '#e8dcb8'); speckle(238, 118, 32, 24, '#d4c69a', 0.06, 210);
-  const ox = 240, oy = 119;
-  poly([[14, 0], [18, 0], [21, 3], [25, 4], [28, 7], [27, 10], [23, 10], [25, 13], [21, 15], [19, 21], [17, 22], [15, 20], [12, 14], [8, 12], [7, 8], [10, 6], [11, 3]].map(([x, y]) => [ox + x, oy + y] as [number, number]), '#b9c08a');
-  for (const [x, y] of [[16, 8], [18, 12], [14, 16]]) rect(ox + x, oy + y, 1, 1, '#8f9660');
+  const fx = 244, fy = 84;
+  posterFrame(fx, fy);
+  rect(fx + 3, fy + 3, POSTER.w - 6, POSTER.h - 6, '#e8dcb8'); speckle(fx + 3, fy + 3, POSTER.w - 6, POSTER.h - 6, '#d4c69a', 0.05, 210);
+  const sc = 1.4, ox = fx + 4, oy = fy + 4, P = (x: number, y: number): [number, number] => [Math.round(ox + x * sc), Math.round(oy + y * sc)];
+  poly([[14, 0], [18, 0], [21, 3], [25, 4], [28, 7], [27, 10], [23, 10], [25, 13], [21, 15], [19, 21], [17, 22], [15, 20], [12, 14], [8, 12], [7, 8], [10, 6], [11, 3]].map(([x, y]) => P(x, y)), '#b9c08a');
+  for (const [x, y] of [[16, 8], [18, 12], [14, 16]]) { const [px, py] = P(x, y); rect(px, py, 1, 1, '#8f9660'); }
   const pts: [number, number][] = [[13, 13], [15, 9], [16, 6], [16, 2]];
-  pts.slice(0, -1).forEach(([x0, y0], i) => { const [x1, y1] = pts[i + 1]; for (let s = 0; s <= 6; s++) if (s % 2 === 0) rect(ox + Math.round(x0 + ((x1 - x0) * s) / 6), oy + Math.round(y0 + ((y1 - y0) * s) / 6), 1, 1, C.red); });
-  for (const [x, y] of pts.filter((_, i) => i !== 1)) { disc(ox + x, oy + y, 1, C.red); rect(ox + x, oy + y, 1, 1, '#ffffff'); }
-  rect(238, 118, 32, 1, '#ffffff33');
+  pts.slice(0, -1).forEach(([x0, y0], i) => { const [x1, y1] = pts[i + 1]; for (let s = 0; s <= 8; s++) if (s % 2 === 0) { const [px, py] = P(x0 + ((x1 - x0) * s) / 8, y0 + ((y1 - y0) * s) / 8); rect(px, py, 1, 1, C.red); } });
+  for (const [x, y] of pts.filter((_, i) => i !== 1)) { const [px, py] = P(x, y); disc(px, py, 1, C.red); rect(px, py, 1, 1, '#ffffff'); }
+  textC('RIDES', fx + POSTER.w / 2, fy + POSTER.h - 12, '#5a4636');
 }
 
 /** A "days since" board like the ones on workshop walls; the number is days since Rahul's last pull request. */
