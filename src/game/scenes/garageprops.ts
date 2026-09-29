@@ -207,6 +207,22 @@ export function posterFrame(x: number, y: number) {
   speckle(x + 3, y + 3, w - 6, h - 6, '#e2dcc9', 0.03, 71 + x);
 }
 
+// A tiny 3 by 5 pixel font for the few places the normal one is too big (only the letters that are needed).
+const MICRO: Record<string, string> = {
+  W: '101101111111101', O: '010101101101010', R: '110101110101101', K: '101101110101101', I: '111010010010111',
+  N: '110101101101101', P: '110101110100100', G: '011100101101011', E: '111100110100111', S: '011100010001110',
+};
+function microText(str: string, cx: number, y: number, col: string) {
+  const w = str.length * 4 - 1;
+  let x = Math.round(cx - w / 2);
+  for (const ch of str) {
+    const bits = MICRO[ch];
+    if (bits) for (let i = 0; i < 15; i++) if (bits[i] === '1') rect(x + (i % 3), y + Math.floor(i / 3), 1, 1, col);
+    x += 4;
+  }
+}
+
+
 /** The fourth frame on the poster wall is kept empty for the rides page: blank paper with dashed lines top and bottom, taped up, saying it is a work in progress. */
 export function ridesFrame() {
   const fx = 244, fy = 84;
@@ -214,8 +230,8 @@ export function ridesFrame() {
   rect(fx + 3, fy + 3, POSTER.w - 6, POSTER.h - 6, '#f0ead8');
   for (let x = fx + 5; x < fx + POSTER.w - 5; x += 3) { rect(x, fy + 5, 2, 1, '#b8b09a'); rect(x, fy + POSTER.h - 6, 2, 1, '#b8b09a'); }
   const mid = fx + POSTER.w / 2;
-  textC('WORK IN', mid, fy + 17, '#5a4636'); textC('PROGRESS', mid, fy + 28, '#5a4636');
-  rect(mid - 12, fy + 38, 24, 1, '#c9c0a8');
+  microText('WORK IN', mid, fy + 19, '#5a4636'); microText('PROGRESS', mid, fy + 27, '#5a4636');
+  rect(mid - 10, fy + 36, 20, 1, '#c9c0a8');
   rect(fx + 4, fy + 2, 8, 3, '#e8d9a8aa'); rect(fx + POSTER.w - 12, fy + 2, 8, 3, '#e8d9a8aa'); // tape at the top corners
 }
 
