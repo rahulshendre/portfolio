@@ -679,6 +679,7 @@ export class GarageScene implements Scene {
 
   private bar(hot?: Hotspot | Control) {
     rect(0, 256, 480, 14, C.ink);
+    if (this.screen.size.portrait) return; // on a portrait phone the page's own button bar covers this strip, so no text here
     text('LIST VIEW', 6, 260, this.hover === 'list' ? C.accent : C.hud);
     text('RIDE AGAIN >', 474 - textW('RIDE AGAIN >'), 260, this.hover === 'ride' ? C.accent : C.hud);
     // Portrait phones only see ~130px of the bar, so keep it short there.
