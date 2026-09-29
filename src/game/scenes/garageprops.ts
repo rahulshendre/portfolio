@@ -155,22 +155,6 @@ export function chargerLive(t: number) {
   rect(373, 143, 3, 2, full ? '#5fdc7a' : '#1f4a2a');                                     // full light
 }
 
-/** A warm rim of window light down the bike's left edge. Painted after the lighting pass so it adds to it. */
-export function bikeRim(bike: HTMLImageElement, bx: number, by: number, bw: number, bh: number) {
-  const layer = (shift: [number, number], col: string) => {
-    const c = document.createElement('canvas'); c.width = bw; c.height = bh;
-    const g = c.getContext('2d')!; g.imageSmoothingEnabled = false;
-    g.drawImage(bike, 0, 0, bw, bh);
-    g.globalCompositeOperation = 'destination-out'; g.drawImage(bike, shift[0], shift[1], bw, bh); // what is left is the edge the shifted copy does not cover
-    g.globalCompositeOperation = 'source-in'; g.fillStyle = col; g.fillRect(0, 0, bw, bh);
-    return c;
-  };
-  const g = ctx();
-  g.globalCompositeOperation = 'lighter';
-  g.globalAlpha = 0.4; g.drawImage(layer([2, 0], '#ffd9a0'), bx, by);   // window light from the left
-  g.globalAlpha = 1; g.globalCompositeOperation = 'source-over';
-}
-
 /** Things lying on the floor in front of the bike: a drip pan, a spanner, a parts tray, a creeper board and an extension lead. */
 export function foreground() {
   // oil drip pan under the engine
