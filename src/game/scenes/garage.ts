@@ -14,7 +14,7 @@ import { site } from '../../data/site';
 import { idleMessage } from '../hints';
 import { countFound, type Theme, type Weather } from '../state';
 import { windowFall, windowSky } from './weather';
-import { SUN, TUBES, bikeGrounding, clockFace, clockHands, conduit, depthShading, floorDetail, floorProps, fuseBox, laptop, laptopLive, sunSprite, sunStrength, tubeBeams } from './garageprops';
+import { SUN, TUBES, bikeGrounding, clockFace, clockHands, conduit, depthShading, floorDetail, floorProps, fuseBox, charger, chargerLive, sunSprite, sunStrength, tubeBeams } from './garageprops';
 import github from '../../data/github.json';
 
 const WALL = '#cbbd9f', MORTAR = '#bcad8f', LOWER = '#7f8a7a', FLOOR = '#958d80', FLOOR_DARK = '#857d71';
@@ -181,7 +181,7 @@ export class GarageScene implements Scene {
     this.toolbox();
     this.tyres();
     this.radioBox();
-    conduit(); fuseBox(); clockFace(); laptop(); floorProps();
+    conduit(); fuseBox(); clockFace(); charger(); floorProps();
 
     if (withBike) {
       // Part of the room's personality, not its focus: mid-size, a little left of centre so the toolbox and PipeCD sign stay clear.
@@ -431,7 +431,7 @@ export class GarageScene implements Scene {
     windowFall(ctx(), WIN.x, WIN.y, WIN.w, WIN.h, this.weather, t);
     this.sunlight(t);
     clockHands(new Date());
-    laptopLive(t);
+    chargerLive(t);
     this.cat(t);
     this.radioLive(t);
     this.cord();
@@ -570,7 +570,7 @@ export class GarageScene implements Scene {
       { x: 240, y: 9, r: 100, c: [255, 150, 120] },   // neon sign
       { x: 244, y: 78, r: 66, c: [255, 236, 190] },   // the two posters, spotlit
       { x: 51, y: 134, r: 56, c: [120, 255, 170] },   // CRT
-      { x: 365, y: 140, r: 30, c: [120, 255, 170] },  // laptop
+      { x: 365, y: 141, r: 26, c: [130, 255, 170] },  // charger lights
       { x: 118, y: 119, r: 36, c: [255, 196, 110] },  // radio
       { x: 214, y: 205, r: 92, c: [255, 226, 170] },  // work lamp over the bike
     ];

@@ -137,18 +137,20 @@ export function clockHands(d: Date) {
   hand(h / 12, 4, '#2a2a2e'); hand(m / 60, 6, '#2a2a2e'); hand(s / 60, 7, C.red); disc(x, y, 1, '#2a2a2e');
 }
 
-/** An open laptop on top of the toolbox. The screen is redrawn each frame by laptopLive. */
-export function laptop() {
-  rect(352, 147, 27, 3, '#8b9096'); rect(352, 147, 27, 1, '#b4b9be'); rect(354, 149, 23, 1, '#4a4e53');
-  rect(354, 133, 23, 14, '#26282c'); bevel(354, 133, 23, 14, '#4a4d55', '#101114'); rect(356, 135, 19, 10, '#0c1610');
-  rect(364, 146, 4, 1, '#d8d2c4');
-  disc(357, 131, 1, '#3d8b4f'); rect(366, 130, 5, 3, '#326ce5'); // a sticker on the lid corner
+/** A bike battery charger on top of the toolbox, cables hanging over the edge. The charge bars and lights are redrawn each frame by chargerLive. */
+export function charger() {
+  rect(352, 150, 30, 2, '#00000033');
+  line(379, 146, 382, 150, C.red); line(382, 150, 383, 159, C.red); line(379, 148, 384, 152, '#26262a'); line(384, 152, 385, 162, '#26262a'); // the leads
+  rect(382, 158, 3, 4, C.red); rect(384, 161, 3, 4, '#3a3d42'); rect(382, 158, 1, 1, '#f08a80');                                    // clamps
+  rect(356, 133, 20, 3, '#3a3d42'); bevel(356, 133, 20, 3, '#5a5d66', '#1b1c20');                                                    // carry handle
+  rect(352, 136, 28, 14, C.accent); bevel(352, 136, 28, 14, '#f5d35c', '#a07f10'); speckle(352, 136, 28, 14, '#a07f10', 0.05, 180);
+  rect(355, 139, 15, 8, '#17181b'); bevel(355, 139, 15, 8, '#0a0a0c', '#3a3d42');                                                     // charge display
+  rect(354, 148, 24, 1, '#1b1712'); rect(353, 149, 4, 1, '#3a3d42'); rect(375, 149, 4, 1, '#3a3d42');                                 // label stripe and feet
 }
-export function laptopLive(t: number) {
-  const step = Math.floor(t * 1.6);
-  for (let i = 0; i < 4; i++) {
-    const n = hash(step - i, 7);
-    rect(357, 136 + i * 2, 4 + Math.floor(n * 12), 1, i === 0 ? '#8ff0a8' : '#3f9e5b');
-  }
-  if (Math.floor(t * 2) % 2 === 0) rect(357, 144, 2, 1, '#8ff0a8');
+export function chargerLive(t: number) {
+  const level = Math.floor((t * 0.7) % 7); // bars fill up, then start again
+  for (let i = 0; i < level; i++) rect(356 + i * 2, 146 - (2 + i), 1, 2 + i, i < 5 ? '#5fdc7a' : '#8ff0a8');
+  const full = level >= 6;
+  rect(373, 139, 3, 2, full ? '#3a3d42' : Math.floor(t * 2) % 2 ? '#f5a623' : '#7a4e10'); // charging light
+  rect(373, 143, 3, 2, full ? '#5fdc7a' : '#1f4a2a');                                     // full light
 }
