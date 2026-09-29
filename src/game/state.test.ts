@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { pickStart } from './state';
+import { isNightHour, pickStart } from './state';
 
 describe('pickStart', () => {
   it('first visit sees the arrival at the door', () => expect(pickStart('', false, false)).toBe('door'));
@@ -9,5 +9,12 @@ describe('pickStart', () => {
     expect(pickStart('?ride', true, true)).toBe('ride');
     expect(pickStart('?garage', false, false)).toBe('garage');
     expect(pickStart('?door', true, true)).toBe('door');
+  });
+});
+
+describe('isNightHour', () => {
+  it('is dark from 7pm until 6am', () => {
+    for (const h of [19, 22, 23, 0, 3, 5]) expect(isNightHour(h), String(h)).toBe(true);
+    for (const h of [6, 9, 12, 18]) expect(isNightHour(h), String(h)).toBe(false);
   });
 });

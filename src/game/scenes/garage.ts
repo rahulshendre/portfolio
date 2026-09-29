@@ -10,6 +10,7 @@ import type { Screen } from '../engine/screen';
 import { blit, paint, type Sprite } from '../engine/sprites';
 import { BAR, CONTROLS, HOTSPOTS, type Control, type Hotspot } from '../hotspots';
 import { site } from '../../data/site';
+import { idleMessage } from '../hints';
 import github from '../../data/github.json';
 
 const WALL = '#cbbd9f', MORTAR = '#bcad8f', LOWER = '#7f8a7a', FLOOR = '#958d80', FLOOR_DARK = '#857d71';
@@ -33,6 +34,8 @@ export class GarageScene implements Scene {
   /** Lights off. Set through setNight so the pull cord swings and the fade runs. */
   night = false;
   radioOn = false;
+  /** Features the visitor has already used (shared with main, which saves it); their hints stop showing. */
+  tried: ReadonlySet<string> = new Set();
   /** Set when the frame rate drops: the garage keeps its look but drops the extras. */
   lowFx = false;
   private t = 0;
@@ -252,9 +255,7 @@ export class GarageScene implements Scene {
     rect(394, 24, 84, 62, '#00000033');
     rect(392, 22, 84, 62, '#9aa0a5'); rect(394, 24, 80, 58, '#f4f4f0'); rect(396, 82, 76, 3, '#9aa0a5');
     text('NOW:', 398, 28, C.red);
-    text('LEARNING K8S', 398, 40, '#2c5aa0');
-    text('VIDEOS: OCT', 398, 52, '#2c5aa0');
-    text('PIPECD V1', 398, 64, '#2f8f4e');
+    site.now.forEach((line, i) => text(line, 398, 40 + i * 12, i === 2 ? '#2f8f4e' : '#2c5aa0'));
     rect(430, 81, 8, 2, C.red); rect(440, 81, 8, 2, '#2c5aa0');
   }
 
@@ -487,7 +488,7 @@ export class GarageScene implements Scene {
     const msg = hot
       ? narrow ? hot.tag || hot.label : isLink ? hot.label : `LOOK AT: ${hot.label}`
       : this.t < 5 && !narrow ? site.tagline.toUpperCase()
-      : narrow ? '< SWIPE >' : this.touch ? 'TAP ANYTHING · SWIPE TO LOOK AROUND' : 'POINT AT ANYTHING';
+      : idleMessage(this.t - 5, this.tried, this.touch, narrow);
     textC(msg, 240, 260, hot ? C.accent : '#a89d8b');
   }
 }

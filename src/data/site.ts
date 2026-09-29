@@ -8,6 +8,10 @@ export const site = {
   description:
     'CS student in Pune. LFX 2026 mentee on PipeCD, a CNCF project. Open source, Kubernetes, Go, and a white Triumph Scrambler 400X.',
   location: 'Pune, India',
+  // One line in the garage's bottom bar, so who this is reads at a glance. Upper-case safe for the pixel font.
+  badge: 'CS STUDENT · PIPECD MENTEE',
+  // The garage whiteboard: three lines, 12 characters at most.
+  now: ['LEARNING K8S', 'VIDEOS: OCT', 'PIPECD V1'],
   email: 'rahulshendre789@gmail.com',
   links: {
     github: 'https://github.com/rahulshendre',

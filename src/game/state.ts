@@ -21,8 +21,19 @@ export function markVisited() {
   try { sessionStorage.setItem(KEY, '1'); } catch { /* private mode: no memory, no problem */ }
 }
 
-export function loadNight(): boolean {
-  try { return localStorage.getItem(NIGHT) === '1'; } catch { return false; }
+/** null = never chosen, so the room follows the visitor's clock. */
+export function loadNight(): boolean | null {
+  try { const v = localStorage.getItem(NIGHT); return v === null ? null : v === '1'; } catch { return null; }
+}
+
+export const isNightHour = (hour: number) => hour >= 19 || hour < 6;
+
+export function loadTried(): string[] {
+  try { const v = JSON.parse(localStorage.getItem('rs:tried') ?? '[]'); return Array.isArray(v) ? v.filter((x) => typeof x === 'string') : []; } catch { return []; }
+}
+
+export function saveTried(list: string[]) {
+  try { localStorage.setItem('rs:tried', JSON.stringify(list)); } catch { /* fine */ }
 }
 
 export function saveNight(on: boolean) {

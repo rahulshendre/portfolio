@@ -53,6 +53,7 @@ import { site, nav } from '../data/site';
     .phone-bar a, .phone-bar button { pointer-events: auto; border: 0; cursor: pointer; font: 400 12px/1 'Silkscreen', monospace; background: #1b1712; color: #fff6e0; padding: 10px 12px; text-decoration: none; box-shadow: 3px 3px 0 #e8b923; }
     @media (orientation: portrait) { body:has(.stage[data-mode='world']) .phone-bar { display: flex; } }
     .stage { transform-origin: 50% 60%; will-change: transform; }
+    .viewport.zooming { overflow: hidden !important; }
     .hotspots button { position: absolute; pointer-events: auto; display: block; cursor: pointer; border: 0; background: none; padding: 0; border-radius: 2px; }
     .hotspots button:focus-visible { outline: 3px solid #e8b923; outline-offset: 2px; }
     .term { position: fixed; inset: 0; z-index: 8; display: grid; place-items: center; background: rgba(10, 8, 5, 0.55); padding: 12px; }
@@ -70,7 +71,11 @@ import { site, nav } from '../data/site';
     .term-out .ok { color: #ffe08a; }
     .term-form { display: flex; gap: 8px; padding: 8px 12px 10px; border-top: 1px solid #1f4a30; }
     .term-form input { flex: 1; min-width: 0; background: transparent; border: 0; outline: 0; color: inherit; font: inherit; text-shadow: inherit; caret-color: #b8f0c0; }
-    @media (prefers-reduced-motion: no-preference) { .term-win { animation: term-on .18s ease-out; } }
+    @media (prefers-reduced-motion: no-preference) {
+      .term { animation: term-dim .3s ease-out both; }
+      .term-win { animation: term-on .18s ease-out .22s both; } /* after the camera has pushed in on the TV */
+    }
+    @keyframes term-dim { from { background: rgba(10, 8, 5, 0); } }
     @keyframes term-on { from { transform: scaleY(.04); opacity: .4; } to { transform: none; opacity: 1; } }
     .noscript { position: fixed; inset: 0; overflow: auto; background: #f4efe6; color: #1b1712; padding: 2rem; font: 18px/1.6 system-ui; z-index: 20; }
   </style>

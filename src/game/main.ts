@@ -1,5 +1,5 @@
 // Boots the home-page game: door (arrival) -> garage, with the ride one click away. The garage's objects are real links.
-import { Screen } from './engine/screen';
+import { Screen, WORLD_H, WORLD_W } from './engine/screen';
 import { input } from './engine/input';
 import { Director } from './engine/scene';
 import { loadImage } from './engine/sprites';
@@ -7,7 +7,7 @@ import { RideScene } from './scenes/ride';
 import { DoorScene } from './scenes/door';
 import { GarageScene } from './scenes/garage';
 import { BAR, CONTROLS, HOTSPOTS, toPct } from './hotspots';
-import { hasVisited, loadNight, markVisited, pickStart, saveNight } from './state';
+import { hasVisited, isNightHour, loadNight, loadTried, markVisited, pickStart, saveNight, saveTried } from './state';
 import { radio } from './engine/audio';
 import { mountTerminal } from './terminal-ui';
 
@@ -24,20 +24,25 @@ const images = Promise.all(SPRITES.map((n) => loadImage(`/sprites/${n}.png`))).t
 }));
 
 let current: GarageScene | undefined;
+const tried = new Set(loadTried());
+const markTried = (f: 'tv' | 'cord' | 'radio') => { if (!tried.has(f)) { tried.add(f); saveTried([...tried]); } };
 
 function toggleNight() {
   if (!current) return;
   current.setNight(!current.night);
   saveNight(current.night);
+  markTried('cord');
 }
 
 function toggleRadio() {
   const on = radio.toggle();
+  markTried('radio');
   if (current) current.radioOn = on;
   document.querySelector('[data-control="radio"]')?.setAttribute('aria-pressed', String(on));
 }
 
 const terminal = mountTerminal({
+  opened: () => markTried('tv'),
   night: toggleNight,
   radio: toggleRadio,
   ride: () => ride(),
@@ -49,7 +54,8 @@ document.getElementById('phone-term')?.addEventListener('click', () => terminal.
 async function garage() {
   const img = await images;
   const scene = new GarageScene(screen, img);
-  scene.night = loadNight();
+  scene.night = loadNight() ?? isNightHour(new Date().getHours()); // until they pull the cord, the room follows their clock
+  scene.tried = tried;
   scene.radioOn = radio.on;
   current = scene;
   director.go(scene);
@@ -119,15 +125,50 @@ else if (start === 'ride') ride();
 else if (start === 'door') door();
 else garage();
 
+// "/" or "`" opens the terminal from anywhere in the garage, like a real one.
+addEventListener('keydown', (e) => {
+  if ((e.key !== '/' && e.key !== '`') || e.metaKey || e.ctrlKey || e.altKey || terminal.isOpen) return;
+  if (!(director.current instanceof GarageScene) || (e.target as HTMLElement)?.closest?.('input,textarea')) return;
+  e.preventDefault();
+  terminal.open();
+});
+
 // The garage leans a little toward the pointer: cheap CSS 3D that keeps the hotspot links lined up.
 const stage = document.getElementById('stage') as HTMLElement;
 const canLean = !reduced && matchMedia('(pointer: fine)').matches;
 let lean = { x: 0, y: 0 }, aim = { x: 0, y: 0 };
 if (canLean) addEventListener('pointermove', (e) => { aim = { x: e.clientX / innerWidth - 0.5, y: e.clientY / innerHeight - 0.5 }; });
+// Opening the terminal pushes the camera in on the TV; closing pulls it back out.
+const TV = HOTSPOTS.find((h) => h.id === 'tv')!.rect, ZOOM = 1.9;
+const tvOrigin = `${(((TV[0] + TV[2] / 2) / WORLD_W) * 100).toFixed(2)}% ${(((TV[1] + TV[3] / 2) / WORLD_H) * 100).toFixed(2)}%`;
+let zoom = 0, pan = { x: 0, y: 0 };
+function zoomStep(dt: number) {
+  const want = !reduced && terminal.isOpen && director.current instanceof GarageScene;
+  if (want && zoom === 0) { // aim at the TV, but never slide the stage so far that its edge shows
+    const r = stage.getBoundingClientRect();
+    const fx = r.left + ((TV[0] + TV[2] / 2) / WORLD_W) * r.width, fy = r.top + ((TV[1] + TV[3] / 2) / WORLD_H) * r.height;
+    const fit = (want: number, focus: number, lo: number, hi: number, view: number) => {
+      const min = view - focus - (hi - focus) * ZOOM, max = -(focus + (lo - focus) * ZOOM); // pan range that keeps the stage covering the window
+      return min > max ? (min + max) / 2 : Math.min(max, Math.max(min, want));
+    };
+    pan = { x: fit(innerWidth / 2 - fx, fx, r.left, r.right, innerWidth), y: fit(innerHeight / 2 - fy, fy, r.top, r.bottom, innerHeight) };
+  }
+  zoom = Math.min(1, Math.max(0, zoom + (want ? 1 : -1) * dt * 2.6));
+  viewport.classList.toggle('zooming', zoom > 0); // no scrollbars while the stage is scaled
+}
+
 function leanStage(dt: number) {
+  zoomStep(dt);
   const on = canLean && director.current instanceof GarageScene && !terminal.isOpen && !(current?.lowFx);
   const k = Math.min(1, dt * 6), tx = on ? aim.x : 0, ty = on ? aim.y : 0;
   lean = { x: lean.x + (tx - lean.x) * k, y: lean.y + (ty - lean.y) * k };
+  if (zoom > 0) {
+    const e = zoom * zoom * (3 - 2 * zoom);
+    stage.style.transformOrigin = tvOrigin;
+    stage.style.transform = `translate(${(pan.x * e).toFixed(1)}px, ${(pan.y * e).toFixed(1)}px) scale(${(1 + (ZOOM - 1) * e).toFixed(3)})`;
+    return;
+  }
+  stage.style.transformOrigin = '';
   stage.style.transform = Math.abs(lean.x) + Math.abs(lean.y) < 0.002 ? '' : `perspective(1200px) rotateY(${(lean.x * 2.4).toFixed(3)}deg) rotateX(${(-lean.y * 1.8).toFixed(3)}deg) scale(1.02)`;
 }
 

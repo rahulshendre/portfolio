@@ -2,6 +2,7 @@
 import { BOOT, complete, run, type Effect, type Line } from './terminal';
 
 export interface TerminalHooks {
+  opened?(): void;
   night(): void;
   radio(): void;
   ride(): void;
@@ -43,6 +44,7 @@ export function mountTerminal(hooks: TerminalHooks) {
     root.hidden = false;
     if (location.hash !== HASH) history.pushState({ term: 1 }, '', HASH);
     if (!booted) { booted = true; void printAll(BOOT); }
+    hooks.opened?.();
     input.focus();
   }
 
