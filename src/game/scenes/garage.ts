@@ -263,22 +263,28 @@ export class GarageScene implements Scene {
     // CRT TV
     line(40, 112 + d, 33, 102 + d, '#555'); line(60, 112 + d, 67, 101 + d, '#555');
     rect(20, 112 + d, 62, 48, '#cfc8b8'); rect(20, 112 + d, 62, 2, '#e0dbcf'); rect(26, 117 + d, 42, 34, '#2a2a2e');
+    bevel(20, 112 + d, 62, 48, '#e6e1d5', '#a39c8c'); bevel(25, 116 + d, 44, 36, '#15151a', '#4a4a50'); speckle(20, 114 + d, 62, 45, '#b3ac9c', 0.05, 40); // plastic edges, dust
     for (let y = 140; y < 150; y += 2) rect(71, y + d, 7, 1, '#9e978a');
     disc(74, 122 + d, 2, '#6b6760'); disc(74, 131 + d, 2, '#6b6760');
     // binders: the nine tutorial chapters, in PipeCD colours
     for (let k = 0; k < 9; k++) {
       const x = 92 + k * 6, h = 26 + (k % 3), col = k % 2 ? CYAN : NAVY;
       rect(x, 160 + d - h, 5, h, col); rect(x + 1, 160 + d - h + 5, 3, 4, '#f4f2ea'); rect(x, 160 + d - h, 1, h, '#1b2550');
+      rect(x + 4, 160 + d - h, 1, h, '#00000033'); rect(x + 1, 160 + d - h, 3, 1, '#ffffff44'); rect(x + 1, 160 + d - h + 11, 3, 1, '#ffffff33'); // spine shading
     }
     rect(146, 150 + d, 5, 10, '#e9e3d1');
     // coffee mug
     rect(156, 150 + d, 8, 10, '#e8e2d1'); rect(164, 152 + d, 2, 5, '#e8e2d1'); rect(157, 151 + d, 6, 2, '#5a3d2b');
     // bench: top at about 0.9m, a lower shelf, and its shadow
     rect(8, 198, 172, 5, '#6f685c');
-    rect(8, 160 + d, 172, 6, C.wood); rect(8, 166 + d, 172, 2, C.woodDark);
-    rect(14, 168 + d, 6, 30 - d, C.woodDark); rect(168, 168 + d, 6, 30 - d, C.woodDark);
-    rect(14, 186, 160, 3, C.wood);
-    rect(24, 176, 26, 10, '#6b7075'); rect(54, 178, 18, 8, '#b8915f'); rect(80, 180, 12, 6, C.red);
+    woodGrain(8, 160 + d, 172, 6, C.wood, C.woodDark, '#a5764a', 30); rect(8, 166 + d, 172, 2, C.woodDark);
+    stain(60, 163 + d, 9, 2, '#5e3c24', 31, 0.8); stain(128, 162 + d, 6, 2, '#4a2f1c', 32, 0.7); speckle(8, 160 + d, 172, 6, '#00000033', 0.05, 33); // rings, spills, nicks
+    woodGrain(14, 168 + d, 6, 30 - d, C.woodDark, '#4a2f1c', '#74482c', 34); woodGrain(168, 168 + d, 6, 30 - d, C.woodDark, '#4a2f1c', '#74482c', 35);
+    woodGrain(14, 186, 160, 3, C.wood, C.woodDark, '#a5764a', 36);
+    rect(24, 176, 26, 10, '#6b7075'); bevel(24, 176, 26, 10, '#8b9096', '#3f4348'); rect(28, 180, 10, 1, '#3f4348');          // a metal case
+    rect(54, 178, 18, 8, '#b8915f'); bevel(54, 178, 18, 8, '#cda875', '#8f6e45'); rect(61, 178, 4, 8, '#d8c9a0');            // a cardboard box with tape
+    rect(80, 180, 12, 6, C.red); bevel(80, 180, 12, 6, '#e05a4c', '#8e2219');
+    rect(10, 168 + d, 160, 1, '#00000033'); rect(10, 189, 160, 1, '#00000033');                                           // shadow under the top and the shelf
   }
 
   private pegboard() {
@@ -325,14 +331,17 @@ export class GarageScene implements Scene {
   private shelf() {
     rect(390, 198, 86, 4, '#6f685c');
     rect(404, 86, 60, 10, C.ink); textC('BUILDS', 434, 88, C.accent);
-    rect(392, 96, 3, 102, '#6b7075'); rect(471, 96, 3, 102, '#6b7075');
+    rect(392, 96, 3, 102, '#6b7075'); rect(471, 96, 3, 102, '#6b7075'); rect(392, 96, 1, 102, '#8b9096'); rect(471, 96, 1, 102, '#8b9096'); rect(394, 96, 1, 102, '#4a4e53'); rect(473, 96, 1, 102, '#4a4e53');
+    speckle(392, 96, 3, 102, '#7a4a2a', 0.12, 44); speckle(471, 96, 3, 102, '#7a4a2a', 0.12, 45);
     const boxes = [[C.accent, CYAN, C.red], ['#3d8b4f', C.reflector, NAVY], [C.red, C.accent, '#3d8b4f']];
     [120, 146, 172].forEach((y, row) => {
       boxes[row].forEach((c, k) => {
         const x = 397 + k * 25, h = 16 + ((k + row) % 2) * 3;
         rect(x, y - h, 22, h, '#b8915f'); rect(x, y - h, 22, 2, '#cda875'); rect(x + 5, y - h + 6, 12, 5, c);
+        for (let j = y - h + 3; j < y - 1; j += 3) rect(x + 1, j, 20, 1, '#ab8551');                                   // cardboard flutes
+        rect(x, y - h, 1, h, '#d3b27f'); rect(x + 21, y - h, 1, h, '#8f6e45'); rect(x + 9, y - h, 4, 4, '#d8c9a0');    // lit edge, shaded edge, a strip of tape
       });
-      rect(392, y, 82, 3, '#6b7075');
+      rect(392, y, 82, 3, '#6b7075'); rect(392, y, 82, 1, '#8b9096'); rect(392, y + 3, 82, 1, '#00000033');
     });
     rect(392, 195, 82, 3, '#6b7075');
     // money plant trailing off the top
@@ -342,7 +351,13 @@ export class GarageScene implements Scene {
   private toolbox() {
     ellipse(350, 234, 40, 3, '#5f584d');
     rect(318, 150, 64, 78, C.red); rect(318, 150, 64, 3, '#e05a4c'); rect(378, 150, 4, 78, '#a82a1f');
-    for (const y of [166, 182, 198, 214]) { rect(318, y, 64, 1, '#8e2219'); rect(342, y + 5, 16, 2, C.steel); }
+    for (const y of [166, 182, 198, 214]) {
+      rect(318, y, 64, 1, '#8e2219'); rect(318, y + 1, 60, 1, '#ea6a5c');                                                // each drawer has a gap and a lit lip
+      rect(342, y + 5, 16, 2, C.steel); rect(342, y + 5, 16, 1, '#dfe3e6'); rect(342, y + 7, 16, 1, '#5a1510');            // handle with a highlight and its shadow
+    }
+    speckle(318, 153, 60, 75, '#c9c3bc', 0.012, 41); speckle(318, 153, 60, 75, '#8e2219', 0.03, 42);                        // chipped paint, dents
+    line(324, 208, 338, 200, '#e6786a'); line(350, 224, 366, 219, '#e6786a'); line(330, 172, 336, 170, '#e6786a');            // scratches
+    streaks(318, 214, 60, 14, '#7a2a1c', 6, 43); rect(318, 226, 64, 2, '#8e2219');                                           // rust running from the bottom
     rect(322, 228, 6, 5, C.tyre); rect(372, 228, 6, 5, C.tyre);
     // stickers from the projects: helm wheel, PipeCD, CNCF, Sugar, Meshery, Gumroad, a first-PR star
     disc(328, 158, 4, '#326ce5'); disc(328, 158, 1, '#fff');
@@ -357,6 +372,7 @@ export class GarageScene implements Scene {
     const d = BENCH_DY;
     rect(92, 128 + d, 52, 3, C.wood); rect(92, 131 + d, 52, 1, C.woodDark);
     rect(96, 110 + d, 44, 18, '#2a2a2e'); rect(97, 111 + d, 42, 16, '#4a4d55'); rect(97, 111 + d, 42, 1, '#6b6f79');
+    bevel(96, 110 + d, 44, 18, '#6b6f79', '#15151a'); speckle(97, 111 + d, 42, 16, '#7a7d85', 0.04, 51); speckle(97, 111 + d, 42, 16, '#2a2c32', 0.04, 52);
     for (const cx of [106, 130]) { disc(cx, 119 + d, 6, C.ink); disc(cx, 119 + d, 4, '#33363d'); disc(cx, 119 + d, 1, '#1b1712'); }
     rect(113, 113 + d, 10, 5, C.ink); rect(114, 116 + d, 8, 1, '#4a4d55');
     disc(118, 123 + d, 1, '#7a2f24'); disc(121, 123 + d, 1, '#5a5d66');
@@ -369,7 +385,9 @@ export class GarageScene implements Scene {
       rect(6, y, 40, 13, C.tyre); rect(4, y + 2, 44, 9, C.tyre);
       rect(6, y + 1, 40, 1, '#343434'); rect(8, y + 11, 36, 1, '#0c0c0c');
       for (let x = 8; x < 44; x += 4) rect(x, y + 4, 2, 5, '#262626');
+      speckle(4, y + 1, 44, 11, '#4a4a4a', 0.1, 46 + y); rect(10, y + 2, 12, 1, '#4d4d4d'); rect(28, y + 2, 8, 1, '#4d4d4d'); // rubber grain, moulded lettering
     }
+    speckle(4, 212, 44, 3, '#7a7466', 0.2, 50); // dust on the top tyre
     rect(54, 232, 10, 20, C.red); rect(56, 228, 6, 4, C.red); rect(57, 225, 4, 3, '#2a2a2e');
   }
 
