@@ -8,7 +8,7 @@ import { DoorScene } from './scenes/door';
 import { GarageScene } from './scenes/garage';
 import { BAR, CONTROLS, HOTSPOTS, toPct } from './hotspots';
 import { WEATHERS, hasVisited, isNightHour, loadFound, loadNight, loadRadio, loadTried, markVisited, pickStart, pickTheme, pickWeather, saveFound, saveNight, saveRadio, saveTried } from './state';
-import { meow, radio } from './engine/audio';
+import { meow, preloadMeow, radio } from './engine/audio';
 import { mountTerminal } from './terminal-ui';
 import { isPanelHref, mountPanel, parsePanelHash, titleFor } from './panel';
 
@@ -81,6 +81,7 @@ async function garage() {
   scene.night = q.has('night') ? true : q.has('day') ? false : loadNight() ?? isNightHour(new Date().getHours()); // until they pull the cord, the room follows their clock
   scene.tried = tried;
   scene.found = found;
+  void preloadMeow();
   if (loadRadio() && !radio.on) radio.autostart(); // the radio plays unless the visitor turned it off last time
   scene.radioOn = radio.on;
   current = scene;

@@ -261,6 +261,21 @@ export const meowAllowed = (last: number, now: number, gap = 1.5) => now - last 
 let meowCtx: AudioContext | undefined;
 let lastMeow = -Infinity;
 
+// A recorded meow (public/sounds/meow.mp3) plays when it exists; otherwise the synthesised one below does.
+let meowBuf: AudioBuffer | null | undefined; // undefined: not tried yet, null: no file or it would not decode
+
+/** Fetch and decode the recording ahead of time so the first pet is not late. Safe to call more than once. */
+export async function preloadMeow() {
+  if (meowBuf !== undefined) return;
+  meowBuf = null;
+  try {
+    meowCtx ??= new AudioContext();
+    const r = await fetch('/sounds/meow.mp3');
+    if (!r.ok) return;
+    meowBuf = await meowCtx.decodeAudioData(await r.arrayBuffer());
+  } catch { meowBuf = null; }
+}
+
 export function meow() {
   const now = performance.now() / 1000;
   if (!meowAllowed(lastMeow, now)) return;
@@ -268,6 +283,12 @@ export function meow() {
   try { meowCtx ??= new AudioContext(); } catch { return; }
   const c = meowCtx;
   void c.resume();
+  if (meowBuf) {
+    const src = c.createBufferSource(), g = c.createGain();
+    src.buffer = meowBuf; g.gain.value = 0.9;
+    src.connect(g).connect(c.destination); src.start();
+    return;
+  }
   const t = c.currentTime, dur = 0.8;
   const buzz = c.createOscillator(); buzz.type = 'sawtooth';
   buzz.frequency.setValueAtTime(390, t); buzz.frequency.exponentialRampToValueAtTime(640, t + 0.14);
