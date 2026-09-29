@@ -8,7 +8,7 @@ export const PANELS = 4;
 const frac = (v: number) => v - Math.floor(v);
 const hash = (i: number, s = 0) => frac(Math.sin(i * 127.1 + s * 311.7) * 43758.5453);
 
-const STEEL_LIGHT = '#90949a', STEEL_DARK = '#7f8389';
+const STEEL_LIGHT = '#a3a7ad', STEEL_DARK = '#868a90';
 
 /** One panel: steel with a soft top-to-bottom shade, two pressed-in recesses, seam, hinges, rollers, dirt, rust, dents and chips. */
 function paintPanel(i: number, w: number, ph: number) {
@@ -17,9 +17,9 @@ function paintPanel(i: number, w: number, ph: number) {
   for (let y = 4; y < ph; y += 3) for (let x = (y * 7) % 11; x < w; x += 11) rect(x, y0 + y, 5, 1, '#9a9ea4'); // faint brushed grain
 
   const recess = (x: number, y: number, rw: number, rh: number) => {
-    rect(x, y, rw, rh, '#868a90');
-    rect(x, y, rw, 1, '#5c6065'); rect(x, y, 1, rh, '#5c6065');                   // pressed in: dark top and left
-    rect(x + 1, y + rh - 1, rw - 1, 1, '#b0b4b9'); rect(x + rw - 1, y + 1, 1, rh - 1, '#b0b4b9'); // lit bottom and right
+    rect(x, y, rw, rh, '#8e9298');
+    rect(x, y, rw, 2, '#4f5358'); rect(x, y, 2, rh, '#4f5358');                   // pressed in: dark top and left
+    rect(x + 2, y + rh - 2, rw - 2, 2, '#c4c8cd'); rect(x + rw - 2, y + 2, 2, rh - 2, '#c4c8cd'); // lit bottom and right
   };
   const half = Math.floor(w / 2);
   recess(12, y0 + 8, half - 20, ph - 16);
@@ -37,7 +37,7 @@ function paintPanel(i: number, w: number, ph: number) {
 
   const grime = (i + 1) / PANELS; // the lower the panel, the dirtier
   for (let y = Math.round(ph * 0.45); y < ph; y++) for (let x = 0; x < w; x++) {
-    const p = grime * Math.pow(y / ph, 2) * 0.5;
+    const p = grime * Math.pow(y / ph, 2.4) * 0.26;
     if (hash(x * 7 + y * 13 + i * 101) < p) rect(x, y0 + y, 1, 1, hash(x + y) > 0.5 ? '#5c5d5f' : '#6b6c6e');
   }
   for (let k = 0; k < 2; k++) { // a couple of dents

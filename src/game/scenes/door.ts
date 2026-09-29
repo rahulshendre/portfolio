@@ -7,12 +7,17 @@ import { input } from '../engine/input';
 import { DoorSound } from '../engine/audio';
 import { glow } from '../engine/light';
 import { BEAM, THUNDER_AT, fall, grade, ground } from './weather';
+import { PANELS, paintDoor, paintFrame, wallWear } from './garagedoor';
+import { panelSlots } from './doorlift';
 import { THEMES, WEATHERS, type Theme, type Weather } from '../state';
 import type { Scene } from '../engine/scene';
 import { WIDE_W, type Screen } from '../engine/screen';
 import { blit, paint, type Sprite } from '../engine/sprites';
 
 const DOOR = { x: 110, y: 70, w: 260, h: 176 };
+const FRAME = { x: DOOR.x - 20, y: DOOR.y - 20, w: DOOR.w + 40, h: DOOR.h + 20 }; // the frame sprite: header, tracks
+const frac = (v: number) => v - Math.floor(v);
+const hash = (i: number, s = 0) => frac(Math.sin(i * 127.1 + s * 311.7) * 43758.5453);
 // A long, wide approach: ~5s of bike coming in, then the sensor sees it, the door wakes, opens, and the bike idles in the doorway.
 const T_SENSE = 2.8, T_ARRIVE = 5.0, T_OPEN = 3.7, T_UP = 2.2, T_END = 7.6;
 const CUES = { sense: T_SENSE, arrive: T_ARRIVE, open: T_OPEN, up: T_UP, end: T_END };
@@ -43,6 +48,7 @@ export class DoorScene implements Scene {
   private t = 0;
   private bg!: Sprite;
   private doorArt!: Sprite;
+  private frameArt!: Sprite;
   private rig!: Sprite; // bike and rider drawn together at native size, then scaled as one
   private finished = false;
   private sfx = new DoorSound();
@@ -62,15 +68,15 @@ export class DoorScene implements Scene {
     this.room = this.makeRoom();
     this.rig = paint(this.bike.width + PAD.x * 2, this.bike.height + PAD.y, () => { blit(this.bike, PAD.x, PAD.y); riderSide(PAD.x, PAD.y); });
     this.doorArt = paint(DOOR.w, DOOR.h, () => {
-      for (let y = 0; y < DOOR.h; y += 6) { rect(0, y, DOOR.w, 5, '#8b8f94'); rect(0, y + 5, DOOR.w, 1, '#6f7378'); rect(0, y, DOOR.w, 1, '#a3a7ab'); }
+      paintDoor(DOOR.w, DOOR.h, this.weather);
       text('GIT PUSH >', 14, 16, '#f4f2ea');
       graffitiTag(48, 50, 2);
       for (const [x, y] of [[36, 44], [224, 40], [216, 100]]) { line(x - 3, y, x + 3, y, '#f4f2ea'); line(x, y - 3, x, y + 3, '#f4f2ea'); }
       line(52, 46, 56, 40, C.accent); line(56, 40, 60, 46, C.accent); line(60, 46, 64, 40, C.accent); line(64, 40, 68, 46, C.accent);
       text('MH-12', 200, 150, '#2a2a2e');
-      rect(DOOR.w / 2 - 12, DOOR.h - 8, 24, 3, '#3a3d42');
-      if (this.theme === 'himalaya') this.duskLight(0, 0, DOOR.w, DOOR.h); // the shutter catches the same dusk as the wall
+      if (this.theme === 'himalaya') this.duskLight(0, 0, DOOR.w, DOOR.h); // the door catches the same dusk as the wall
     });
+    this.frameArt = paint(FRAME.w, FRAME.h, () => paintFrame(DOOR.x - FRAME.x, DOOR.y - FRAME.y, DOOR.w, DOOR.h));
   }
 
   /** Where the camera should look, in the 640-wide frame. On a phone the stage scrolls sideways and follows the bike. */
@@ -118,6 +124,30 @@ export class DoorScene implements Scene {
     input.endFrame();
   }
 
+  /** The door as separate panels: each lifts, tilts back onto the track's curve (shorter, darker) and vanishes behind the header. */
+  private drawPanels(g: CanvasRenderingContext2D, up: number, shake: number) {
+    const slots = panelSlots(up, PANELS, DOOR.h), ph = DOOR.h / PANELS, moving = up > 0 && up < DOOR.h;
+    slots.forEach((s, i) => {
+      const y0 = DOOR.y + Math.round(s.y) + shake, y1 = DOOR.y + Math.round(s.y + s.h) + shake, h = y1 - y0;
+      if (h < 1) return;
+      const jx = moving ? Math.round(Math.sin(this.t * 55 + i * 1.9) * (1 - up / DOOR.h)) : 0; // panels rattle in their tracks
+      g.drawImage(this.doorArt, 0, i * ph, DOOR.w, ph, DOOR.x + jx, y0, DOOR.w, h);
+      if (s.h < ph - 0.5) { g.globalAlpha = 0.55 * (1 - s.h / ph); rect(DOOR.x + jx, y0, DOOR.w, h, '#0d0b10'); g.globalAlpha = 1; } // tilting away from the light
+    });
+  }
+
+  /** Dust and flecks shaken loose from the header as the door starts to move. */
+  private dust(g: CanvasRenderingContext2D) {
+    const p = (this.t - T_OPEN) / 1.6;
+    if (p <= 0 || p >= 1) return;
+    for (let i = 0; i < 26; i++) {
+      const x = DOOR.x + Math.round(hash(i, 1) * DOOR.w), y = DOOR.y + Math.round(p * (20 + hash(i, 2) * 70));
+      g.globalAlpha = (1 - p) * (0.35 + hash(i, 3) * 0.4);
+      rect(x, y, 1, 1, i % 3 ? '#cbbfa8' : '#8a8172');
+    }
+    g.globalAlpha = 1;
+  }
+
   draw() {
     const g = this.screen.ctx;
     bind(g);
@@ -125,17 +155,22 @@ export class DoorScene implements Scene {
     ground(g, this.weather);
     g.save(); g.translate(OX, 0); // everything below is in garage coordinates
     const up = ease((this.t - T_OPEN) / T_UP) * DOOR.h;
-    const shake = this.t > T_SENSE + 0.3 && this.t < T_OPEN ? Math.round(Math.sin(this.t * 90)) : 0;
+    const shake = this.t > T_SENSE + 0.3 && this.t < T_OPEN + 0.25 ? Math.round(Math.sin(this.t * 90)) : 0; // a jolt as the motor takes load
     // inside: the real garage through the doorway, lighting up as the door rises
     g.drawImage(this.room, DOOR.x, 20, DOOR.w, DOOR.h, DOOR.x, DOOR.y, DOOR.w, DOOR.h);
     g.globalAlpha = 0.72 * (1 - Math.min(1, up / DOOR.h));
     rect(DOOR.x, DOOR.y, DOOR.w, DOOR.h, '#140f0a');
     g.globalAlpha = 1;
-    // the door itself, rolling up into its housing
+    // the shadow under the header falls into the room while the door opens
+    if (up > 0) for (let r = 0; r < 14; r++) { g.globalAlpha = (1 - r / 14) * 0.5; rect(DOOR.x, DOOR.y + r, DOOR.w, 1, '#0d0a08'); }
+    g.globalAlpha = 1;
+    // the door: four panels, rising on the tracks
     g.save(); g.beginPath(); g.rect(DOOR.x, DOOR.y, DOOR.w, DOOR.h); g.clip();
-    g.drawImage(this.doorArt, DOOR.x, DOOR.y - up + shake);
+    this.drawPanels(g, up, shake);
+    this.dust(g);
     g.restore();
-    rect(DOOR.x - 6, DOOR.y - 10, DOOR.w + 12, 12, '#5d6166'); rect(DOOR.x - 6, DOOR.y - 10, DOOR.w + 12, 2, '#767b80');
+    g.drawImage(this.frameArt, FRAME.x, FRAME.y); // header box and tracks sit in front of the door
+    rect(DOOR.x - 4, 247, DOOR.w + 8, 2, '#4a4450'); // the threshold
     // warm light spilling onto the driveway once it's open
     if (up > 30) glow(g, 240, 254, 170, 11, '255,196,120', 0.6 * Math.min(1, up / DOOR.h));
     // the bike rolling in from the left, and stopping just inside the doorway
@@ -300,6 +335,7 @@ export class DoorScene implements Scene {
     rect(90, 200, 300, 48, '#c9b99c');
     rect(90, 42, 300, 3, '#a8917c'); rect(90, 45, 300, 1, '#bba58f'); // shadow under the roof lip
     rect(90, 238, 300, 10, '#a3927f'); rect(90, 238, 300, 1, '#8c7b69'); // plinth
+    wallWear(90, 46, 300, 200);
     if (this.theme === 'himalaya') this.duskLight(90, 42, 300, 206);
     rect(90, 42, 2, 206, '#5d5470'); rect(388, 42, 2, 206, '#f3c48e'); // dark left edge, sun-catching right edge
     ellipse(240, 250, 160, 3, '#3a3040'); // the garage's shadow on the driveway
