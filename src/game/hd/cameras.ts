@@ -8,54 +8,6 @@ export const CAMS: Cam[] = ['behind', 'pov', 'top'];
 export const CAM_NAMES: Record<Cam, string> = { behind: 'BEHIND', pov: 'RIDER POV', top: 'TOP DOWN' };
 export const CAM_HEIGHT: Record<Cam, number> = { behind: 900, pov: 430, top: 900 };
 
-/** Pearl-white Scrambler + rider from behind. Lean tilts the upper body. */
-export function drawRear(ctx: CanvasRenderingContext2D, W: number, H: number, lean: number, t: number, speedFrac: number) {
-  use(ctx);
-  const bob = speedFrac > 0.05 ? Math.sin(t * 28) * 1.5 : 0;
-  const s = Math.max(0.9, W / 900);
-  const cx = W / 2, cy = H - 8 + bob;
-  // shadow
-  oval(cx, H - 4, 36 * s, 4 * s, '#3a383480');
-  at(cx, cy, s * 28, () => {
-    // wheels
-    circle(-1.1, -0.15, 0.55, '#121214');
-    circle(1.05, -0.15, 0.55, '#121214');
-    circle(-1.1, -0.15, 0.38, '#2c2c2c');
-    circle(1.05, -0.15, 0.38, '#2c2c2c');
-    // swingarm / frame
-    stroke([-1.1, -0.15, 0.1, -0.7, 1.05, -0.15], '#c8c4bc', 0.12);
-    stroke([0.1, -0.7, 0.55, -1.35], '#2a2a2e', 0.1);
-    // tank pearl white + black stripe
-    poly([-0.35, -0.85, 0.55, -0.9, 0.7, -0.55, -0.15, -0.45], '#f1efe9');
-    poly([0.05, -0.88, 0.35, -0.9, 0.4, -0.6, 0.1, -0.55], '#121214');
-    // seat brown
-    oval(-0.15, -0.95, 0.35, 0.18, '#5a3d2b');
-    // gold fork caps
-    circle(0.95, -1.15, 0.12, '#d9a441');
-    circle(0.75, -1.2, 0.1, '#d9a441');
-    // rider lean
-    g.save();
-    g.translate(lean * 0.15, 0);
-    g.rotate(lean * 0.12);
-    // legs
-    poly([-0.4, -0.7, 0.1, -0.65, 0.35, -0.2, -0.1, -0.15], '#2f3b52');
-    poly([0.2, -0.55, 0.55, -0.5, 0.7, -0.15, 0.4, -0.1], '#2f3b52');
-    box(0.55, -0.12, 0.28, 0.12, '#121214'); // boot
-    // torso jacket
-    poly([-0.35, -1.35, 0.35, -1.4, 0.45, -0.75, -0.25, -0.7], '#2b2e36');
-    stroke([-0.2, -1.2, 0.25, -1.25], '#3f4450', 0.08);
-    // arms to bars
-    stroke([0.2, -1.2, 0.85, -1.25], '#2b2e36', 0.14);
-    stroke([-0.15, -1.15, 0.7, -1.3], '#2b2e36', 0.12);
-    box(0.8, -1.32, 0.18, 0.12, '#121214'); // glove
-    // white helmet
-    circle(0.05, -1.7, 0.32, '#1b1712');
-    circle(0.05, -1.7, 0.28, '#f4f2ea');
-    box(0.12, -1.78, 0.18, 0.14, '#2a2c33'); // visor
-    g.restore();
-  }, 0);
-}
-
 /** From the seat: tank, bars, mirrors, round speedo. */
 export function drawPOV(ctx: CanvasRenderingContext2D, W: number, H: number, speedFrac: number, t: number, kmh: number) {
   use(ctx);

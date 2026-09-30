@@ -27,11 +27,13 @@ export class EngineSound {
   private filter?: BiquadFilterNode;
   private body?: OscillatorNode;
   private thump?: OscillatorNode;
+  private wind?: GainNode;
+  private windFilter?: BiquadFilterNode;
 
   toggle(): boolean {
     this.on = !this.on;
     if (this.on) this.start();
-    else this.gain?.gain.setTargetAtTime(0, this.ctx!.currentTime, 0.08);
+    else { this.gain?.gain.setTargetAtTime(0, this.ctx!.currentTime, 0.08); this.wind?.gain.setTargetAtTime(0, this.ctx!.currentTime, 0.08); }
     return this.on;
   }
 
@@ -45,7 +47,14 @@ export class EngineSound {
       const thumpGain = ctx.createGain(); thumpGain.gain.value = 0.35;
       body.connect(filter); thump.connect(thumpGain).connect(filter); filter.connect(gain).connect(dest(ctx));
       body.start(); thump.start();
-      Object.assign(this, { ctx, gain, filter, body, thump });
+      // wind: looped noise through a band that opens up with speed
+      const len = ctx.sampleRate * 2, buf = ctx.createBuffer(1, len, ctx.sampleRate), d = buf.getChannelData(0);
+      for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+      const src = ctx.createBufferSource(); src.buffer = buf; src.loop = true;
+      const windFilter = ctx.createBiquadFilter(); windFilter.type = 'bandpass'; windFilter.frequency.value = 500; windFilter.Q.value = 0.6;
+      const wind = ctx.createGain(); wind.gain.value = 0;
+      src.connect(windFilter).connect(wind).connect(dest(ctx)); src.start();
+      Object.assign(this, { ctx, gain, filter, body, thump, wind, windFilter });
     }
     void wake(this.ctx!);
     this.gain!.gain.setTargetAtTime(0.06, this.ctx!.currentTime, 0.1);
@@ -58,6 +67,8 @@ export class EngineSound {
     this.body!.frequency.setTargetAtTime(f, t, 0.06);
     this.thump!.frequency.setTargetAtTime(f / 2, t, 0.06);
     this.filter!.frequency.setTargetAtTime(450 + speed * 1500, t, 0.08);
+    this.wind!.gain.setTargetAtTime(speed * speed * 0.16, t, 0.15);              // silent when crawling, a real rush at speed
+    this.windFilter!.frequency.setTargetAtTime(350 + speed * 1800, t, 0.15);
   }
 
   mute() { if (this.on) this.toggle(); }

@@ -10,11 +10,11 @@ export const FINISH = 1180; // garage sits here
 export const MILESTONE_SEGS = [150, 420, 690, 960];
 export const PASS_TOP = 900;
 export const BOARDS = [
-  { i: 95, id: 'pipecd', o: -2.1 },
-  { i: 230, id: 'github', o: 2.1 },
-  { i: 360, id: 'youtube', o: -2.1 },
-  { i: 480, id: 'x', o: 2.1 },
-  { i: 600, id: 'linkedin', o: -2.1 },
+  { i: 95, id: 'pipecd', o: -1.9 },
+  { i: 230, id: 'github', o: 1.9 },
+  { i: 360, id: 'youtube', o: -1.9 },
+  { i: 480, id: 'x', o: 1.9 },
+  { i: 600, id: 'linkedin', o: -1.9 },
 ] as const;
 // Border Roads Organisation signs: yellow stones, black paint, famously witty.
 export const BRO = [
@@ -53,12 +53,12 @@ export function buildTrack(milestones: readonly { top: string; label: string }[]
 
   MILESTONE_SEGS.forEach((i, k) => milestones[k] && add(i, { o: -1.45, type: 'ms', label: milestones[k].top, sub: milestones[k].label }));
   for (const b of BOARDS) add(b.i, { o: b.o, type: 'board', label: b.id });
-  for (const b of BRO) add(b.i, { o: b.i % 2 ? 1.75 : -1.75, type: 'bro', lines: b.lines });
+  for (const b of BRO) add(b.i, { o: b.i % 2 ? 1.55 : -1.55, type: 'bro', lines: b.lines });
 
   for (let i = 4; i < FINISH + 80; i++) {
     const z = zoneAt(i), r = rnd(i), r2 = rnd(i + 17);
     // BRO-painted edge stones, black and yellow on the drop side of the pass
-    if (i % 2 === 0) { add(i, { o: -1.13, type: 'stone', v: 0 }); add(i, { o: 1.13, type: 'stone', v: z === 'pass' ? 1 : 0 }); }
+    if (i % 4 === 0) { add(i, { o: -1.13, type: 'stone', v: 0 }); add(i, { o: 1.13, type: 'stone', v: z === 'pass' ? 1 : 0 }); }
     if (clear(i)) continue;
     if (z === 'leh') {
       if (i % 7 === 0 && i > 14) add(i, { o: (i % 14 ? 1 : -1) * (2.2 + r * 0.7), type: 'house', v: Math.floor(r2 * 3) });

@@ -1,12 +1,12 @@
 // Roadside props for the Ladakh ride, drawn in local unit space via at().
 import { LOGOS, type LogoId } from './logos';
-import { at, box, circle, g, label, oval, poly, rrect, stroke } from './draw';
+import { at, box, circle, g, label, oval, poly, rrect, stroke, vgrad } from './draw';
 
 const FLAG = ['#d8342b', '#e8b923', '#2c6eb0', '#f4f2ea', '#3c8a48'];
 
 export function drawHouse(sx: number, sy: number, k: number, v = 0) {
   const s = k * 0.9;
-  if (s < 2) return;
+  if (s < 0.16) return;
   at(sx, sy, s, () => {
     const wall = ['#f0ebe0', '#e8d8c0', '#d8c8a8'][v % 3];
     box(-28, -52, 56, 48, wall);
@@ -21,7 +21,7 @@ export function drawHouse(sx: number, sy: number, k: number, v = 0) {
 
 export function drawChorten(sx: number, sy: number, k: number) {
   const s = k * 0.85;
-  if (s < 2) return;
+  if (s < 0.16) return;
   at(sx, sy, s, () => {
     box(-18, -20, 36, 18, '#ebe4d4');
     box(-14, -36, 28, 16, '#ebe4d4');
@@ -35,7 +35,7 @@ export function drawChorten(sx: number, sy: number, k: number) {
 
 export function drawPoplar(sx: number, sy: number, k: number, gold = 1) {
   const s = k * 0.95;
-  if (s < 2) return;
+  if (s < 0.16) return;
   at(sx, sy, s, () => {
     box(-2, -70, 4, 70, '#5a4030');
     const leaf = gold ? '#c8a848' : '#6a8a48';
@@ -48,7 +48,7 @@ export function drawPoplar(sx: number, sy: number, k: number, gold = 1) {
 
 export function drawFlags(sx: number, sy: number, k: number) {
   const s = k;
-  if (s < 2) return;
+  if (s < 0.16) return;
   at(sx, sy, s, () => {
     stroke([-40, -90, 40, -70], '#3a3028', 1.4);
     for (let i = 0; i < 8; i++) {
@@ -62,7 +62,7 @@ export function drawFlags(sx: number, sy: number, k: number) {
 
 export function drawCanopy(sx: number, sy: number, k: number) {
   const s = k;
-  if (s < 3) return;
+  if (s < 0.16) return;
   at(sx, sy, s, () => {
     stroke([-90, -110, 90, -100], '#3a3028', 2);
     for (let i = 0; i < 18; i++) {
@@ -76,7 +76,7 @@ export function drawCanopy(sx: number, sy: number, k: number) {
 
 export function drawMani(sx: number, sy: number, k: number) {
   const s = k;
-  if (s < 2) return;
+  if (s < 0.16) return;
   at(sx, sy, s, () => {
     box(-50, -18, 100, 16, '#a89880');
     for (let i = 0; i < 8; i++) box(-46 + i * 12, -16, 10, 12, i % 2 ? '#8a7a68' : '#b8a890');
@@ -86,7 +86,7 @@ export function drawMani(sx: number, sy: number, k: number) {
 
 export function drawBoulder(sx: number, sy: number, k: number, v = 0) {
   const s = k * (0.8 + (v % 3) * 0.15);
-  if (s < 2) return;
+  if (s < 0.16) return;
   at(sx, sy, s, () => {
     oval(0, -10, 22 + v * 3, 12 + v * 2, '#8a7060');
     oval(-6, -14, 14, 8, '#9a8070');
@@ -96,7 +96,7 @@ export function drawBoulder(sx: number, sy: number, k: number, v = 0) {
 
 export function drawSnow(sx: number, sy: number, k: number, v = 0) {
   const s = k * 0.7;
-  if (s < 2) return;
+  if (s < 0.16) return;
   at(sx, sy, s, () => {
     oval(0, -6, 18 + v * 4, 8, '#f0f4f8');
     oval(-8, -8, 10, 5, '#e0e8f0');
@@ -105,7 +105,7 @@ export function drawSnow(sx: number, sy: number, k: number, v = 0) {
 
 export function drawYak(sx: number, sy: number, k: number) {
   const s = k * 0.85;
-  if (s < 3) return;
+  if (s < 0.16) return;
   at(sx, sy, s, () => {
     oval(0, -14, 22, 12, '#3a3028');
     oval(18, -20, 10, 8, '#3a3028'); // head
@@ -121,7 +121,7 @@ export function drawYak(sx: number, sy: number, k: number) {
 
 export function drawStone(sx: number, sy: number, k: number, hazard = 0) {
   const s = k;
-  if (s < 1.5) return;
+  if (s < 0.16) return;
   at(sx, sy, s, () => {
     if (hazard) {
       box(-4, -10, 8, 10, Math.floor(sx) % 2 ? '#222' : '#e8b923');
@@ -133,7 +133,7 @@ export function drawStone(sx: number, sy: number, k: number, hazard = 0) {
 
 export function drawBro(sx: number, sy: number, k: number, lines?: readonly string[]) {
   const s = k;
-  if (s < 4) return;
+  if (s < 0.16) return;
   at(sx, sy, s, () => {
     rrect(-48, -70, 96, 56, 4, '#e8b923');
     rrect(-44, -66, 88, 48, 3, '#1b1712');
@@ -147,7 +147,7 @@ export function drawBro(sx: number, sy: number, k: number, lines?: readonly stri
 
 export function drawMilestone(sx: number, sy: number, k: number, top?: string, sub?: string) {
   const s = k;
-  if (s < 3) return;
+  if (s < 0.16) return;
   at(sx, sy, s, () => {
     box(-18, -70, 36, 66, '#f2f0ea');
     box(-18, -70, 36, 22, '#e8b923');
@@ -159,7 +159,7 @@ export function drawMilestone(sx: number, sy: number, k: number, top?: string, s
 
 export function drawBoard(sx: number, sy: number, k: number, id?: string) {
   const s = k;
-  if (s < 4) return;
+  if (s < 0.16) return;
   at(sx, sy, s, () => {
     box(-4, -10, 8, 90, '#5a5048');
     rrect(-70, -120, 140, 80, 4, '#2a2a2e');
@@ -181,7 +181,7 @@ export function drawBoard(sx: number, sy: number, k: number, id?: string) {
 
 export function drawSign(sx: number, sy: number, k: number, top?: string, sub?: string) {
   const s = k;
-  if (s < 3) return;
+  if (s < 0.16) return;
   at(sx, sy, s, () => {
     box(-3, -8, 6, 70, '#6a6058');
     rrect(-40, -90, 80, 50, 3, '#2c5aa0');
@@ -193,13 +193,34 @@ export function drawSign(sx: number, sy: number, k: number, top?: string, sub?: 
 
 export function drawGarage(sx: number, sy: number, k: number) {
   const s = k;
-  if (s < 4) return;
+  if (s < 0.16) return;
   at(sx, sy, s, () => {
-    box(-70, -100, 140, 100, '#d9cbb2');
-    box(-74, -108, 148, 12, '#b9a88c');
-    box(-50, -88, 100, 70, '#8b8f94');
-    for (let y = -84; y < -20; y += 8) box(-48, y, 96, 6, '#9a9ea2');
-    label("RAHUL'S", 0, -112, 10, '#e8b923', { align: 'center', weight: 600 });
+    // warm light spilling out over the ground
+    poly([-56, 0, 56, 0, 120, 46, -120, 46], vgrad(0, 46, [[0, 'rgba(255,196,110,0.5)'], [1, 'rgba(255,196,110,0)']]));
+    // the building: warm concrete with a parapet, and a hazard stripe along the base
+    box(-92, -104, 184, 104, vgrad(-104, 0, [[0, '#e9dcc4'], [1, '#c8b694']]));
+    box(-96, -114, 192, 12, '#a99676'); box(-96, -114, 192, 3, '#c9b898');
+    for (let x = -92; x < 92; x += 16) box(x, -8, 8, 8, '#1b1712'), box(x + 8, -8, 8, 8, '#e8b923');
+    // the door: shutter rolled up, warm light inside, a bike waiting
+    box(-52, -84, 104, 84, '#2a2622');
+    box(-48, -80, 96, 80, vgrad(-80, 0, [[0, '#ffd88a'], [0.6, '#f4a95a'], [1, '#c8763a']]));
+    for (let y = -80; y < -62; y += 6) box(-48, y, 96, 4, '#8b8f94');
+    circle(-18, -14, 13, '#17130f'); circle(22, -14, 13, '#17130f'); circle(-18, -14, 6, '#6b6f79'); circle(22, -14, 6, '#6b6f79');
+    poly([-18, -14, -6, -38, 14, -40, 22, -14, 10, -26, -2, -22], '#f4f2ea'); poly([-10, -40, 12, -44, 16, -36, -6, -34], '#17130f');
+    // the neon sign on the roof
+    rrect(-72, -158, 144, 40, 5, '#1b1712'); rrect(-68, -154, 136, 32, 3, '#2a1a1a');
+    g.save(); g.shadowColor = '#ff6a5a'; g.shadowBlur = 14;
+    label("RAHUL'S", 0, -139, 15, '#ff8c78', { align: 'center', weight: 700 });
+    label('GARAGE', 0, -125, 12, '#ffd0a0', { align: 'center', weight: 700 });
+    g.restore();
+    stroke([-60, -118, -60, -104], '#3a3028', 3); stroke([60, -118, 60, -104], '#3a3028', 3);
+    // wall lamps with a glow, a lit window and an OPEN sign
+    for (const x of [-72, 72]) { box(x - 4, -96, 8, 5, '#2a2a2e'); circle(x, -90, 5, '#fff0b8'); circle(x, -90, 14, 'rgba(255,220,140,0.25)'); }
+    box(60, -64, 24, 22, '#2a2622'); box(62, -62, 20, 18, '#ffd88a'); box(71, -62, 2, 18, '#2a2622'); box(62, -54, 20, 2, '#2a2622');
+    rrect(-88, -60, 30, 14, 3, '#1b2a4a'); label('OPEN', -73, -50, 9, '#7fd0ff', { align: 'center', weight: 700 });
+    // prayer flags strung from the roof
+    stroke([-96, -112, -130, -96], '#3a3028', 1.2);
+    for (let i = 0; i < 6; i++) { const t = i / 5, x = -96 - t * 34, y = -112 + t * 16; poly([x, y, x + 6, y + 1, x + 5, y + 12, x - 1, y + 11], FLAG[i % 5]); }
   });
 }
 

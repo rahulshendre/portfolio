@@ -1,7 +1,9 @@
 // Title card, then the Ladakh ride through four chapters, then pulling up at the garage.
 import { box, circle, label, rrect, use } from '../hd/draw';
-import { CAM_HEIGHT, CAM_NAMES, CAMS, drawPOV, drawRear, drawTop, type Cam } from '../hd/cameras';
-import { envAt } from '../hd/background';
+import { CAM_HEIGHT, CAM_NAMES, CAMS, drawPOV, drawTop, type Cam } from '../hd/cameras';
+import { drawRider } from '../hd/rider';
+import { drawSpeedLines } from '../hd/speed';
+import { envAt, hazeAt } from '../hd/background';
 import { renderRoad } from '../hd/road';
 import { buildTrack, FINISH, MILESTONE_SEGS, SEG_L, zoneAt, type Segment } from '../hd/track-ladakh';
 import { autopilotLane, capBehind, LEFT, spawnTraffic, type Car } from '../hd/traffic';
@@ -27,7 +29,7 @@ export class RideScene implements Scene {
   private phase: 'title' | 'ride' | 'arrive' = 'title';
   private segs: Segment[] = buildTrack(milestones);
   private cars: Car[] = spawnTraffic();
-  private pos = 0; private px = LEFT; private speed = 0; private lean = 0;
+  private pos = 0; private px = LEFT; private speed = 0; private lean = 0; private braking = false; private lastSpeed = 0; private avgDt = 1 / 60; private lite = false;
   private cam: Cam = 'behind';
   private bgOff = 0; private t = 0; private odo = 0; private fade = 0; private flash = 0;
   private manualUntil = 0;
@@ -67,6 +69,9 @@ export class RideScene implements Scene {
 
   update(dt: number) {
     this.t += dt;
+    // a slow device (frames longer than about 32 ms for a while) drops the priciest effects; it never switches back, so it can't flicker
+    this.avgDt += (Math.min(dt, 0.25) - this.avgDt) * 0.05;
+    if (!this.lite && this.t > 2 && this.avgDt > 0.032) this.lite = true;
     this.banner.t -= dt;
     this.flash -= dt;
     const tap = this.handleTap();
@@ -117,6 +122,8 @@ export class RideScene implements Scene {
     const leanTo = steer || (Math.abs(target - this.px) > 0.05 ? Math.sign(target - this.px) : 0) || seg.curve * 0.25;
     this.lean += (leanTo - this.lean) * Math.min(1, dt * 8);
 
+    this.braking = this.speed < this.lastSpeed - MAX_S * dt * 0.05; // slowing down lights the tail lamp
+    this.lastSpeed = this.speed;
     this.pos += this.speed * dt;
     this.bgOff += seg.curve * sp * dt * 12;
     this.odo += (this.speed * dt) / 9000;
@@ -132,11 +139,15 @@ export class RideScene implements Scene {
     const g = this.screen.ctx, { W, H, HZ } = this.screen.size;
     use(g);
     const sp = this.speed / MAX_S, segI = Math.floor(this.pos / SEG_L);
-    const env = envAt(segI, FINISH, zoneAt(segI));
+    const env = { ...envAt(segI, FINISH, zoneAt(segI)), lite: this.lite };
     if (this.cam === 'top') drawTop(g, this.segs, this.cars, W, H, this.pos, this.px);
     else {
-      renderRoad(g, this.segs, { W, H, HZ, pos: this.pos, px: this.px, camH: CAM_HEIGHT[this.cam], bgOff: this.bgOff, t: this.t, env }, this.cars);
-      if (this.cam === 'behind') drawRear(g, W, H, this.lean, this.t, sp);
+      g.save();
+      g.translate(0, Math.round(Math.sin(this.t * 47) * sp * sp * 1.6 + Math.sin(this.t * 19) * sp * 0.7)); // the road hums up through the suspension at speed
+      renderRoad(g, this.segs, { W, H, HZ, pos: this.pos, px: this.px, camH: CAM_HEIGHT[this.cam], bgOff: this.bgOff, t: this.t, env, haze: hazeAt(env.tod) }, this.cars);
+      g.restore();
+      if (!this.lite) drawSpeedLines(g, W, H, HZ, sp, this.t);
+      if (this.cam === 'behind') drawRider(g, W, H, this.lean, this.t, sp, this.braking);
       else drawPOV(g, W, H, sp, this.t, sp * 138);
     }
     this.hud(W, H, segI);
@@ -200,6 +211,10 @@ export class RideScene implements Scene {
   private title(W: number, H: number) {
     const namePx = Math.max(28, Math.round(W / 16));
     const y = H * 0.2;
+    // a soft dark wash behind the title so the words read over the flags and trees
+    const gr = this.screen.ctx.createLinearGradient(0, 0, 0, H * 0.5);
+    gr.addColorStop(0, 'rgba(20,14,8,0.42)'); gr.addColorStop(0.7, 'rgba(20,14,8,0.14)'); gr.addColorStop(1, 'rgba(20,14,8,0)');
+    this.screen.ctx.fillStyle = gr; this.screen.ctx.fillRect(0, 0, W, H * 0.5);
     label(site.name.toUpperCase(), W / 2, y, namePx, HUD, { align: 'center', font: FONT_DISPLAY, shadow: INK });
     label(site.tagline.toUpperCase(), W / 2, y + namePx * 0.9, Math.max(12, Math.round(W / 55)), HUD, {
       align: 'center', font: FONT_MONO, shadow: INK,

@@ -1,5 +1,6 @@
 import { SEG_L } from './track-ladakh';
-import { at, box, circle, oval, poly, stroke } from './draw';
+import { at, box, g, hgrad, oval, poly, rrect, stroke, vgrad } from './draw';
+import { drawRiderAt } from './rider';
 
 export type Kind = 'army' | 'suv' | 'biker';
 export interface Car { z: number; o: number; v: number; kind: Kind; warned?: boolean }
@@ -38,38 +39,37 @@ export function capBehind(cars: Car[], playerZ: number, px: number, speed: numbe
 }
 
 /** Draw traffic from behind (facing away), size = screen scale k. */
-export function drawCar(kind: Kind, sx: number, sy: number, k: number) {
+/** Other traffic, seen from behind and drawn to the same scale as the road: `k` is pixels per unit. */
+export function drawCar(kind: Kind, sx: number, sy: number, k: number, t = 0) {
   const s = k;
-  if (s < 2) return;
+  if (s < 0.14) return;
   if (kind === 'army') {
     at(sx, sy, s, () => {
-      box(-28, -48, 56, 40, '#4a5a38'); // canvas
-      box(-30, -20, 60, 18, '#3a4a30'); // bed
-      box(-22, -58, 44, 14, '#3a4a30'); // cab
-      box(-16, -54, 12, 8, '#1a2a18');
-      box(4, -54, 12, 8, '#1a2a18');
-      circle(-18, -4, 7, '#1a1a1a');
-      circle(18, -4, 7, '#1a1a1a');
-      box(-8, -62, 16, 4, '#e8b923'); // star bar
+      oval(0, 0, 38, 5, '#00000055');
+      box(-24, -9, 12, 9, '#141416'); box(12, -9, 12, 9, '#141416');                                       // rear wheels
+      box(-30, -14, 60, 7, '#2a2c2e');                                                                       // bumper
+      box(-29, -30, 58, 17, vgrad(-30, -13, [[0, '#4a5a38'], [1, '#33402a']]));                              // tailgate
+      box(-26, -12, 6, 4, '#d8342b'); box(20, -12, 6, 4, '#d8342b');                                         // tail lamps
+      rrect(-11, -26, 22, 8, 1, '#e8b923'); box(-8, -24, 16, 1, '#1b1712'); box(-8, -21, 16, 1, '#1b1712'); // plate
+      rrect(-30, -74, 60, 46, 7, hgrad(-30, 30, [[0, '#3f4f30'], [0.45, '#5b6c45'], [1, '#3a4a2c']]));        // canvas hood
+      for (const x of [-18, -6, 6, 18]) box(x - 0.5, -72, 1.2, 42, '#00000030');                            // its ribs
+      box(-18, -80, 36, 8, '#33402a');                                                                       // the cab roof above it
+      poly([-26, -72, -30, -72, -30, -30, -26, -30], '#ffffff14');
     });
   } else if (kind === 'suv') {
     at(sx, sy, s, () => {
-      poly([-24, -8, -22, -36, 22, -36, 24, -8], '#d8dce0');
-      box(-18, -48, 36, 14, '#c0c4c8');
-      box(-14, -44, 12, 8, '#3a5060');
-      box(2, -44, 12, 8, '#3a5060');
-      circle(-16, -4, 6, '#1a1a1a');
-      circle(16, -4, 6, '#1a1a1a');
-      box(-6, -12, 12, 4, '#e8b923'); // plate
+      oval(0, 0, 32, 5, '#00000055');
+      box(-22, -8, 10, 8, '#141416'); box(12, -8, 10, 8, '#141416');                                        // wheels
+      rrect(-26, -16, 52, 8, 3, '#b4b8c0');                                                                  // bumper
+      rrect(-26, -50, 52, 36, 6, hgrad(-26, 26, [[0, '#cfd3d9'], [0.4, '#f0f2f5'], [1, '#c2c6cd']]));        // white body
+      rrect(-20, -46, 40, 15, 3, '#22303c'); poly([-20, -40, -6, -46, -2, -46, -14, -31, -20, -31], '#ffffff22'); // rear glass with a glint
+      box(-25, -34, 6, 14, '#d8342b'); box(19, -34, 6, 14, '#d8342b');                                       // tail lamps
+      rrect(-8, -26, 16, 7, 1, '#f4f2ea');                                                                   // plate
+      stroke([-22, -55, 22, -55], '#2a2c30', 1.4);                                                            // roof rails
+      rrect(-17, -66, 34, 12, 4, '#6b4a2a'); stroke([-6, -66, -6, -54], '#2a1c10', 1.2); stroke([6, -66, 6, -54], '#2a1c10', 1.2); // luggage strapped on the roof
     });
   } else {
-    at(sx, sy, s, () => {
-      circle(-10, -8, 7, '#1a1a1a');
-      circle(12, -8, 7, '#1a1a1a');
-      stroke([-10, -8, 4, -22, 12, -8], '#c8c4bc', 2.2);
-      stroke([4, -22, 4, -34], '#2a2e36', 2);
-      circle(4, -42, 6, '#f4f2ea'); // white helmet
-      oval(4, -28, 8, 10, '#2b2e36'); // jacket
-    });
+    // another rider: the same drawing as yours, with their own colours and a duffel bag strapped on
+    drawRiderAt(g, sx, sy, s * 16, 0, t, 0.6, false, { bag: true, colors: { jacket: '#8a3a2e', jacketLit: '#b04c3a', jacketDark: '#5a231d', helmet: '#2f5a3a', helmetShade: '#1f3d28', stripe: '#f0f0e8', pants: '#3a3428', pantsLit: '#4c4536' } });
   }
 }
