@@ -4,8 +4,20 @@ import { drawRiderAt } from './rider';
 
 export type Kind = 'army' | 'suv' | 'biker' | 'yak' | 'tanker' | 'tempo' | 'goats' | 'marmot';
 export interface Car { z: number; o: number; v: number; kind: Kind; warned?: boolean; yieldT?: number;
+  /** The speed it is really doing this frame: its own, or slower if it is stuck behind another vehicle. */
+  vNow?: number;
+  /** The slower vehicle it is pulling out to overtake. */
+  pass?: Car;
   /** Walks sideways across the road, in road half-widths per second, once you are near. */
   lat?: number; hurry?: number }
+
+/** Half the width of each vehicle in road half-widths, measured from what is drawn, so blocking and bumps match the picture. */
+export const HALF: Record<Kind, number> = { army: 0.27, tanker: 0.27, suv: 0.24, tempo: 0.245, biker: 0.11, yak: 0.4, goats: 0.46, marmot: 0 };
+/** Half the width of your bike. */
+export const BIKE_HALF = 0.1;
+/** Vehicles keep at least this far behind the one in front (world units), so a faster one queues up instead of driving through a slower one. */
+export const FOLLOW_GAP = 2.4 * SEG_L;
+const isAnimal = (c: Car) => c.kind === 'goats' || c.kind === 'marmot';
 
 export const LEFT = -0.45;
 export const RIGHT = 0.45;
@@ -36,25 +48,63 @@ export const spawnTraffic = (): Car[] => [
 
 /** A honk: the nearest slow vehicle ahead in this lane pulls over to the verge for a few seconds. */
 export function honkAt(cars: Car[], playerZ: number, px: number): boolean {
-  const c = carAhead(cars, playerZ, px, 22 * SEG_L, 0.5);
+  const c = carAhead(cars, playerZ, px, 22 * SEG_L, 0.25);
   if (!c) return false;
   if (c.lat) c.hurry = 3; else c.yieldT = 3.2;                                        // animals hurry across; vehicles pull over
   return true;
 }
 
-export function carAhead(cars: Car[], playerZ: number, px: number, within: number, laneTol = 0.3): Car | undefined {
+/** Do a vehicle and something at lateral position `x` (half-width `hw`) overlap sideways? */
+export const overlaps = (c: Car, x: number, hw: number, slack = 0.05) => Math.abs(c.o - x) < HALF[c.kind] + hw + slack;
+
+/** The nearest vehicle ahead that your bike would run into if you held your line. `extra` widens the test (a honk reaches a little further sideways). */
+export function carAhead(cars: Car[], playerZ: number, px: number, within: number, extra = 0): Car | undefined {
   let best: Car | undefined;
   for (const c of cars) {
     const gap = c.z - playerZ;
-    if (gap > 0 && gap < within && c.kind !== 'marmot' && Math.abs(c.o - px) < laneTol && (!best || gap < best.z - playerZ)) best = c;
+    if (gap > 0 && gap < within && c.kind !== 'marmot' && overlaps(c, px, BIKE_HALF + extra) && (!best || gap < best.z - playerZ)) best = c;
   }
   return best;
 }
 
+/** Is the right-hand lane clear around `z` for a vehicle to pull out into, counting the other traffic and you? */
+function rightFree(cars: Car[], self: Car, playerZ: number, px: number) {
+  if (Math.abs(px - RIGHT) < 0.55 && self.z - playerZ > -3 * SEG_L && self.z - playerZ < 14 * SEG_L) return false;
+  return !cars.some((o) => o !== self && !isAnimal(o) && Math.abs(o.o - RIGHT) < HALF[o.kind] + HALF[self.kind] + 0.1 && o.z > self.z - 3 * SEG_L && o.z < self.z + 14 * SEG_L);
+}
+
+/** Move every vehicle and animal on. Leaders go first; each holds its gap to the one ahead in its lane, or pulls out to overtake it if the right lane is clear. */
+export function stepTraffic(cars: Car[], playerZ: number, px: number, dt: number, maxS: number) {
+  const order = [...cars].sort((a, b) => b.z - a.z);
+  for (const c of order) {
+    let v = c.v, blocker: Car | undefined;
+    if (!isAnimal(c)) for (const l of order) {
+      if (l === c || isAnimal(l) || l.z <= c.z || l.z - c.z > 30 * SEG_L) continue;   // the lane test below also holds a passing vehicle back until it has cleared the one it is passing sideways
+      if (Math.abs(l.o - c.o) >= HALF[l.kind] + HALF[c.kind]) continue;              // not in the same lane
+      if (!blocker || l.z < blocker.z) blocker = l;
+      v = Math.min(v, (l.vNow ?? l.v) + Math.max(0, l.z - c.z - FOLLOW_GAP) / (3 * SEG_L) * 0.12);   // ease up to the leader's speed as the gap closes
+      if (l.z - c.z < FOLLOW_GAP) c.z = l.z - FOLLOW_GAP;                             // and never closer than the gap
+    }
+    // overtaking: pull out around a slower vehicle in the left lane if the right lane is clear, and stay out until the next one is passed too
+    const slower = isAnimal(c) ? undefined : order.filter((l) => l !== c && !isAnimal(l) && l.z > c.z && l.z - c.z < 3 * SEG_L + Math.max(0, c.v - (l.vNow ?? l.v)) * maxS * 1.6 && (l.vNow ?? l.v) < c.v - 0.02 && Math.abs(l.o - LEFT) < HALF[l.kind] + HALF[c.kind]).sort((a, b) => a.z - b.z)[0];
+    if (c.pass && c.z > c.pass.z + 4 * SEG_L) c.pass = slower && !c.yieldT && rightFree(cars, c, playerZ, px) ? slower : undefined;
+    else if (!c.pass && slower && !c.yieldT && rightFree(cars, c, playerZ, px)) c.pass = slower;
+    c.vNow = v;
+    c.z += v * maxS * dt;
+    if (c.lat) {                                                                        // animals cross once you are close, hurrying if you honk
+      if (c.z - playerZ < 60 * SEG_L && Math.abs(c.o) < 3) c.o += c.lat * (c.hurry && c.hurry > 0 ? 2.6 : 1) * dt;
+      if (c.hurry) c.hurry -= dt;
+      continue;
+    }
+    if (c.yieldT && c.yieldT > 0) { c.yieldT -= dt; c.pass = undefined; c.o += (-0.9 - c.o) * Math.min(1, dt * 2.5); }   // pulled over after a honk
+    else { const goal = c.pass ? RIGHT : LEFT; if (c.o !== goal) c.o += (goal - c.o) * Math.min(1, dt * 1.5); }
+  }
+}
+
 export function capBehind(cars: Car[], playerZ: number, px: number, speed: number, maxS: number): { speed: number; blocker?: Car } {
-  const c = carAhead(cars, playerZ, px, 4 * SEG_L);
+  const c = carAhead(cars, playerZ, px, 6 * SEG_L);
   // slow down smoothly behind it: the closer you get, the nearer to its speed you are held
-  return c ? { speed: Math.min(speed, c.v * maxS + Math.max(0, c.z - playerZ - 0.8 * SEG_L) * 5), blocker: c } : { speed };
+  return c ? { speed: Math.min(speed, c.v * maxS + Math.max(0, c.z - playerZ - 2 * SEG_L) * 5), blocker: c } : { speed };
 }
 
 /** Draw traffic from behind (facing away), size = screen scale k. */

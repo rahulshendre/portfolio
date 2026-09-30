@@ -10,7 +10,7 @@ import type { Look } from '../rail';
 import { envAt, hazeAt } from '../hd/background';
 import { renderRoad } from '../hd/road';
 import { altitude, buildTrack, TOWNS, townAt, PASS_TOP, elevation, FINISH, LAKE_FROM, MILESTONE_SEGS, N, SEG_L, zoneAt, type Segment } from '../hd/track-ladakh';
-import { capBehind, honkAt, LEFT, spawnTraffic, type Car } from '../hd/traffic';
+import { BIKE_HALF, capBehind, honkAt, LEFT, overlaps, spawnTraffic, stepTraffic, type Car } from '../hd/traffic';
 import { LIGHTS } from '../hd/props';
 import { drawAir, drawLights, drawFlare, drawGround, drawHeadlight, drawLightning, drawNight, drawRain, drawSkyTint, SKIES, type Bolt, type Sky } from '../hd/air';
 import { agility, lateralStep, step as bikeStep, V_CRUISE, V_TOP } from '../hd/physics';
@@ -210,18 +210,11 @@ export class RideScene implements Scene {
       this.speed = bikeStep(this.speed / K, dt, { gas: this.gas, brake: this.brake, grade, cruise: V_CRUISE, top: V_TOP * (seg.zone === 'pass' ? 0.92 : 1), rough: this.rough, side: this.vx, grip: { clear: 1, fog: 0.95, rain: 0.65, snow: 0.55 }[this.sky] }) * K;
     }
 
-    for (const c of this.cars) {
-      const before = c.z - playerZ;
-      c.z += c.v * MAX_S * dt;
-      if (before > 0 && c.z - playerZ <= 0 && Math.abs(c.o - this.px) < 0.9 && this.speed > MAX_S * 0.25) { engine.whoosh(); if (c.kind !== 'goats' && c.kind !== 'marmot') this.passed++; }   // just went by
-      if (c.lat) {                                                                                   // animals cross once you are close, hurrying if you honk
-        if (c.z - playerZ < 60 * SEG_L && Math.abs(c.o) < 3) c.o += c.lat * (c.hurry && c.hurry > 0 ? 2.6 : 1) * dt;
-        if (c.hurry) c.hurry -= dt;
-        continue;
-      }
-      if (c.yieldT && c.yieldT > 0) { c.yieldT -= dt; c.o += (-0.9 - c.o) * Math.min(1, dt * 2.5); }   // pulled over after a honk
-      else if (c.o !== LEFT) c.o += (LEFT - c.o) * Math.min(1, dt * 1.5);
-    }
+    const gaps = this.cars.map((c) => c.z - playerZ);
+    stepTraffic(this.cars, playerZ, this.px, dt, MAX_S);
+    this.cars.forEach((c, n) => {
+      if (gaps[n] > 0 && c.z - playerZ <= 0 && Math.abs(c.o - this.px) < 0.9 && this.speed > MAX_S * 0.25) { engine.whoosh(); if (c.kind !== 'goats' && c.kind !== 'marmot') this.passed++; }   // just went by
+    });
     const capped = capBehind(this.cars, playerZ, this.px, this.speed, MAX_S);
     this.speed = capped.speed;
     if (capped.blocker && !capped.blocker.warned) {
@@ -237,11 +230,11 @@ export class RideScene implements Scene {
     this.px += this.vx * dt - seg.curve * sp * sp * dt * 0.1 * agility(vNow);
     // sideswipe: touching a vehicle beside you shoves you away from it and scrubs speed
     for (const c of this.cars) {
-      if (c.lat || c.kind === 'marmot') continue;
+      if (c.kind === 'marmot') continue;
       const gap = c.z - playerZ;
-      if (Math.abs(gap) < 0.7 * SEG_L && Math.abs(c.o - this.px) < 0.3) {
+      if (Math.abs(gap) < 0.7 * SEG_L && overlaps(c, this.px, BIKE_HALF, 0)) {                 // the bump uses the width of what is drawn
         this.vx += (this.px >= c.o ? 1 : -1) * 2.2 * dt * 8; this.speed *= 1 - dt * 1.5;
-        if (this.bumpT <= 0) { this.bumpT = 1.2; engine.thud(); this.show('CAREFUL|WATCH THE TRAFFIC', false, 1.2); }
+        if (this.bumpT <= 0) { this.bumpT = 1.2; engine.thud(); this.show(c.kind === 'goats' || c.kind === 'yak' ? 'CAREFUL|MIND THE ANIMALS' : 'CAREFUL|WATCH THE TRAFFIC', false, 1.2); }
       }
     }
     this.bumpT -= dt;

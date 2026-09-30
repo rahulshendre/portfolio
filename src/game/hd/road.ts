@@ -37,7 +37,7 @@ export interface View {
   haze: string;
 }
 
-type Seg = Segment & { p1?: Projected; clip?: number };
+type Seg = Segment & { p1?: Projected; clip?: number; camX1?: number; camX2?: number };   // camX: the sideways offset from the camera at each end of the segment, so things can be placed part-way along it
 
 export const DRAW_DIST = 180;
 /** Props are drawn in a unit space about 55 units to a house, against a road 2200 units across, so they scale up from the road's own scale. */
@@ -89,6 +89,7 @@ export function renderRoad(g: CanvasRenderingContext2D, segs: Seg[], v: View, ca
     const s = segs[i];
     const p1 = project(s.y1, i * SEG_L, v.px * ROAD_W - cx, camY, v.pos, W, H, HZ, ROAD_W);
     const p2 = project(s.y2, (i + 1) * SEG_L, v.px * ROAD_W - cx - dx, camY, v.pos, W, H, HZ, ROAD_W);
+    s.camX1 = v.px * ROAD_W - cx; s.camX2 = s.camX1 - dx;
     cx += dx; dx += s.curve; s.p1 = p1; s.clip = maxy;
     if (p1.cz <= CAM_DEPTH || p2.y >= p1.y || p2.y >= maxy) continue;
     const alt = Math.floor(i / 3) % 2, c = groundCols(i);
@@ -187,7 +188,14 @@ export function renderRoad(g: CanvasRenderingContext2D, segs: Seg[], v: View, ca
         lastPole = { x: px, y: s.p1.y - 121 * ks, s: ks };
       }
     }
-    if (here) for (const car of here) drawCar(car.kind, s.p1.x + k * car.o * ROAD_W, s.p1.y, k * PROP_K * 0.5, v.t);
+    if (here) for (const car of here) {                                            // a vehicle sits part-way along its segment: place it exactly, not at the segment's start, so it glides instead of stepping
+      const f = (car.z - i * SEG_L) / SEG_L, cp = project(s.y1 + (s.y2 - s.y1) * f, car.z, s.camX1! + (s.camX2! - s.camX1!) * f, camY, v.pos, W, H, HZ, ROAD_W);
+      const near = v.camH * CAM_DEPTH, fade = Math.min(1, (cp.cz - near * 0.55) / (near * 0.4));   // one that is drawing level with the rider melts away rather than popping out
+      if (fade <= 0) continue;
+      g.globalAlpha = fade;
+      drawCar(car.kind, cp.x + ((cp.s * W) / 2) * car.o * ROAD_W, cp.y, ((cp.s * W) / 2) * PROP_K * 0.5, v.t);
+      g.globalAlpha = 1;
+    }
     g.restore();
   }
 }
