@@ -43,6 +43,8 @@ const CHAPTER = (i: number) => townAt(i) ??
     : ({ leh: 'LEH TOWN', valley: 'INDUS VALLEY', pass: 'KHARDUNG LA', lake: 'THE LAKE' } as const)[zoneAt(i)]);
 
 const FONT_DISPLAY = '"Fraunces", Georgia, serif';
+/** The name on the opening card: the pixel font the site's buttons and the garage sign use. */
+const FONT_NAME = '"Silkscreen", ui-monospace, monospace';
 const FONT_MONO = '"IBM Plex Mono", ui-monospace, monospace';
 const INK = '#1b1712', HUD = '#fff6e0', ACCENT = '#e8b923';
 
@@ -54,6 +56,7 @@ export class RideScene implements Scene {
   private pos = 0; private px = LEFT; private speed = 0; private lean = 0; private braking = false; private lastSpeed = 0; private avgDt = 1 / 60; private lite = false; private honkT = 0; private gearNow = 0; private birdT = 2; private rung = new Set<number>();
   private photo = false; private photoT = 0; private paused = false; private lights: 'auto' | 'on' | 'off' = 'auto'; private gas = false; private brake = false; private trip = 0; private vx = 0; private bolt: Bolt | null = null; private boltIn = 6; private night = false; private nightK = 0; private gasWas = false; private rough = 0; private bumpT = 0; private rideT = 0; private topKmh = 0; private passed = 0; private honks = 0; private stopT = 0; private sky: Sky = 'clear';
   private cam: Cam = 'behind';
+  private pitchK = 0;   // the bike's nose: dips under braking, lifts under power, and the headlight follows
   private homeT = 0;   // how long the side shot of your bike rolling into the garage has been showing
   private bikeImg: HTMLImageElement | null = null;   // the garage's own picture of your bike, shown on the arrival card
   private pixel = typeof location !== 'undefined' && new URLSearchParams(location.search).has('pixel'); private low = new LowRes();
@@ -64,6 +67,7 @@ export class RideScene implements Scene {
   constructor(private screen: Screen, private onArrive: () => void, private onSkip: () => void) {}
 
   enter() {
+    void document.fonts?.load(`400 32px ${FONT_NAME}`);                       // the canvas needs the pixel font loaded before the opening card can use it
     const im = new Image(); im.onload = () => { this.bikeImg = im; }; im.src = '/sprites/bike-side-lg.png';
     addEventListener('blur', this.autoPause);                          // switching away pauses the ride
     input.endFrame();
@@ -246,6 +250,7 @@ export class RideScene implements Scene {
 
     this.braking = this.brake || this.speed < this.lastSpeed - MAX_S * dt * 0.05; // slowing down lights the tail lamp
     this.lastSpeed = this.speed;
+    this.pitchK += ((this.braking ? 1 : this.gas ? -0.6 : 0) - this.pitchK) * Math.min(1, dt * 4);
     this.pos += this.speed * dt;
     this.bgOff += seg.curve * sp * dt * 12;
     this.odo += (this.speed * dt) / 9000;
@@ -302,7 +307,7 @@ export class RideScene implements Scene {
       if (!this.lite) finish(g, W, H, HZ, env.tod, this.nightK > 0.5, !small);   // grade, vignette and grain over the world, under the rider and the HUD
       const beam = this.lights === 'off' ? 0 : Math.max(this.lights === 'on' ? 0.5 : 0, env.tod > 0.55 ? (env.tod - 0.55) / 0.45 : 0, this.nightK * 1.4);
       const beamA = Math.min(1, beam);
-      if (!this.lite && beamA > 0) drawHeadlight(g, W, H, HZ, this.lean, beamA);
+      if (!this.lite && beamA > 0) drawHeadlight(g, W, H, HZ, this.lean, beamA, { wet: this.sky === 'rain' ? 1 : 0, mist: this.sky === 'fog' || this.sky === 'snow' ? 1 : 0, t: this.t, pitch: this.pitchK });
       if (this.cam === 'behind' || this.cam === 'high') drawRider(g, W, H, this.lean, this.t, sp, this.braking, RIDER_SCALE[this.cam]);
       else drawPOV(g, W, H, sp, this.t, sp * KMH);
     }
@@ -431,25 +436,22 @@ export class RideScene implements Scene {
   }
 
   private title(W: number, H: number) {
-    const namePx = Math.max(28, Math.round(W / 16));
+    const namePx = Math.max(26, Math.round(W / 20));
     const y = H * 0.2;
     // a soft dark wash behind the title so the words read over the flags and trees
     const gr = this.screen.ctx.createLinearGradient(0, 0, 0, H * 0.62);
     gr.addColorStop(0, 'rgba(20,14,8,0.46)'); gr.addColorStop(0.7, 'rgba(20,14,8,0.2)'); gr.addColorStop(1, 'rgba(20,14,8,0)');
     this.screen.ctx.fillStyle = gr; this.screen.ctx.fillRect(0, 0, W, H * 0.62);
-    label(site.name.toUpperCase(), W / 2, y, namePx, HUD, { align: 'center', font: FONT_DISPLAY, shadow: INK });
-    label(site.tagline.toUpperCase(), W / 2, y + namePx * 0.9, Math.max(12, Math.round(W / 55)), HUD, {
-      align: 'center', font: FONT_MONO, shadow: INK,
-    });
+    label(site.name.toUpperCase(), W / 2, y, namePx, HUD, { align: 'center', font: FONT_NAME, shadow: INK });
     if (OG) {
-      label('LFX 2026 MENTEE · PIPECD · CNCF', W / 2, y + namePx * 1.5, Math.max(14, Math.round(W / 40)), ACCENT, {
+      label('LFX 2026 MENTEE · PIPECD · CNCF', W / 2, y + namePx * 1.2, Math.max(14, Math.round(W / 40)), ACCENT, {
         align: 'center', font: FONT_MONO, shadow: INK,
       });
       return;
     }
     if (Math.floor(this.t * 2) % 2 === 0) {
       const p = matchMedia('(pointer: coarse)').matches ? 'TAP TO RIDE' : 'PRESS ANY KEY TO RIDE';
-      label(p, W / 2, y + namePx * 1.55, Math.max(16, Math.round(W / 36)), ACCENT, {
+      label(p, W / 2, y + namePx * 1.25, Math.max(16, Math.round(W / 36)), ACCENT, {
         align: 'center', font: FONT_MONO, shadow: INK,
       });
     }

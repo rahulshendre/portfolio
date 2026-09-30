@@ -87,19 +87,72 @@ export function drawSkyTint(g: CanvasRenderingContext2D, W: number, H: number, H
   }
 }
 
-/** A warm cone of light from the bike as evening falls (a is 0 to 1). */
-export function drawHeadlight(g: CanvasRenderingContext2D, W: number, H: number, HZ: number, lean: number, a: number) {
-  const x = W / 2 + lean * H * 0.05, top = HZ + (H - HZ) * 0.42;
+export interface BeamOpts { wet?: number; mist?: number; t?: number; pitch?: number }
+
+/**
+ * Your headlight, thrown down the road. A pool of light lies on the tarmac in perspective (nothing at the far end, a hot spot a little way ahead of
+ * the wheel, easing off under the bike), lifts the road's own texture rather than tinting it, and swings with the lean. Through the air the beam
+ * shows as a soft column, stronger in rain, mist and dust, with glints in it and a long reflection down a wet road. Braking dips the nose and
+ * shortens the throw.
+ */
+export function drawHeadlight(g: CanvasRenderingContext2D, W: number, H: number, HZ: number, lean: number, a: number, o: BeamOpts = {}) {
+  const wet = o.wet ?? 0, mist = o.mist ?? 0, t = o.t ?? 0, pitch = Math.max(-1, Math.min(1, o.pitch ?? 0));
+  const hy = H * HZ, span = H * 0.93 - hy, lamp = H * 0.24;
+  const yAt = (u: number) => hy + span * u;                                          // u runs from 1 at the bike toward 0 at the horizon
+  const xc = (u: number) => W / 2 + lean * W * (0.14 * (1 - u) + 0.03);             // the beam is aimed where the bike points, so it swings out toward the far end
+  const hw = (u: number) => W * (0.115 * u + 0.02);                                  // half-width of the lit ground at that depth
+  const uNear = 0.97, uFar = 0.12 + pitch * 0.05;
+  const sm = (e0: number, e1: number, x: number) => { const k = Math.min(1, Math.max(0, (x - e0) / (e1 - e0))); return k * k * (3 - 2 * k); };
+  const prof = (u: number) => sm(uFar, 0.42, u) * (1 - 0.35 * sm(0.62, 0.84, u)) * (1 - sm(0.86, 0.97, u)) * 1.15;
+  /** The pool: a chain of soft ellipses lying on the road from just ahead of the wheel out to the far end, each in perspective, so the light is one smooth teardrop with no seams. */
+  const slices = (rgb: string, k: number) => {
+    for (let j = 0; j < 11; j++) {
+      const u = 0.86 - j * 0.07, I = Math.min(1, prof(u)) * k;
+      if (I < 0.01) continue;
+      const rx = hw(u) * 1.45, ry = span * (0.15 * u + 0.025);
+      g.save(); g.translate(xc(u), yAt(u)); g.scale(rx, ry);
+      const gr = g.createRadialGradient(0, 0, 0, 0, 0, 1);
+      gr.addColorStop(0, `rgba(${rgb},${I * 0.55})`); gr.addColorStop(0.45, `rgba(${rgb},${I * 0.2})`); gr.addColorStop(1, `rgba(${rgb},0)`);
+      g.fillStyle = gr; g.beginPath(); g.arc(0, 0, 1, 0, Math.PI * 2); g.fill(); g.restore();
+    }
+  };
   g.save();
+  // 1. the pool as a soft-light pass, so paint, cracks and stones on the tarmac come up brighter instead of being washed flat
+  g.globalCompositeOperation = 'soft-light';
+  g.globalAlpha = Math.min(1, a);
+  slices('255,240,205', 1); slices('255,240,205', 1); slices('255,240,205', 0.8);
+  // 2. and the light itself, added on top: warm, brightest in the middle of the pool
   g.globalCompositeOperation = 'lighter';
-  for (const [wd, al] of [[1, 0.4], [0.68, 0.35], [0.4, 0.3]] as const) {                  // stacked cones give it a soft edge
-    const gr = g.createLinearGradient(0, H, 0, top);
-    gr.addColorStop(0, `rgba(255,214,150,${0.2 * a * al * 2})`); gr.addColorStop(1, 'rgba(255,214,150,0)');
-    g.fillStyle = gr;
-    g.beginPath(); g.moveTo(x - W * 0.035 * wd, H * 0.9); g.lineTo(x + W * 0.035 * wd, H * 0.9); g.lineTo(x + W * 0.13 * wd, top); g.lineTo(x - W * 0.13 * wd, top); g.closePath(); g.fill();
+  g.globalAlpha = a * 0.7;
+  slices('255,214,150', 0.85);
+  g.globalAlpha = 1;
+  glow(xc(0.6), yAt(0.6), H * 0.13 * (0.8 + 0.3 * wet), '#ffe3b0', 0.16 * a);                                                     // the hot spot
+  // 3. the beam through the air: a chain of soft slices from the lamp to the far end of the pool
+  const haze = 0.3 + 0.7 * Math.max(wet, mist);
+  for (let i = 0; i < 14; i++) {
+    const u = uFar + ((uNear - uFar) * i) / 13, l = lamp * u, k = Math.sin((i / 13) * Math.PI * 0.85 + 0.25), rx = Math.max(6, hw(u) * 0.85), cy = yAt(u) - l * 0.5;
+    const gr = g.createRadialGradient(xc(u), cy, 0, xc(u), cy, rx);
+    gr.addColorStop(0, `rgba(255,232,190,${0.13 * haze * a * k})`); gr.addColorStop(1, 'rgba(255,232,190,0)');
+    g.fillStyle = gr; g.beginPath(); g.ellipse(xc(u), cy, rx, Math.max(4, l * 0.6), 0, 0, Math.PI * 2); g.fill();
   }
-  g.globalCompositeOperation = 'source-over';
-  glow(x, H * 0.86, H * 0.18, '#ffe0a8', 0.22 * a);
+  // 4. things floating in it: dust and mist, and in rain, streaks of lit drops falling through the beam
+  const n = wet > 0 ? 16 : mist > 0 ? 12 : a > 0.6 ? 6 : 0;
+  for (let i = 0; i < n; i++) {
+    const p = (t * (wet ? 1.5 : 0.35) + i * 0.6180339) % 1, r1 = Math.abs(Math.sin(i * 12.9898) * 43758.5453) % 1, r2 = Math.abs(Math.sin(i * 78.233) * 43758.5453) % 1;
+    const u = uFar + (uNear - uFar) * (wet ? 1 - p : p), x = xc(u) + (r1 * 2 - 1) * hw(u) * 0.75, y = yAt(u) - lamp * u * r2;
+    g.globalAlpha = Math.min(1, a * (wet ? 0.5 : 0.35) * Math.sin(p * Math.PI));
+    if (wet) { g.strokeStyle = '#fff1d0'; g.lineWidth = Math.max(0.8, u * 2.2); g.beginPath(); g.moveTo(x, y); g.lineTo(x - u * 3, y + u * 22); g.stroke(); }
+    else { g.fillStyle = '#ffeccb'; g.beginPath(); g.arc(x, y, Math.max(0.7, u * 2.2), 0, Math.PI * 2); g.fill(); }
+  }
+  g.globalAlpha = 1;
+  // 5. a wet road throws the lamp back: a long bright streak running toward you
+  if (wet > 0) {
+    const sx = xc(0.5) + Math.sin(t * 2.3) * W * 0.003, cy = (yAt(0.2) + yAt(0.9)) / 2;
+    g.save(); g.translate(sx, cy); g.scale(W * (0.012 + 0.014 * a), (yAt(0.9) - yAt(0.2)) / 2);
+    const gr = g.createRadialGradient(0, 0, 0, 0, 0, 1);
+    gr.addColorStop(0, `rgba(255,236,200,${0.34 * a * wet})`); gr.addColorStop(0.5, `rgba(255,236,200,${0.12 * a * wet})`); gr.addColorStop(1, 'rgba(255,236,200,0)');
+    g.fillStyle = gr; g.beginPath(); g.arc(0, 0, 1, 0, Math.PI * 2); g.fill(); g.restore();
+  }
   g.restore();
 }
 
