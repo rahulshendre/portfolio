@@ -25,7 +25,7 @@ export function computeSize(mode: Mode, vw: number, vh: number, dpr = 1): Size {
   const portrait = vh > vw * 1.1;
   if (mode === 'hd') {
     const d = Math.min(2, Math.max(1, dpr));
-    return { W: Math.round(vw * d), H: Math.round(vh * d), HZ: portrait ? 0.55 : 0.5, portrait, cssW: vw, cssH: vh, dpr: d };
+    return { W: Math.round(vw * d), H: Math.round(vh * d), HZ: portrait ? 0.5 : 0.44, portrait, cssW: vw, cssH: vh, dpr: d };
   }
   if (mode === 'world' || mode === 'wide') {
     const w = mode === 'wide' ? WIDE_W : WORLD_W, fitH = vh / WORLD_H;

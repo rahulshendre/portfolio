@@ -13,8 +13,8 @@ const C = {
 export interface Look { colors?: Partial<typeof C>; bag?: boolean; }
 
 /** Rear view of the hero rider. `lean` runs -1 (left) to 1 (right); `braking` lights the tail lamp. */
-export function drawRider(ctx: CanvasRenderingContext2D, W: number, H: number, lean: number, t: number, speedFrac: number, braking = false) {
-  const sc = Math.min(H * 0.074, W * 0.1);          // pixels per unit
+export function drawRider(ctx: CanvasRenderingContext2D, W: number, H: number, lean: number, t: number, speedFrac: number, braking = false, scale = 1) {
+  const sc = Math.min(H * 0.074, W * 0.1) * scale;          // pixels per unit
   drawRiderAt(ctx, W / 2 + lean * sc * 0.25, H - Math.max(14, H * 0.03), sc, lean, t, speedFrac, braking);
 }
 

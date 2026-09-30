@@ -35,7 +35,11 @@ describe('ladakh traffic', () => {
     expect(autopilotLane(cars, 1000)).toBe(RIGHT);
     expect(autopilotLane(cars, 1600)).toBe(LEFT);
   });
-  it('caps speed while stuck behind', () => {
-    expect(capBehind(cars, 1000, LEFT, 9000, 9600).speed).toBeCloseTo(0.3 * 9600);
+  it('holds you to its speed when close, easing off as the gap opens', () => {
+    const close = capBehind([{ ...cars[0], z: 1100 }], 1000, LEFT, 9000, 9600).speed;
+    expect(close).toBeCloseTo(0.3 * 9600);
+    const far = capBehind(cars, 1000, LEFT, 9000, 9600).speed;
+    expect(far).toBeGreaterThan(close);
+    expect(far).toBeLessThan(9000);
   });
 });

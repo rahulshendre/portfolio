@@ -9,7 +9,7 @@ import { DoorScene } from './scenes/door';
 import { GarageScene } from './scenes/garage';
 import { BAR, CONTROLS, HOTSPOTS, toPct } from './hotspots';
 import { THEMES, WEATHERS, hasVisited, isNightHour, loadMute, saveMute, loadNight, loadRadio, loadTried, markVisited, pickStart, pickTheme, pickWeather, saveNight, saveRadio, saveTried } from './state';
-import { hiss, meow, preloadMeow, radio, setMuted } from './engine/audio';
+import { engine, hiss, meow, preloadMeow, radio, setMuted } from './engine/audio';
 import { mountTerminal } from './terminal-ui';
 import { isPanelHref, mountPanel, parsePanelHash, titleFor } from './panel';
 
@@ -248,5 +248,5 @@ function frame(now: number) {
   leanStage(dt);
   requestAnimationFrame(frame);
 }
-document.addEventListener('visibilitychange', () => (document.hidden ? radio.suspend() : radio.resume()));
+document.addEventListener('visibilitychange', () => { if (document.hidden) { radio.suspend(); engine.suspend(); } else { radio.resume(); engine.resume(); } });
 requestAnimationFrame(frame);

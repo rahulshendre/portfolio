@@ -29,11 +29,14 @@ export class EngineSound {
   private thump?: OscillatorNode;
   private wind?: GainNode;
   private windFilter?: BiquadFilterNode;
+  private river?: GainNode;
+  private lake?: GainNode;
+  private rain?: GainNode;
 
   toggle(): boolean {
     this.on = !this.on;
     if (this.on) this.start();
-    else { this.gain?.gain.setTargetAtTime(0, this.ctx!.currentTime, 0.08); this.wind?.gain.setTargetAtTime(0, this.ctx!.currentTime, 0.08); }
+    else for (const n of [this.gain, this.wind, this.river, this.lake, this.rain]) n?.gain.setTargetAtTime(0, this.ctx!.currentTime, 0.08);   // every layer, so the river does not keep running in the garage
     return this.on;
   }
 
@@ -54,21 +57,142 @@ export class EngineSound {
       const windFilter = ctx.createBiquadFilter(); windFilter.type = 'bandpass'; windFilter.frequency.value = 500; windFilter.Q.value = 0.6;
       const wind = ctx.createGain(); wind.gain.value = 0;
       src.connect(windFilter).connect(wind).connect(dest(ctx)); src.start();
-      Object.assign(this, { ctx, gain, filter, body, thump, wind, windFilter });
+      // running water: a brighter hiss for the river, a slow soft wash for the lake
+      const rsrc = ctx.createBufferSource(); rsrc.buffer = buf; rsrc.loop = true;
+      const rf = ctx.createBiquadFilter(); rf.type = 'bandpass'; rf.frequency.value = 1100; rf.Q.value = 0.8;
+      const river = ctx.createGain(); river.gain.value = 0;
+      rsrc.connect(rf).connect(river).connect(dest(ctx)); rsrc.start(0, 0.7);
+      const lsrc = ctx.createBufferSource(); lsrc.buffer = buf; lsrc.loop = true;
+      const lf = ctx.createBiquadFilter(); lf.type = 'lowpass'; lf.frequency.value = 420;
+      const lake = ctx.createGain(); lake.gain.value = 0;
+      const lfo = ctx.createOscillator(); lfo.frequency.value = 0.14; const lfoAmt = ctx.createGain(); lfoAmt.gain.value = 0.02;   // waves: the wash swells and falls
+      lfo.connect(lfoAmt).connect(lake.gain); lfo.start();
+      lsrc.connect(lf).connect(lake).connect(dest(ctx)); lsrc.start(0, 1.3);
+      const nsrc = ctx.createBufferSource(); nsrc.buffer = buf; nsrc.loop = true;                      // rain: bright, steady hiss
+      const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 2600;
+      const rain = ctx.createGain(); rain.gain.value = 0;
+      nsrc.connect(hp).connect(rain).connect(dest(ctx)); nsrc.start(0, 0.3);
+      Object.assign(this, { ctx, gain, filter, body, thump, wind, windFilter, river, lake, rain });
     }
     void wake(this.ctx!);
-    this.gain!.gain.setTargetAtTime(0.06, this.ctx!.currentTime, 0.1);
+    this.gain!.gain.setTargetAtTime(0.075, this.ctx!.currentTime, 0.1);
+  }
+
+  /** Pause with the tab so the engine never runs for an empty room. */
+  suspend() { if (this.on) void this.ctx?.suspend(); }
+  resume() { if (this.on && this.ctx) void wake(this.ctx); }
+
+  /** Start the sound of the ride: the engine catches, then idles. Safe to call again. */
+  begin() {
+    if (this.on) return;
+    this.on = true; this.start();
+    const c = this.ctx!, t = c.currentTime;
+    this.body!.frequency.setValueAtTime(16, t); this.body!.frequency.linearRampToValueAtTime(44, t + 0.55);
+    this.thump!.frequency.setValueAtTime(8, t); this.thump!.frequency.linearRampToValueAtTime(22, t + 0.55);
+    this.crackle(t, 0.35, 700, 0.09);                                                                        // the starter
+  }
+
+  private crackle(t: number, dur: number, freq: number, vol: number) {
+    const c = this.ctx!, len = Math.floor(c.sampleRate * dur), b = c.createBuffer(1, len, c.sampleRate), d = b.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (Math.random() < 0.35 ? 1 : 0.15) * (1 - i / len);
+    const s = c.createBufferSource(); s.buffer = b; const f = c.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = freq;
+    const g = c.createGain(); g.gain.value = vol; s.connect(f).connect(g).connect(dest(c)); s.start(t);
   }
 
   /** Pitch and brightness follow speed (0..1). */
-  update(speed: number) {
+  /** `rpm` (0 to 1) is how far through the current gear you are: the note climbs, then drops at each shift. */
+  update(speed: number, rpm = speed, env?: { river: number; lake: number; alt: number }, load = 0.4) {
     if (!this.on || !this.ctx) return;
-    const t = this.ctx.currentTime, f = 38 + speed * 92;
+    const t = this.ctx.currentTime, f = 38 + (0.3 + 0.7 * rpm) * 62 + speed * 34;
     this.body!.frequency.setTargetAtTime(f, t, 0.06);
     this.thump!.frequency.setTargetAtTime(f / 2, t, 0.06);
-    this.filter!.frequency.setTargetAtTime(450 + speed * 1500, t, 0.08);
-    this.wind!.gain.setTargetAtTime(speed * speed * 0.16, t, 0.15);              // silent when crawling, a real rush at speed
-    this.windFilter!.frequency.setTargetAtTime(350 + speed * 1800, t, 0.15);
+    this.filter!.frequency.setTargetAtTime(450 + speed * 1500 + load * 500, t, 0.08);             // on the gas it opens up and growls
+    this.gain!.gain.setTargetAtTime(0.05 + 0.04 * load, t, 0.1);
+    this.wind!.gain.setTargetAtTime(speed * speed * 0.2 + 0.012, t, 0.15);        // a breath at rest, a real rush at speed
+    this.windFilter!.frequency.setTargetAtTime(350 + speed * 1800 - (env?.alt ?? 0) * 200, t, 0.15);
+    this.river!.gain.setTargetAtTime((env?.river ?? 0) * 0.05, t, 0.4);
+    this.lake!.gain.setTargetAtTime((env?.lake ?? 0) * 0.07, t, 0.6);
+  }
+
+  /** Turn the rain on (0 to 1), or off. */
+  setRain(v: number) { if (this.ctx && this.rain) this.rain.gain.setTargetAtTime(v * 0.05, this.ctx.currentTime, 0.6); }
+
+  /** A few quick notes of a bird, somewhere to one side. */
+  chirp() {
+    if (!this.on || !this.ctx) return;
+    const c = this.ctx, t = c.currentTime, pan = c.createStereoPanner(), base = 2600 + Math.random() * 1800;
+    pan.pan.value = Math.random() * 2 - 1; pan.connect(dest(c));
+    for (let i = 0, n = 2 + Math.floor(Math.random() * 3); i < n; i++) {
+      const o = c.createOscillator(), g = c.createGain(), s = t + i * 0.11;
+      o.type = 'sine'; o.frequency.setValueAtTime(base, s); o.frequency.exponentialRampToValueAtTime(base * 1.5, s + 0.06); o.frequency.exponentialRampToValueAtTime(base * 0.9, s + 0.1);
+      g.gain.setValueAtTime(0, s); g.gain.linearRampToValueAtTime(0.024, s + 0.01); g.gain.exponentialRampToValueAtTime(0.0005, s + 0.11);
+      o.connect(g).connect(pan); o.start(s); o.stop(s + 0.13);
+    }
+  }
+
+  /** A deep temple gong, for the monasteries on the hills. */
+  gong() {
+    if (!this.on || !this.ctx) return;
+    const c = this.ctx, t = c.currentTime;
+    [[110, 0.06, 4.5], [164.8, 0.035, 3.5], [277, 0.02, 2.5], [421, 0.012, 1.8]].forEach(([f, v, d]) => {
+      const o = c.createOscillator(), g = c.createGain(); o.type = 'sine'; o.frequency.value = f;
+      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(v, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0004, t + d);
+      o.connect(g).connect(dest(c)); o.start(t); o.stop(t + d + 0.1);
+    });
+  }
+
+  /** The truck ahead answers your horn: two low notes. */
+  truckHorn() {
+    if (!this.on || !this.ctx) return;
+    const c = this.ctx, t = c.currentTime;
+    for (const f of [98, 123]) {
+      const o = c.createOscillator(), lp = c.createBiquadFilter(), g = c.createGain(); o.type = 'sawtooth'; o.frequency.value = f; lp.type = 'lowpass'; lp.frequency.value = 700;
+      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.07, t + 0.03); g.gain.setValueAtTime(0.07, t + 0.55); g.gain.linearRampToValueAtTime(0, t + 0.65);
+      o.connect(lp).connect(g).connect(dest(c)); o.start(t); o.stop(t + 0.7);
+    }
+  }
+
+  /** A tiny mechanical tick as the gearbox changes. */
+  shift() { if (this.on && this.ctx) this.crackle(this.ctx.currentTime, 0.05, 2600, 0.05); }
+
+  /** A soft two-note bell, for each place you pass. */
+  chime() {
+    if (!this.on || !this.ctx) return;
+    const ctx = this.ctx, t = ctx.currentTime;
+    [[659.3, 0], [987.8, 0.16]].forEach(([f, d]) => {
+      const o = ctx.createOscillator(); o.type = 'sine'; o.frequency.value = f;
+      const o2 = ctx.createOscillator(); o2.type = 'sine'; o2.frequency.value = f * 2.76;      // an inharmonic partial makes it ring like metal
+      const g = ctx.createGain(), g2 = ctx.createGain();
+      g.gain.setValueAtTime(0, t + d); g.gain.linearRampToValueAtTime(0.05, t + d + 0.01); g.gain.exponentialRampToValueAtTime(0.0008, t + d + 1.4);
+      g2.gain.setValueAtTime(0, t + d); g2.gain.linearRampToValueAtTime(0.015, t + d + 0.01); g2.gain.exponentialRampToValueAtTime(0.0005, t + d + 0.5);
+      o.connect(g).connect(dest(ctx)); o2.connect(g2).connect(dest(ctx)); o.start(t + d); o2.start(t + d); o.stop(t + d + 1.5); o2.stop(t + d + 0.6);
+    });
+  }
+
+  /** A short rush of air as you pass another vehicle. */
+  whoosh() {
+    if (!this.on || !this.ctx) return;
+    const ctx = this.ctx, t = ctx.currentTime, len = Math.floor(ctx.sampleRate * 0.5), buf = ctx.createBuffer(1, len, ctx.sampleRate), d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+    const src = ctx.createBufferSource(); src.buffer = buf;
+    const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 1.4;
+    bp.frequency.setValueAtTime(900, t); bp.frequency.exponentialRampToValueAtTime(220, t + 0.45);   // it drops in pitch as it goes by
+    const g = ctx.createGain(); g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.13, t + 0.08); g.gain.linearRampToValueAtTime(0, t + 0.48);
+    src.connect(bp).connect(g).connect(dest(ctx)); src.start(t);
+  }
+
+  /** Two short blasts, a major third apart, like a small bike horn. */
+  horn() {
+    if (!this.on || !this.ctx) return;
+    const ctx = this.ctx, t = ctx.currentTime;
+    for (const f of [392, 494]) {
+      const o = ctx.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f;
+      const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 1500;
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0, t);
+      for (const [a, b] of [[0, 0.13], [0.2, 0.42]]) { g.gain.linearRampToValueAtTime(0.06, t + a + 0.015); g.gain.setValueAtTime(0.06, t + b); g.gain.linearRampToValueAtTime(0, t + b + 0.03); }
+      o.connect(lp).connect(g).connect(dest(ctx)); o.start(t); o.stop(t + 0.6);
+    }
   }
 
   mute() { if (this.on) this.toggle(); }
@@ -129,6 +253,9 @@ export class RadioSound {
     this.step = 0;
     this.timer = window.setInterval(() => this.schedule(), 100);
   }
+
+  /** Turn the radio down (1 is full) while the engine is running, so both can be heard. */
+  setLevel(v: number) { if (this.on && this.ctx) this.master!.gain.setTargetAtTime(0.5 * v, this.ctx.currentTime, 0.3); }
 
   private stop() {
     if (this.timer) clearInterval(this.timer);

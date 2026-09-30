@@ -39,6 +39,25 @@ class Input {
     return false;
   }
 
+  // A gamepad, if one is plugged in: left stick or d-pad steers, right trigger is gas, left trigger brake.
+  // A honks, X toggles the light, Y changes camera, Start pauses, Back shows the keys.
+  padX = 0; padGas = false; padBrake = false;
+  private padPrev: boolean[] = [];
+  poll() {
+    const gp = (navigator.getGamepads?.() ?? []).find((p) => p && p.connected);
+    if (!gp) { this.padX = 0; this.padGas = this.padBrake = false; return; }
+    const b = (i: number) => !!gp.buttons[i]?.pressed, v = (i: number) => gp.buttons[i]?.value ?? 0, dz = (n: number) => (Math.abs(n) < 0.18 ? 0 : n);
+    this.padX = dz(gp.axes[0] ?? 0) || (b(15) ? 1 : b(14) ? -1 : 0);
+    this.padGas = v(7) > 0.15 || b(12);
+    this.padBrake = v(6) > 0.15 || b(13);
+    [[0, 'KeyH'], [2, 'KeyL'], [3, 'KeyV'], [9, 'KeyP'], [8, 'KeyK']].forEach(([i, code]) => {
+      const now = b(i as number);
+      if (now && !this.padPrev[i as number]) { this.pressedQ.add(code as string); this.lastInputAt = performance.now(); }
+      this.padPrev[i as number] = now;
+    });
+    if (this.padX || this.padGas || this.padBrake) this.lastInputAt = performance.now();
+  }
+
   /** True once per tap/click on the canvas. */
   tap() { const t = this.tapped; this.tapped = false; return t; }
 
@@ -49,6 +68,7 @@ class Input {
     const l = this.down.has('ArrowLeft') || this.down.has('KeyA');
     const r = this.down.has('ArrowRight') || this.down.has('KeyD');
     if (l !== r) return l ? -1 : 1;
+    if (this.padX) return this.padX;
     if (this.pointerDown) return this.pointer.clientX < innerWidth / 2 ? -1 : 1;
     return 0;
   }

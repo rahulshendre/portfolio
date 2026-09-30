@@ -119,6 +119,16 @@ export function drawBackground(g: CanvasRenderingContext2D, W: number, H: number
   const hazeCol = hazeAt(env.tod);
 
   const horizon = Math.round(H * HZ);
+  if (env.tod > 0.7 && !env.lite) {                                                   // the first stars, out at the top of the sky as evening comes
+    const a = (env.tod - 0.7) / 0.3;
+    g.fillStyle = '#fff6e0';
+    for (let i = 0; i < 46; i++) {
+      const r1 = Math.abs(Math.sin(i * 91.7) * 4375.5) % 1, r2 = Math.abs(Math.sin(i * 47.3 + 2) * 9871.3) % 1;
+      g.globalAlpha = a * (0.25 + 0.5 * Math.abs(Math.sin(t * 1.3 + i))) * (1 - r2 * 0.6);
+      g.fillRect(r1 * W, r2 * horizon * 0.5, 1.6, 1.6);
+    }
+    g.globalAlpha = 1;
+  }
   // the sun: a wide warm bloom, a soft ring, then the disc
   const sunX = W * 0.74, sunY = horizon - H * (0.26 - 0.15 * env.tod);   // it sinks toward the peaks as the ride goes on
   if (!env.lite) {
@@ -134,6 +144,23 @@ export function drawBackground(g: CanvasRenderingContext2D, W: number, H: number
   for (const [cx0, cy0, s, sp] of [[80, 0.14, 1.5, 1.0], [330, 0.08, 1.1, 0.7], [560, 0.19, 1.9, 1.3], [820, 0.11, 1.3, 0.9], [1040, 0.22, 1.6, 1.1]] as const) {
     const cx = (((cx0 - off * 0.03 - t * 2.2 * sp) % span) + span) % span - 130;
     cloud(g, cx, cy0 * H, s * (H / 480), env.tod, 0.5 + env.tod * 0.18);
+  }
+
+  // a few birds, riding the air high up
+  if (!env.lite) for (let i = 0; i < 4; i++) {
+    const bx = (((i * 331 + 120 - off * 0.05 - t * (14 + i * 3)) % (W + 200)) + (W + 200)) % (W + 200) - 100, by = horizon * (0.28 + 0.1 * i) + Math.sin(t * 0.7 + i) * 8, fl = Math.sin(t * 7 + i * 2) * 3.4 * (H / 600);
+    g.strokeStyle = mix('#3a3230', '#2a2028', env.tod); g.lineWidth = 1.6; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(bx - 9, by + fl); g.quadraticCurveTo(bx - 4, by - 3, bx, by); g.quadraticCurveTo(bx + 4, by - 3, bx + 9, by + fl); g.stroke();
+  }
+
+  if (!env.lite) {                                                                    // and one eagle, wheeling on a thermal, wings held wide
+    const ex = W * (0.32 + 0.22 * Math.sin(t * 0.09 + 1)) - off * 0.02, ey = horizon * (0.42 + 0.06 * Math.sin(t * 0.17)), sc = H / 600 * 1.3, bank = Math.cos(t * 0.09 + 1) * 0.25, tip = Math.sin(t * 1.4) * 1.5;
+    g.save(); g.translate(ex, ey); g.rotate(bank); g.scale(sc, sc);
+    g.fillStyle = mix('#3a2e26', '#2a2028', env.tod);
+    g.beginPath(); g.moveTo(-34, 2 + tip); g.quadraticCurveTo(-22, -7, -6, -2); g.quadraticCurveTo(0, -5, 6, -2); g.quadraticCurveTo(22, -7, 34, 2 + tip);
+    g.quadraticCurveTo(24, 2, 20, 4); g.lineTo(28, 7 + tip); g.quadraticCurveTo(16, 4, 12, 4); g.quadraticCurveTo(0, 8, -12, 4); g.quadraticCurveTo(-16, 4, -28, 7 + tip); g.lineTo(-20, 4); g.quadraticCurveTo(-24, 2, -34, 2 + tip); g.fill();
+    g.beginPath(); g.moveTo(-5, 3); g.lineTo(0, 12); g.lineTo(5, 3); g.fill();                                                                       // the tail
+    g.restore();
   }
 
   const base = horizon + 2, tall = Math.max(1, H / 420), snow = smooth(0.2, 0.85, env.alt);
