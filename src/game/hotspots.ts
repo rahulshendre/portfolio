@@ -34,7 +34,7 @@ export const HOTSPOTS: Hotspot[] = [
   { id: 'linkedin', label: 'LINKEDIN · RAHUL SHENDRE', tag: 'LINKEDIN', href: site.links.linkedin, rect: [92, 62, 63, 13], external: true },
   { id: 'github', label: 'GITHUB · RAHULSHENDRE', tag: 'GITHUB', href: site.links.github, rect: [92, 78, 63, 13], external: true },
   { id: 'tv', label: 'CRT TV · OPEN THE TERMINAL', tag: 'TERMINAL', href: '/videos', rect: [18, 96, 66, 64], action: 'terminal' },
-  { id: 'binders', label: 'BINDERS · WRITING AND DOCS', tag: 'WRITING', href: '/writing', rect: [90, 128, 58, 32] },
+  { id: 'binders', label: 'BINDERS · WRITING', tag: 'WRITING', href: '/writing', rect: [90, 128, 58, 32] },
   { id: 'coffee', label: 'COFFEE · ABOUT ME', tag: 'COFFEE', href: '/about', rect: [152, 140, 20, 20] },
   { id: 'pegboard', label: 'PEGBOARD · THE STACK', tag: 'STACK', href: '/about#stack', rect: [300, 22, 88, 52] },
   { id: 'whiteboard', label: 'WHITEBOARD · ABOUT ME', tag: 'ABOUT', href: '/about', rect: [392, 22, 84, 62] },

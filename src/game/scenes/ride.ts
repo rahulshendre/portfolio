@@ -4,6 +4,7 @@ import { CAM_HEIGHT, CAM_NAMES, CAMS, drawPOV, drawTop, RIDER_SCALE, type Cam } 
 import { drawRider } from '../hd/rider';
 import { drawSpeedLines } from '../hd/speed';
 import { finish } from '../hd/finish';
+import { LowRes } from '../hd/pixel';
 import { envAt, hazeAt } from '../hd/background';
 import { renderRoad } from '../hd/road';
 import { altitude, buildTrack, PASS_TOP, elevation, FINISH, LAKE_FROM, MILESTONE_SEGS, N, SEG_L, zoneAt, type Segment } from '../hd/track-ladakh';
@@ -50,6 +51,7 @@ export class RideScene implements Scene {
   private pos = 0; private px = LEFT; private speed = 0; private lean = 0; private braking = false; private lastSpeed = 0; private avgDt = 1 / 60; private lite = false; private honkT = 0; private gearNow = 0; private birdT = 2; private rung = new Set<number>();
   private photo = false; private photoT = 0; private paused = false; private lights: 'auto' | 'on' | 'off' = 'auto'; private gas = false; private brake = false; private trip = 0; private vx = 0; private bolt: Bolt | null = null; private boltIn = 6; private night = false; private nightK = 0; private gasWas = false; private rough = 0; private bumpT = 0; private rideT = 0; private topKmh = 0; private passed = 0; private honks = 0; private stopT = 0; private sky: Sky = 'clear';
   private cam: Cam = 'behind';
+  private pixel = typeof location !== 'undefined' && new URLSearchParams(location.search).has('pixel'); private low = new LowRes();
   private bgOff = 0; private t = 0; private odo = 0; private fade = 0; private flash = 0;
   private shown = new Set<number>();
   private banner = { lines: [] as string[], t: 0, big: false, total: 2.6 };
@@ -70,6 +72,13 @@ export class RideScene implements Scene {
       EVENTS.filter((e) => e.i < at).forEach((e) => this.shown.add(e.i));
       for (const c of this.cars) if (c.z < this.pos) c.z += c.v < 0.1 ? 0 : 400 * SEG_L;   // vehicles behind you reappear ahead; the slow herds stay behind
     }
+  }
+  private heldPause = false;
+  /** The help drawer opened or closed: hold still while it is open, and carry on after unless the rider had paused it themselves. */
+  hold(on: boolean) {
+    if (this.phase !== 'ride') return;
+    if (on) { this.heldPause = this.paused; this.autoPause(); }
+    else if (!this.heldPause) this.paused = false;
   }
   private autoPause = () => { if (this.phase === 'ride' && !this.paused) { this.paused = true; engine.update(0, 0, { river: 0, lake: 0, alt: 0 }); } };
   exit() { engine.mute(); radio.setLevel(1); removeEventListener('blur', this.autoPause); }
@@ -147,8 +156,9 @@ export class RideScene implements Scene {
       if (input.pressed('KeyL')) { this.lights = this.lights === 'on' ? 'off' : 'on'; this.show(this.lights === 'on' ? 'HEADLIGHT ON' : 'HEADLIGHT OFF', false, 1.2); }
       if (input.pressed('KeyN')) { this.night = !this.night; this.show(this.night ? 'NIGHT RIDE|LIGHTS ON' : 'DAYLIGHT', false, 1.6); }
       if (input.pressed('KeyT')) { this.sky = SKIES[(SKIES.indexOf(this.sky) + 1) % SKIES.length]; engine.setRain(this.sky === 'rain' ? 1 : 0); this.show(`WEATHER|${this.sky.toUpperCase()}`, false, 1.6); }
+      if (input.pressed('KeyG')) { this.pixel = !this.pixel; this.show(this.pixel ? 'PIXEL LOOK|G FOR SMOOTH' : 'SMOOTH LOOK|G FOR PIXEL', false, 1.6); }
       if (input.pressed('KeyR')) this.show(radio.toggle() ? 'RADIO ON' : 'RADIO OFF', false, 1.2);
-      if (input.pressed('KeyK')) this.show('W GAS · S BRAKE · A D STEER|H HONK · L LIGHT · P PAUSE|V OR 1-4 CAMERA · F PHOTO · R RADIO|T WEATHER · N NIGHT · M SOUND · ESC EXIT', false, 4.5);
+      if (input.pressed('KeyK')) this.show('W GAS · S BRAKE · A D STEER|H HONK · L LIGHT · P PAUSE|V OR 1-4 CAMERA · F PHOTO · R RADIO|T WEATHER · N NIGHT · G PIXEL · M SOUND · ESC EXIT', false, 4.5);
     }
     CAMS.forEach((c, i) => { if (input.pressed('Digit' + (i + 1))) this.setCam(c); });
     if (this.phase !== 'title' && input.pressed('KeyF')) { this.photo = !this.photo; this.photoT = 3; }
@@ -158,7 +168,7 @@ export class RideScene implements Scene {
       this.bgOff += dt * 3;
       if (tap === 'other' || input.anyKey()) {
         this.phase = 'ride'; this.startSound();
-        this.show(matchMedia('(pointer: coarse)').matches ? 'TAP SIDES TO STEER|GAS AND BRAKE BELOW' : 'W GAS · S BRAKE · A D STEER|H HONK · K FOR ALL KEYS', false, 4);
+        this.show(matchMedia('(pointer: coarse)').matches ? 'TAP SIDES TO STEER|GAS AND BRAKE BELOW' : 'W GAS · S BRAKE · A D STEER|HELP FOR ALL KEYS', false, 3.5);
       }
       input.endFrame();
       return;
@@ -259,13 +269,15 @@ export class RideScene implements Scene {
   }
 
   draw() {
-    const g = this.screen.ctx, { W, H, HZ } = this.screen.size;
+    const full = this.screen.ctx, { W: FW, H: FH, HZ } = this.screen.size;
+    const small = this.pixel ? this.low.fit(FW, FH) : null;                          // pixel look: the world goes on a small canvas, the HUD stays sharp on the full one
+    const g = small ? this.low.ctx : full, W = small ? small.W : FW, H = small ? small.H : FH;
     use(g);
     const sp = this.speed / MAX_S, segI = Math.floor(this.pos / SEG_L);
     const env = { ...envAt(segI, FINISH, zoneAt(segI)), lite: this.lite, night: this.nightK };
     if (this.cam === 'top') {
       drawTop(g, this.segs, this.cars, W, H, this.pos, this.px, this.t);
-      if (!this.lite) finish(g, W, H, HZ, env.tod);
+      if (!this.lite) finish(g, W, H, HZ, env.tod, false, !small);
     }
     else {
       g.save();
@@ -283,20 +295,22 @@ export class RideScene implements Scene {
       if (!this.lite && this.sky === 'clear' && this.nightK < 0.3) drawFlare(g, W, H, HZ, env.tod);
       if (!this.lite && this.sky === 'rain') drawRain(g, W, H, this.t, sp);
       if (this.bolt) drawLightning(g, W, H, HZ, this.bolt);
-      if (!this.lite) finish(g, W, H, HZ, env.tod, this.nightK > 0.5);   // grade, vignette and grain over the world, under the rider and the HUD
+      if (!this.lite) finish(g, W, H, HZ, env.tod, this.nightK > 0.5, !small);   // grade, vignette and grain over the world, under the rider and the HUD
       const beam = this.lights === 'off' ? 0 : Math.max(this.lights === 'on' ? 0.5 : 0, env.tod > 0.55 ? (env.tod - 0.55) / 0.45 : 0, this.nightK * 1.4);
       const beamA = Math.min(1, beam);
       if (!this.lite && beamA > 0) drawHeadlight(g, W, H, HZ, this.lean, beamA);
       if (this.cam === 'behind' || this.cam === 'high') drawRider(g, W, H, this.lean, this.t, sp, this.braking, RIDER_SCALE[this.cam]);
       else drawPOV(g, W, H, sp, this.t, sp * KMH);
     }
+    if (small) this.low.blit(full, FW, FH);
+    use(full);
     const d = this.screen.size.dpr;
-    g.save(); g.scale(d, d);                                                       // HUD in CSS pixels, so it stays a readable size on a phone
-    if (!this.photo) this.hud(W / d, H / d, segI);
-    else if (this.photoT > 0) { const cw = W / d; this.pill('PHOTO MODE  ·  ENTER SAVES  ·  F EXITS', cw / 2 - 150, (H / d) - 46, 13); }
-    g.restore();
-    if (this.flash > 0) { g.globalAlpha = 0.35; box(0, 0, W, H, '#000'); g.globalAlpha = 1; }
-    if (this.fade > 0) { g.globalAlpha = Math.min(1, this.fade / 0.7); box(0, 0, W, H, INK); g.globalAlpha = 1; }
+    full.save(); full.scale(d, d);                                                 // HUD in CSS pixels, so it stays a readable size on a phone
+    if (!this.photo) this.hud(FW / d, FH / d, segI);
+    else if (this.photoT > 0) { const cw = FW / d; this.pill('PHOTO MODE  ·  ENTER SAVES  ·  F EXITS', cw / 2 - 150, (FH / d) - 46, 13); }
+    full.restore();
+    if (this.flash > 0) { full.globalAlpha = 0.35; box(0, 0, FW, FH, '#000'); full.globalAlpha = 1; }
+    if (this.fade > 0) { full.globalAlpha = Math.min(1, this.fade / 0.7); box(0, 0, FW, FH, INK); full.globalAlpha = 1; }
   }
 
   private pill(s: string, x: number, y: number, px = 13) {
@@ -318,7 +332,7 @@ export class RideScene implements Scene {
     g.font = `400 ${head}px ${FONT_DISPLAY}`; const w0 = g.measureText(lines[0] ?? '').width;
     g.font = `500 ${px}px ${FONT_MONO}`; const w1 = Math.max(0, ...lines.slice(1).map((l) => g.measureText(l).width));
     const cw = Math.max(w0, w1) + 44, ch = head + 22 + (lines.length - 1) * (px + 8) + (big ? 10 : 0);
-    const x = -cw + (cw + 16) * e, y = narrow ? 76 : 64;
+    const x = -cw + (cw + 16) * e, y = 96;                                    // below the page's SOUND and HELP buttons
     g.save(); g.globalAlpha = Math.min(1, e * 1.2);
     rrect(x, y, cw, ch, 8, 'rgba(27,23,18,0.86)');
     box(x, y + 6, 4, ch - 12, ACCENT);
@@ -377,13 +391,13 @@ export class RideScene implements Scene {
   private summary(W: number, H: number) {
     const g = this.screen.ctx, a = Math.min(1, (this.stopT - 0.4) / 0.5) * (1 - Math.min(1, this.fade / 0.5));
     const m = Math.floor(this.rideT / 60), s = Math.floor(this.rideT % 60);
-    const rows: [string, string][] = [['TIME', `${m}:${String(s).padStart(2, '0')}`], ['DISTANCE', `${this.odo.toFixed(1)} KM`], ['TOP SPEED', `${Math.round(this.topKmh)} KM/H`], ['OVERTAKES', String(this.passed)], ['HONKS', String(this.honks)]];
-    const px = Math.max(13, Math.round(W / (W < 700 ? 30 : 62))), cw = Math.min(W - 32, 340), ch = 60 + rows.length * (px + 12) + 14, x = W / 2 - cw / 2, y = H * 0.24;
+    const rows: [string, string][] = [['TIME', `${m}:${String(s).padStart(2, '0')}`], ['DISTANCE', `${this.odo.toFixed(1)} KM`], ['TOP SPEED', `${Math.round(this.topKmh)} KM/H`], ['OVERTAKES', String(this.passed)], ['HONKS', String(this.honks)], ['NEXT STOP', 'RED HAT']];
+    const px = Math.max(13, Math.round(W / (W < 700 ? 30 : 62))), cw = Math.min(W - 32, 340), ch = 84 + rows.length * (px + 12) + 14, x = W / 2 - cw / 2, y = H * 0.24;
     g.save(); g.globalAlpha = a;
     rrect(x, y, cw, ch, 10, 'rgba(27,23,18,0.9)'); box(x, y + 8, 4, ch - 16, ACCENT);
     label('MADE IT', x + 24, y + 38, Math.round(px * 1.9), ACCENT, { font: FONT_DISPLAY });
-    label('TRIUMPH SCRAMBLER 400 X', x + cw - 24, y + 36, px - 2, '#a89d8b', { font: FONT_MONO, align: 'right' });
-    rows.forEach(([k, v], i) => { const yy = y + 66 + i * (px + 12); label(k, x + 24, yy + px, px - 1, '#a89d8b', { font: FONT_MONO }); label(v, x + cw - 24, yy + px, px, HUD, { font: FONT_MONO, align: 'right', weight: 500 }); });
+    label('TRIUMPH SCRAMBLER 400 X', x + 24, y + 60, px - 3, '#a89d8b', { font: FONT_MONO });
+    rows.forEach(([k, v], i) => { const yy = y + 84 + i * (px + 12); label(k, x + 24, yy + px, px - 1, '#a89d8b', { font: FONT_MONO }); label(v, x + cw - 24, yy + px, px, i === rows.length - 1 ? ACCENT : HUD, { font: FONT_MONO, align: 'right', weight: 500 }); });
     g.restore();
   }
 
@@ -427,9 +441,6 @@ export class RideScene implements Scene {
         align: 'center', font: FONT_MONO, shadow: INK,
       });
     }
-    const hp = Math.max(11, Math.round(W / 70)), coarse = matchMedia('(pointer: coarse)').matches;
-    label(W < 700 ? 'LADAKH TO THE GARAGE' : 'LADAKH TO THE GARAGE · A SHORT RIDE', W / 2, y + namePx * 2.05, hp + 1, HUD, { align: 'center', font: FONT_MONO, shadow: INK });
-    label(coarse ? 'TAP SIDES TO STEER · GAS AND BRAKE ON SCREEN' : 'W GAS · S BRAKE · A D STEER · H HORN · K ALL KEYS', W / 2, y + namePx * 2.45, hp, ACCENT, { align: 'center', font: FONT_MONO, shadow: INK });
     this.pill('SKIP >', 12, H - 40, Math.max(12, Math.round(W / 70)));
   }
 }

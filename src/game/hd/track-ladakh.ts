@@ -7,7 +7,7 @@ export const SEG_L = 200;
 export const ROAD_W = 1100;
 export const N = 1400; // road keeps going past the garage so the horizon never runs out
 export const FINISH = 1180; // garage sits here
-export const MILESTONE_SEGS = [150, 420, 690, 960];
+export const MILESTONE_SEGS = [150, 420, 690, 960, 1110];
 export const PASS_TOP = 900;
 export const BOARDS = [
   { i: 95, id: 'pipecd', o: -1.9 },

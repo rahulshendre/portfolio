@@ -25,6 +25,73 @@ import { site, nav } from '../data/site';
     </div>
   </div>
   <button type="button" class="sound" id="sound" aria-pressed="true">SOUND ON</button>
+  <button type="button" class="sound helpbtn" id="help-btn" aria-expanded="false" aria-controls="help">HELP</button>
+  <div class="help-back" id="help-back" hidden></div>
+  <aside class="help" id="help" hidden role="dialog" aria-label="Help">
+    <div class="help-bar"><span>HELP</span><button type="button" class="help-close" aria-label="Close help">ESC</button></div>
+    <div class="help-body">
+      <section data-for="ride">
+        <h3>Drive</h3>
+        <ul class="keys">
+          <li><kbd>W</kbd><kbd>&uarr;</kbd><span>Gas</span></li>
+          <li><kbd>S</kbd><kbd>&darr;</kbd><span>Brake</span></li>
+          <li><kbd>A</kbd><kbd>D</kbd><span>Steer</span></li>
+          <li><kbd>H</kbd><kbd>Space</kbd><span>Horn</span></li>
+        </ul>
+        <p class="tip">Stay on the tarmac. Gravel drags you down, and traffic will not always move for you.</p>
+        <h3>Look</h3>
+        <ul class="keys">
+          <li><kbd>V</kbd><kbd>1-4</kbd><span>Camera</span></li>
+          <li><kbd>F</kbd><span>Photo, then Enter saves it</span></li>
+          <li><kbd>G</kbd><span>Pixel or smooth</span></li>
+        </ul>
+        <h3>Ride</h3>
+        <ul class="keys">
+          <li><kbd>L</kbd><span>Headlight</span></li>
+          <li><kbd>N</kbd><span>Night</span></li>
+          <li><kbd>T</kbd><span>Weather</span></li>
+          <li><kbd>R</kbd><kbd>M</kbd><span>Radio, sound</span></li>
+          <li><kbd>P</kbd><span>Pause</span></li>
+          <li><kbd>Esc</kbd><span>Skip to the garage</span></li>
+        </ul>
+        <h3>Try it</h3>
+        <div class="try">
+          <button type="button" data-key="KeyV">Camera</button>
+          <button type="button" data-key="KeyN">Night</button>
+          <button type="button" data-key="KeyT">Weather</button>
+          <button type="button" data-key="KeyL">Light</button>
+          <button type="button" data-key="KeyG">Pixel</button>
+          <button type="button" data-key="KeyF">Photo</button>
+        </div>
+        <p class="tip">On a phone: tap the left or right side to steer, and use the pedals at the bottom. A gamepad works too.</p>
+      </section>
+      <section data-for="garage">
+        <h3>Look around</h3>
+        <ul class="keys">
+          <li><span>Click anything to open it. Tab steps between things.</span></li>
+          <li><span>Press / for the terminal, then type help.</span></li>
+        </ul>
+        <h3>Things to poke</h3>
+        <ul class="keys">
+          <li><span>Pull cord: lights. Radio: lo-fi. Window: weather.</span></li>
+          <li><span>The cat likes a stroke. The helmet takes you on the ride.</span></li>
+        </ul>
+        <h3>Go</h3>
+        <div class="try">
+          <a href="/?ride">Ride in again</a>
+          <a href="/list">Everything on one page</a>
+        </div>
+      </section>
+      <section data-for="door">
+        <h3>Arriving</h3>
+        <ul class="keys">
+          <li><span>Click or press a key to go in.</span></li>
+          <li><span>Skip drops you straight into the garage.</span></li>
+        </ul>
+        <div class="try"><a href="/?ride">Take the ride instead</a></div>
+      </section>
+    </div>
+  </aside>
   <div class="sky" id="sky" hidden>
     <button type="button" id="sky-weather" aria-label="Change the weather outside the window">SKY: CLEAR</button>
     <button type="button" id="sky-theme" aria-label="Change the view from the window">VIEW: HIMALAYA</button>
@@ -55,6 +122,29 @@ import { site, nav } from '../data/site';
     .viewport::before { content: ''; position: absolute; inset: 0; background: #1b1712 url('/sprites/poster.png') center / contain no-repeat; image-rendering: pixelated; transition: opacity 0.35s; }
     .viewport.ready::before { opacity: 0; pointer-events: none; }
     .sound { position: fixed; top: 8px; left: 8px; z-index: 6; border: 0; cursor: pointer; font: 400 12px/1 'Silkscreen', monospace; background: #1b1712; color: #fff6e0; padding: 9px 11px; box-shadow: 3px 3px 0 #e8b923; }
+    .helpbtn { top: 52px; }
+    .helpbtn[aria-expanded='true'] { color: #e8b923; }
+    .help-back { position: fixed; inset: 0; z-index: 11; background: rgba(10, 8, 5, 0.45); }
+    .help-back[hidden], .help[hidden] { display: none; }
+    .help { position: fixed; top: 0; bottom: 0; left: 0; z-index: 12; width: min(310px, 86vw); display: flex; flex-direction: column; background: #1b1712; color: #fff6e0; border-right: 4px solid #e8b923; box-shadow: 8px 0 0 #0009; font: 13px/1.5 ui-monospace, Menlo, Consolas, monospace; }
+    .help-bar { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; font: 12px/1 'Silkscreen', monospace; letter-spacing: .08em; color: #e8b923; }
+    .help-close { font: inherit; color: #1b1712; background: #e8b923; border: 0; padding: 5px 9px; cursor: pointer; }
+    .help-body { flex: 1; overflow-y: auto; padding: 0 14px 18px; }
+    .help-body section { display: none; }
+    body[data-scene='ride'] .help-body [data-for='ride'], body[data-scene='garage'] .help-body [data-for='garage'], body[data-scene='door'] .help-body [data-for='door'] { display: block; }
+    .help h3 { margin: 16px 0 6px; font: 12px/1 'Silkscreen', monospace; letter-spacing: .08em; color: #a89d8b; font-weight: 400; }
+    .keys { list-style: none; margin: 0; padding: 0; }
+    .keys li { display: flex; align-items: center; gap: 6px; padding: 3px 0; }
+    .keys li span { margin-left: 4px; color: #fff6e0; }
+    .keys li > span:only-child { margin-left: 0; }
+    .help kbd { min-width: 26px; padding: 2px 6px; text-align: center; font: 12px/1.4 'Silkscreen', monospace; color: #1b1712; background: #fff6e0; border-bottom: 3px solid #a89d8b; }
+    .help .tip { margin: 8px 0 0; color: #a89d8b; }
+    .try { display: flex; flex-wrap: wrap; gap: 8px; }
+    .try button, .try a { border: 0; cursor: pointer; text-decoration: none; font: 12px/1 'Silkscreen', monospace; background: #fff6e0; color: #1b1712; padding: 9px 11px; box-shadow: 3px 3px 0 #e8b923; }
+    .try button:hover, .try a:hover { background: #ffe9a8; }
+    .help :focus-visible { outline: 3px solid #e8b923; outline-offset: 2px; }
+    @media (prefers-reduced-motion: no-preference) { .help { animation: help-in .2s ease-out both; } }
+    @keyframes help-in { from { transform: translateX(-100%); } }
     .sky { position: fixed; top: 8px; left: 118px; z-index: 6; display: flex; gap: 10px; }
     .sky[hidden] { display: none; }
     .sky button { border: 0; cursor: pointer; font: 400 12px/1 'Silkscreen', monospace; background: #1b1712; color: #fff6e0; padding: 9px 11px; box-shadow: 3px 3px 0 #e8b923; }

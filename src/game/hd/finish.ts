@@ -2,9 +2,9 @@
 // a cached overlay so it costs a single drawImage per frame. This is what makes flat vector shapes feel photographed and lit.
 import { rnd } from './draw';
 
-let cache: { W: number; H: number; HZ: number; tod: number; night: boolean; canvas: HTMLCanvasElement } | null = null;
+let cache: { W: number; H: number; HZ: number; tod: number; night: boolean; grain: boolean; canvas: HTMLCanvasElement } | null = null;
 
-function build(W: number, H: number, HZ: number, tod: number, night: boolean) {
+function build(W: number, H: number, HZ: number, tod: number, night: boolean, grain: boolean) {
   const c = document.createElement('canvas'); c.width = W; c.height = H;
   const g = c.getContext('2d')!;
   // warm bloom from the low sun on the right, cooler shadow on the left
@@ -33,6 +33,7 @@ function build(W: number, H: number, HZ: number, tod: number, night: boolean) {
   const b = g.createLinearGradient(0, H * 0.82, 0, H);
   b.addColorStop(0, 'rgba(20,10,6,0)'); b.addColorStop(1, 'rgba(20,10,6,0.22)');
   g.fillStyle = b; g.fillRect(0, H * 0.82, W, H * 0.18);
+  if (!grain) return c;                                                            // the pixel look has its own dither, so no film grain on top
   // grain: a small tile of noise, repeated
   const T = 128, n = document.createElement('canvas'); n.width = n.height = T;
   const ng = n.getContext('2d')!, id = ng.createImageData(T, T);
@@ -43,8 +44,8 @@ function build(W: number, H: number, HZ: number, tod: number, night: boolean) {
 }
 
 /** Draw the finishing pass. `tod` 0..1 shifts the bloom slightly as the day goes on; it is rebuilt only when the size or the hour changes noticeably. */
-export function finish(ctx: CanvasRenderingContext2D, W: number, H: number, HZ: number, tod: number, night = false) {
+export function finish(ctx: CanvasRenderingContext2D, W: number, H: number, HZ: number, tod: number, night = false, grain = true) {
   const q = Math.round(tod * 6) / 6;
-  if (!cache || cache.W !== W || cache.H !== H || cache.HZ !== HZ || cache.tod !== q || cache.night !== night) cache = { W, H, HZ, tod: q, night, canvas: build(W, H, HZ, q, night) };
+  if (!cache || cache.W !== W || cache.H !== H || cache.HZ !== HZ || cache.tod !== q || cache.night !== night || cache.grain !== grain) cache = { W, H, HZ, tod: q, night, grain, canvas: build(W, H, HZ, q, night, grain) };
   ctx.drawImage(cache.canvas, 0, 0);
 }

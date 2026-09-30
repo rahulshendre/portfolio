@@ -4,14 +4,14 @@
 export const site = {
   name: 'Rahul Shendre',
   shortName: 'Rahul',
-  tagline: 'I write the docs that ship the deploys.',
+  tagline: 'I build the tools that ship the deploys.',
   description:
     'CS student in Pune. LFX 2026 mentee on PipeCD, a CNCF project. Open source, Kubernetes, Go, and a white Triumph Scrambler 400X.',
   location: 'Pune, India',
   // One line in the garage's bottom bar, so who this is reads at a glance. Upper-case safe for the pixel font.
   badge: 'PIPECD MENTEE · PLANETREAD DEV',
   // The garage whiteboard: three lines, 12 characters at most.
-  now: ['PIPECD V1', 'SUBTITLE QA', 'VIDEOS: OCT'],
+  now: ['PIPECD V1', 'SUBTITLE QA', 'RED HAT SOON'],
   email: 'rahulshendre789@gmail.com',
   links: {
     github: 'https://github.com/rahulshendre',
@@ -46,7 +46,7 @@ export const nav = [
 
 export const pipecd = {
   role: 'LFX Mentee 2026',
-  focus: 'Plugin development, v1 docs, developer experience and adoption',
+  focus: 'Plugin development, the v1 tutorial, developer experience and adoption',
   repo: 'https://github.com/pipe-cd/pipecd',
   site: 'https://pipecd.dev',
   cncf: 'https://www.cncf.io/projects/pipecd/',
@@ -61,10 +61,10 @@ export const pipecd = {
   },
   highlights: [
     'Wrote the PipeCD v1 plugin tutorial, chapters 1 to 9: setup, config types, lifecycle methods, sync stages, DIFF, SYNC and ROLLBACK, wiring main.go with Piped',
-    'Expanded the v1 plugin docs: Kubernetes, Terraform and Analysis plugins, stage plugins (wait, wait-approval, script-run), plugins overview',
+    'Wrote the v1 pages for the Kubernetes, Terraform and Analysis plugins, the stage plugins (wait, wait-approval, script-run) and the plugins overview',
     'Split pipe-cd/examples into v0 and v1 and added v1 Kubernetes examples (simple, bluegreen, wait-approval, helm local chart)',
     'Added the v1 Application Configuration Reference and user guide pages (deployment trace, secret management, drift detection, rollbacks)',
-    'Moved docs and examples from gcr.io images to ghcr.io',
+    'Moved the examples and guides from gcr.io images to ghcr.io',
   ],
 };
 
@@ -72,7 +72,7 @@ export const pipecd = {
 export const otherProjects = [
   { repo: 'kubestellar/kubestellar', name: 'KubeStellar', blurb: 'Multi-cluster configuration management (CNCF sandbox).' },
   { repo: 'kubestellar/ui', name: 'KubeStellar UI', blurb: "KubeStellar's web interface." },
-  { repo: 'kubestellar/docs', name: 'KubeStellar docs', blurb: 'Documentation site.' },
+  { repo: 'kubestellar/docs', name: 'KubeStellar site', blurb: 'The project website.' },
   { repo: 'llaske/sugarizer', name: 'Sugarizer', blurb: 'Sugar Labs learning platform that runs in any browser.' },
   { repo: 'sugarlabs/sugar-toolkit-gtk3', name: 'Sugar toolkit', blurb: 'Sugar Learning Environment activity toolkit.' },
   { repo: 'meshery/meshery', name: 'Meshery', blurb: 'The cloud native manager (CNCF).' },
@@ -207,6 +207,7 @@ export const milestones = [
   { top: '2025', label: 'SUGARIZER' },
   { top: '2026', label: 'LFX · PIPECD' },
   { top: 'PIPECD', label: '45 MERGED' },
+  { top: 'NEXT', label: 'RED HAT' },
 ] as const;
 
 // Third-party material used on the site. CC BY needs the author, the licence and a note that it was changed.

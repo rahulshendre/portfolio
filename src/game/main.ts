@@ -11,6 +11,7 @@ import { BAR, CONTROLS, HOTSPOTS, toPct } from './hotspots';
 import { THEMES, WEATHERS, hasVisited, isNightHour, loadMute, saveMute, loadNight, loadRadio, loadTried, markVisited, pickStart, pickTheme, pickWeather, saveNight, saveRadio, saveTried } from './state';
 import { engine, hiss, meow, preloadMeow, radio, setMuted } from './engine/audio';
 import { mountTerminal } from './terminal-ui';
+import { mountHelp } from './help';
 import { isPanelHref, mountPanel, parsePanelHash, titleFor } from './panel';
 
 const canvas = document.getElementById('game') as HTMLCanvasElement;
@@ -74,6 +75,10 @@ const showMute = (m: boolean) => { if (soundBtn) { soundBtn.setAttribute('aria-p
 setMuted(loadMute()); showMute(loadMute());
 soundBtn?.addEventListener('click', () => { const m = soundBtn.getAttribute('aria-pressed') === 'true'; setMuted(m); saveMute(m); showMute(m); });
 
+// The help drawer: the ride holds still while it is open.
+mountHelp({ held: (open) => { if (director.current instanceof RideScene) director.current.hold(open); } });
+const setScene = (name: 'door' | 'garage' | 'ride') => { document.body.dataset.scene = name; }; // the drawer shows the help for whichever scene is up
+
 document.getElementById('phone-term')?.addEventListener('click', () => terminal.open()); // the TV is off-screen on a portrait phone
 
 // Garage-only buttons for the sky outside the window: the weather and the view (the window click still cycles the weather).
@@ -101,6 +106,7 @@ async function garage() {
   if (sky) sky.hidden = false;
   showSky();
   director.go(scene);
+  setScene('garage');
   markVisited();
   mountHotspots(scene);
   layer.toggleAttribute('data-night', scene.night);
@@ -118,6 +124,7 @@ async function door() {
   const img = await images;
   current = undefined;
   if (sky) sky.hidden = true;
+  setScene('door');
   director.go(new DoorScene(screen, img.bike, img.mountains, () => new GarageScene(screen, img, weather, theme).roomSprite(false), garage, weather, theme, (o) => { weather = o.weather ?? weather; theme = o.theme ?? theme; void door(); }));
 }
 
@@ -178,6 +185,7 @@ async function ride() {
   current = undefined;
   if (sky) sky.hidden = true;
   director.go(new RideScene(screen, door, garage));
+  setScene('ride');
 }
 
 const start = pickStart(location.search, hasVisited(), reduced);

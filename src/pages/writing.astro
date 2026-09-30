@@ -8,11 +8,11 @@ const docs = prsFor('pipe-cd').filter((p) => p.state === 'merged' && /^docs/i.te
 const tutorial = docs.filter((p) => /plugin tutorial/i.test(p.title)).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
 const otherDocs = docs.filter((p) => !tutorial.includes(p));
 ---
-<Page title="Writing" description="Technical writing by Rahul Shendre: the PipeCD v1 plugin tutorial, PipeCD docs, and notes on Kubernetes and DevOps.">
+<Page title="Writing" description="Technical writing by Rahul Shendre: the PipeCD v1 plugin tutorial, PipeCD guides, and notes on Kubernetes and DevOps.">
   <header class="page-head">
     <span class="kicker">Workbench · binders</span>
     <h1>Things I've <em>figured out</em>.</h1>
-    <p class="lede">Most of my writing so far lives in the PipeCD docs. Notes of my own start here.</p>
+    <p class="lede">Most of my writing so far is on pipecd.dev. Notes of my own start here.</p>
   </header>
 
   <h2 style="margin-top:0">Notes</h2>
@@ -34,7 +34,7 @@ const otherDocs = docs.filter((p) => !tutorial.includes(p));
     ))}
   </ol>
 
-  <h2>Other docs I wrote for PipeCD</h2>
+  <h2>More PipeCD pages I wrote</h2>
   <ul class="log">
     {otherDocs.map((p) => (
       <li><time datetime={p.createdAt}>{fmtDate(p.createdAt)}</time><a href={p.url}>{p.title}</a><span class="state" data-state="merged">merged</span></li>

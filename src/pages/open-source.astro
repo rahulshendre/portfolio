@@ -16,7 +16,7 @@ const timeline = [
   { date: firstPrDate('pipe-cd/pipecd')!, text: 'First PR to PipeCD' },
 ].sort((a, b) => a.date.localeCompare(b.date));
 ---
-<Page title="Open Source" description={`LFX 2026 mentee on PipeCD (CNCF). ${pipe.merged} merged PRs across PipeCD: the v1 plugin tutorial, v1 plugin docs and examples.`}>
+<Page title="Open Source" description={`LFX 2026 mentee on PipeCD (CNCF). ${pipe.merged} merged PRs across PipeCD: the v1 plugin tutorial, the v1 plugin pages and examples.`}>
   <header class="page-head">
     <span class="kicker">Back wall · the big one</span>
     <h1>Open road,<br /><em>open source</em>.</h1>
@@ -33,7 +33,7 @@ const timeline = [
   <section class="two-col">
     <div>
       <h2 style="margin-top:0">PipeCD</h2>
-      <p><b>{pipecd.role}.</b> Most of my work is making PipeCD v1 easy to pick up. If you're writing a PipeCD plugin, the tutorial in the docs is mine.</p>
+      <p><b>{pipecd.role}.</b> Most of my work is making PipeCD v1 easy to pick up. If you're writing a PipeCD plugin, the tutorial on pipecd.dev is mine.</p>
       <ul class="prose">{pipecd.highlights.map((h) => <li>{h}</li>)}</ul>
     </div>
     <div>
@@ -41,7 +41,7 @@ const timeline = [
       <ul class="prose">
         <li><a href={pipecd.kubecon.url}>{pipecd.kubecon.title}</a>, talking to people about PipeCD all day.</li>
         <li><a href={pipecd.gsoc.url}>{pipecd.gsoc.title}</a> (<a href={pipecd.gsoc.issue}>issue</a>).</li>
-        <li>Docs live at <a href={pipecd.site}>pipecd.dev</a>.</li>
+        <li>The project lives at <a href={pipecd.site}>pipecd.dev</a>.</li>
       </ul>
     </div>
   </section>
