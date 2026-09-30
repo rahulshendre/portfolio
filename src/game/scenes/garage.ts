@@ -14,9 +14,9 @@ import { site } from '../../data/site';
 import { idleMessage } from '../hints';
 import { istHMS, istLabel } from '../ist';
 import { tick } from '../engine/audio';
-import { countFound, type Theme, type Weather } from '../state';
+import type { Theme, Weather } from '../state';
 import { stormFlash, windowFall, windowSky } from './weather';
-import { CLOCK, FAN, wallShadows, POSTER_AT, SUN, TUBES, benchLamp, benchLampGlow, bikeGrounding, ceilingMech, helmetStand, compressor, compressorPuff, fanLive, fanStatic, foreground, posterFrame, POSTER, incidentBoard, ridesFrame, clockFace, clockHands, conduit, depthShading, floorDetail, floorProps, charger, chargerLive, mothLive, sunSprite, sunStrength, tubeBeams } from './garageprops';
+import { CLOCK, FAN, wallShadows, POSTER_AT, SUN, TUBES, benchLamp, benchLampGlow, bikeGrounding, ceilingMech, helmet, compressor, satchel, pendantLamps, compressorGauge, compressorPuff, fanLive, fanStatic, foreground, posterFrame, POSTER, incidentBoard, ridesFrame, clockFace, clockHands, conduit, depthShading, floorDetail, floorProps, charger, chargerLive, mothLive, sunSprite, sunStrength, tubeBeams } from './garageprops';
 import github from '../../data/github.json';
 
 const WALL = '#cbbd9f', MORTAR = '#bcad8f', LOWER = '#7f8a7a', FLOOR = '#958d80', FLOOR_DARK = '#857d71';
@@ -50,18 +50,16 @@ export class GarageScene implements Scene {
   clock24 = true;
   /** Features the visitor has already used (shared with main, which saves it); their hints stop showing. */
   tried: ReadonlySet<string> = new Set();
-  /** Objects the visitor has used (shared with main). Shown as a counter on the ceiling beam. */
-  found: ReadonlySet<string> = new Set();
   private petT = -10;
   private puffT = -10;
   private tickS = -1;
-  private cheerT = -10;
   /** Set when the frame rate drops: the garage keeps its look but drops the extras. */
   lowFx = false;
   private t = 0;
   private bg!: Sprite;
   private nightDark?: Sprite;
   private nightGlow?: Sprite;
+  private rim?: Sprite; // the bike's moonlit edge, built on first night
   private nightT = 0;
   private pull = 0;
   private glow = 0;           // 0..1, eases in and out as you point at things
@@ -80,7 +78,6 @@ export class GarageScene implements Scene {
   private sun?: Sprite; // the window's light on the floor, rebuilt when the weather changes
   private touch = matchMedia('(pointer: coarse)').matches;
   private reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  private og = new URLSearchParams(location.search).has('og'); // ?og: no counter, for the share image
   // dust drifting through the tube-light beams: fixed seeds, so it looks the same every visit
   private motes = Array.from({ length: 28 }, (_, i) => ({ x: TUBES[i % 2] + ((i * 37) % 70) - 35, y: 24 + ((i * 53) % 166), k: i }));
 
@@ -96,6 +93,7 @@ export class GarageScene implements Scene {
   }
 
   /** Change what is outside the window (repaints the room, since the sky is part of the still picture). */
+  setTheme(th: Theme) { this.theme = th; this.bg = this.roomSprite(); this.layers(); }
   setWeather(w: Weather) { this.weather = w; this.bg = this.roomSprite(); this.layers(); this.sun = sunSprite(w); }
 
   exit() { removeEventListener('pointermove', this.onMove); clearTimeout(this.layerTimer); }
@@ -103,8 +101,6 @@ export class GarageScene implements Scene {
   pet() { this.petT = this.t; }
   /** The compressor's blast of air. */
   puff() { this.puffT = this.t; }
-  /** Everything found: the bar says so for a few seconds. */
-  cheer() { this.cheerT = this.t; }
 
   setNight(on: boolean, instant = false) {
     this.night = on;
@@ -158,10 +154,10 @@ export class GarageScene implements Scene {
     const all: (Hotspot | Control)[] = [...HOTSPOTS, ...CONTROLS, BAR.list, BAR.ride];
     const hot = all.find((h) => h.id === this.hover);
     if (hot && hot.id !== 'bike' && !('href' in hot && (hot === BAR.list || hot === BAR.ride))) this.brackets(hot);
-    if (this.touch || this.t < 3.2) { const placed: number[][] = []; for (const h of [...HOTSPOTS, ...CONTROLS]) if (!['coffee', 'shelf', 'youtube', 'x', 'linkedin', 'github', 'clock'].includes(h.id)) this.tagFor(h, placed); }
+    if (this.t < (this.touch ? 6 : 3.2)) { // the name tags introduce the room, then step aside; touch has no hover, so they stay a little longer
+      const placed: number[][] = []; for (const h of [...HOTSPOTS, ...CONTROLS]) if (!['coffee', 'shelf', 'youtube', 'x', 'linkedin', 'github', 'clock', 'helmet', 'satchel'].includes(h.id)) this.tagFor(h, placed); }
     if (hot?.tag && !SELF_EXPLAINING.includes(hot.id)) this.tagFor(hot); // whatever you point at gets its name on top, along with the glow (the number plates already say their name)
     this.bar(hot);
-    this.counter();
   }
 
   // ---------------------------------------------------------------- the room, painted once
@@ -230,7 +226,7 @@ export class GarageScene implements Scene {
     this.tyres();
     this.radioBox();
     conduit(); clockFace(); charger(); floorProps(); benchLamp();
-    helmetStand(); ceilingMech(); fanStatic(); ridesFrame(); incidentBoard(DAYS_SINCE_PR); compressor();
+    ceilingMech(); fanStatic(); ridesFrame(); incidentBoard(DAYS_SINCE_PR); compressor();
 
     if (withBike) {
       // Part of the room's personality, not its focus: mid-size, a little left of centre so the toolbox and PipeCD sign stay clear.
@@ -247,7 +243,7 @@ export class GarageScene implements Scene {
     this.window();
     // things that glow are painted after the light so the lighting never dims them
     for (const x of TUBES) { rect(x - 30, 13, 60, 3, '#fff8e0'); rect(x - 30, 16, 60, 1, '#e8dcb8'); }
-    for (const x of [200, 280]) { rect(x - 4, 18, 8, 4, '#2a2a2e'); rect(x - 2, 22, 4, 1, '#fff4c2'); }
+    pendantLamps();
     this.neon("RAHUL'S GARAGE", 240, 5);
   }
 
@@ -338,7 +334,7 @@ export class GarageScene implements Scene {
     woodGrain(14, 186, 160, 3, C.wood, C.woodDark, '#a5764a', 36);
     rect(24, 176, 26, 10, '#6b7075'); bevel(24, 176, 26, 10, '#8b9096', '#3f4348'); rect(28, 180, 10, 1, '#3f4348');          // a metal case
     rect(54, 178, 18, 8, '#b8915f'); bevel(54, 178, 18, 8, '#cda875', '#8f6e45'); rect(61, 178, 4, 8, '#d8c9a0');            // a cardboard box with tape
-    rect(80, 180, 12, 6, C.red); bevel(80, 180, 12, 6, '#e05a4c', '#8e2219');
+    satchel();
     rect(10, 168 + d, 160, 1, '#00000033'); rect(10, 189, 160, 1, '#00000033');                                           // shadow under the top and the shelf
   }
 
@@ -346,12 +342,17 @@ export class GarageScene implements Scene {
     rect(302, 24, 88, 52, '#00000033');
     rect(300, 22, 88, 52, '#b08a5e'); bevel(300, 22, 88, 52, '#c9a577', '#7a5a38'); speckle(301, 23, 86, 50, '#9a7648', 0.06, 80); speckle(301, 23, 86, 50, '#c4a06f', 0.03, 81);
     for (let y = 26; y < 72; y += 5) for (let x = 304; x < 386; x += 5) rect(x, y, 1, 1, '#8a6a44');
-    rect(308, 28, 3, 30, C.steel); disc(309, 28, 3, C.steel); disc(309, 28, 1, '#b08a5e'); disc(309, 58, 3, C.steel);
-    for (const [x, c] of [[318, C.red], [324, C.accent], [330, CYAN]] as const) { rect(x, 28, 4, 12, c); rect(x + 1, 40, 2, 16, C.steel); }
-    rect(340, 30, 3, 28, C.wood); rect(334, 28, 15, 6, C.steelDark);
-    // helm wheel
-    disc(368, 47, 13, '#326ce5'); disc(368, 47, 9, '#f4f2ea'); disc(368, 47, 3, '#326ce5');
-    for (let k = 0; k < 7; k++) { const a = (k / 7) * Math.PI * 2 - Math.PI / 2; line(368, 47, 368 + Math.cos(a) * 11, 47 + Math.sin(a) * 11, '#326ce5'); }
+    // tools hang in one tidy row, each with a painted outline behind it, like a real tool board; nudged down to sit centred on the board
+    const g = ctx(); g.save(); g.translate(0, 9);
+    const outline = (x: number, y: number, w: number, h: number) => rect(x - 1, y - 1, w + 2, h + 2, '#8a6a4488');
+    outline(307, 27, 5, 27); rect(308, 28, 3, 24, C.steel); disc(309, 28, 3, C.steel); disc(309, 28, 1, '#b08a5e'); disc(309, 52, 3, C.steel); // spanner
+    for (const [x, c] of [[318, C.red], [324, C.accent], [330, CYAN]] as const) { outline(x, 27, 4, 26); rect(x, 28, 4, 12, c); rect(x + 1, 40, 2, 12, C.steel); } // screwdrivers
+    outline(333, 27, 17, 26); rect(340, 30, 3, 22, C.wood); rect(334, 28, 15, 6, C.steelDark); rect(334, 28, 15, 1, '#6b7078'); // hammer
+    outline(350, 29, 8, 24); line(354, 40, 352, 30, C.steel); line(355, 40, 357, 30, C.steel); line(354, 40, 351, 52, C.red); line(355, 40, 358, 52, C.red); rect(354, 39, 2, 2, C.steelDark); // pliers
+    // helm wheel (Kubernetes)
+    disc(370, 40, 10, '#326ce5'); disc(370, 40, 7, '#f4f2ea'); disc(370, 40, 2, '#326ce5');
+    for (let k = 0; k < 7; k++) { const a = (k / 7) * Math.PI * 2 - Math.PI / 2; line(370, 40, 370 + Math.cos(a) * 8, 40 + Math.sin(a) * 8, '#326ce5'); }
+    g.restore();
   }
 
   private calendar() {
@@ -401,6 +402,7 @@ export class GarageScene implements Scene {
       rect(392, y, 82, 3, '#6b7075'); rect(392, y, 82, 1, '#8b9096'); rect(392, y + 3, 82, 1, '#00000033');
     });
     rect(392, 195, 82, 3, '#6b7075');
+    helmet(414, 185); // on the bottom shelf, under the builds
     // money plant trailing off the top
     rect(462, 78, 8, 8, '#b3563a'); disc(466, 76, 4, '#4f7d3f'); for (const [x, y] of [[470, 82], [472, 88], [471, 95]]) rect(x, y, 3, 3, '#4f7d3f');
   }
@@ -452,10 +454,12 @@ export class GarageScene implements Scene {
   // ---------------------------------------------------------------- animated bits
   private animate() {
     const t = this.t;
-    // TV: glowing static with SOON flashing through
+    // TV: glowing static with SOON flashing through; look at it and the picture roughs up, with a bright roll bar
+    const tvHot = this.hover === 'tv' && !this.reduced, tvRow = tvHot ? Math.floor((t * 40) % 40) : -9;
     for (let y = 119 + BENCH_DY; y < 149 + BENCH_DY; y++) for (let x = 28; x < 66; x++) {
-      const n = (Math.sin(x * 12.99 + y * 78.23 + Math.floor(t * 12) * 3.7) * 43758.5) % 1;
-      rect(x, y, 1, 1, Math.abs(n) > 0.55 ? '#7f8a82' : '#34403a');
+      const n = (Math.sin(x * 12.99 + y * 78.23 + Math.floor(t * (tvHot ? 30 : 12)) * 3.7) * 43758.5) % 1;
+      const roll = Math.abs(y - 119 - BENCH_DY - tvRow) < 2;
+      rect(x, y, 1, 1, Math.abs(n) > (tvHot ? 0.42 : 0.55) ? (roll ? '#c4cec6' : '#7f8a82') : roll ? '#5a6a60' : '#34403a');
     }
     rect(31, 127 + BENCH_DY, 32, 12, '#1d2a22'); text('> HI', 34, 130 + BENCH_DY, '#b8f0c0');
     if (Math.floor(t * 2) % 2 === 0) rect(56, 130 + BENCH_DY, 4, 7, '#b8f0c0'); // blinking cursor
@@ -472,6 +476,7 @@ export class GarageScene implements Scene {
     this.mood(t);
     fanLive(t);
     if (!this.reduced) mothLive(t);
+    compressorGauge(t, t - this.puffT, this.reduced);
     compressorPuff(t - this.puffT);
     clockHands(istHMS(new Date()));
     chargerLive(this.hover === 'toolbox' ? t * 3 : t); // it works harder when you look at it
@@ -521,11 +526,12 @@ export class GarageScene implements Scene {
   private cat(t: number) {
     const g0 = ctx();
     g0.save(); g0.translate(CAT.dx, CAT.dy); // she sits on top of the stack
-    const body = '#3d3d44', shade = '#2c2c33';
+    const body = '#d98b3a', shade = '#a8622a'; // ginger tabby: she has to show against the black tyres
     ellipse(22, 208, 8, 5, body); ellipse(22, 211, 8, 2, shade);
     const cyc = t % 24, stretch = !this.reduced && cyc > 20.5 && cyc < 23 ? Math.sin(((cyc - 20.5) / 2.5) * Math.PI) : 0; // now and then she stretches: head down, back up
     const twitch = !this.reduced && t % 9 > 8.75, hy = Math.round(stretch * 2);
     if (stretch > 0.3) ellipse(22, 207, 8, 5, body); // back arched
+    for (const x of [17, 21, 25]) rect(x, 203, 1, 4, shade); rect(15, 210, 14, 1, '#f0c48a'); // tabby stripes, pale belly
     disc(30, 203 + hy, 4, body);
     rect(27, twitch ? 199 : 198 + hy, 2, twitch ? 2 : 3, body); rect(32, 198 + hy, 2, 3, body); rect(28, 199 + hy, 1, 1, '#c98f8f');
     const petting = t - this.petT < 2, open = !petting && t % 7 > 6.3; // one slow blink; eyes shut while petted
@@ -537,7 +543,7 @@ export class GarageScene implements Scene {
       g.globalAlpha = 1;
     }
     const sway = Math.round(Math.sin(t * (petting ? 5 : 2.2)) * 2);
-    line(15, 209, 11, 208 + sway, body); line(11, 208 + sway, 9, 204 + sway, body);
+    line(15, 209, 11, 208 + sway, body); line(11, 208 + sway, 9, 204 + sway, body); rect(9, 204 + sway, 1, 2, shade); // tail with a dark tip
     g0.restore();
   }
 
@@ -618,6 +624,25 @@ export class GarageScene implements Scene {
     g.drawImage(this.nightGlow!, 0, 0);
     g.globalCompositeOperation = 'source-over';
     g.globalAlpha = 1;
+    this.moonRim(g);
+  }
+
+  /** At night the window is the only light that reaches the bike: a thin cool edge along the sides that face it, nothing else. */
+  private moonRim(g: CanvasRenderingContext2D) {
+    const k = BIKE.scale, bw = Math.round(this.img.bike.width * k), bh = Math.round(this.img.bike.height * k);
+    if (!this.rim) {
+      const c = document.createElement('canvas'); c.width = bw; c.height = bh;
+      const cg = c.getContext('2d')!; cg.imageSmoothingEnabled = false;
+      cg.drawImage(this.img.bike, 0, 0, bw, bh);
+      cg.globalCompositeOperation = 'source-in'; cg.fillStyle = '#7f9ae0'; cg.fillRect(0, 0, bw, bh); // the bike as a flat moonlit shape
+      cg.globalCompositeOperation = 'destination-out'; cg.drawImage(this.img.bike, 2, 1, bw, bh);       // cut away everything except the edges facing the window
+      this.rim = c as Sprite;
+    }
+    g.save();
+    g.translate(Math.round(this.par.x * 2), Math.round(this.par.y * 1)); // rides with the bike as it slides
+    g.globalAlpha = this.nightT * 0.28;
+    g.drawImage(this.rim, Math.round(BIKE.cx - bw / 2), BIKE.floor - bh);
+    g.restore();
   }
 
   /** At night the window is the one soft blue light in the room: a dark sky with stars and a moon, and the weather still visible in it. */
@@ -644,12 +669,12 @@ export class GarageScene implements Scene {
     const src = [
       { x: 240, y: 9, r: 100, c: [255, 150, 120] },   // neon sign
       { x: 46, y: 59, r: 62, c: [150, 180, 255] },    // the window: moonlight
-      { x: 244, y: 78, r: 66, c: [255, 236, 190] },   // the two posters, spotlit
+      { x: 200, y: 40, r: 40, c: [255, 220, 150] },   // pendant lamp, left: a pool under the shade
+      { x: 280, y: 40, r: 40, c: [255, 220, 150] },   // pendant lamp, right
       { x: 51, y: 134, r: 56, c: [120, 255, 170] },   // CRT
       { x: 365, y: 141, r: 26, c: [130, 255, 170] },  // charger lights
       { x: 163, y: 148, r: 34, c: [255, 200, 110] },  // bench lamp
       { x: 118, y: 119, r: 36, c: [255, 196, 110] },  // radio
-      { x: 214, y: 205, r: 92, c: [255, 226, 170] },  // work lamp over the bike
     ];
     const mk = () => { const c = document.createElement('canvas'); c.width = 480; c.height = 270; return c; };
     const dark = mk(), glow = mk();
@@ -685,7 +710,7 @@ export class GarageScene implements Scene {
   /** A name on top of an object. Tags drawn in the same pass (the intro shows them all) are kept from overlapping: a clashing one hops above the others, then below its object. */
   private tagFor(h: Hotspot | Control, placed?: number[][]) {
     const label = h.id === 'clock' ? istLabel(new Date(), this.clock24) : h.tag; // the clock's tag is the live time
-    const [x, y, w, hh] = h.rect, tw = textW(label) + 6;
+    const [x, y, w, hh] = h.rect, tw = textW(label) + 4;
     let tx = Math.round(Math.min(480 - tw - 2, Math.max(2, x + w / 2 - tw / 2)));
     let ty = Math.max(18, y - 11);
     const below = ['bookbox', 'map'].includes(h.id); // the poster grid is tight: the lower frames name themselves underneath
@@ -700,15 +725,8 @@ export class GarageScene implements Scene {
       if (ty < 18) ty = y + hh + 1;
       placed.push([tx, ty, tw]);
     }
-    rect(tx, ty, tw, 10, C.ink);
-    text(label, tx + 3, ty + 2, C.accent);
-  }
-
-  private counter() {
-    if (this.og) return;
-    const total = HOTSPOTS.length + CONTROLS.length, n = countFound(this.found, [...HOTSPOTS, ...CONTROLS].map((h) => h.id));
-    const s = `FOUND ${n}/${total}`;
-    text(s, 474 - textW(s), 5, n === total ? C.accent : '#a89d8b');
+    rect(tx, ty, tw, 9, C.ink);
+    text(label, tx + 2, ty + 1, C.accent);
   }
 
   private bar(hot?: Hotspot | Control) {
@@ -721,7 +739,6 @@ export class GarageScene implements Scene {
     const isLink = hot === BAR.list || hot === BAR.ride;
     const msg = hot
       ? narrow ? hot.tag || hot.label : isLink ? hot.label : `LOOK AT: ${hot.label}`
-      : this.t - this.cheerT < 5 ? 'YOU FOUND EVERYTHING! NICE.'
       : this.t < 5 && !narrow ? site.tagline.toUpperCase()
       : idleMessage(this.t - 5, this.tried, this.touch, narrow);
     textC(msg, 240, 260, hot ? C.accent : '#a89d8b');

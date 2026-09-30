@@ -43,6 +43,8 @@ export const HOTSPOTS: Hotspot[] = [
   { id: 'toolbox', label: 'TOOLBOX STICKERS · PROJECTS', tag: 'PROJECTS', href: '/open-source#projects', rect: [322, 146, 62, 88] },
   { id: 'map', label: 'RIDES · WORK IN PROGRESS', tag: 'RIDES', href: '/garage', rect: [242, 85, 44, 42] },
   { id: 'board', label: 'PR BOARD · DAYS SINCE MY LAST PR', tag: 'PR BOARD', href: '/open-source#log', rect: [290, 154, 26, 26] },
+  { id: 'helmet', label: 'HELMET · TAKE THE RIDE', tag: 'RIDE', href: '/?ride', rect: [404, 176, 22, 19] },
+  { id: 'satchel', label: 'MESSENGER BAG · SAY HI', tag: 'SAY HI', href: '/about#hi', rect: [78, 173, 17, 14] },
   { id: 'shelf', label: 'PARTS SHELF · BUILDS', tag: 'BUILDS', href: '/builds', rect: [390, 86, 86, 112] },
 ];
 

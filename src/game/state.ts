@@ -1,14 +1,12 @@
 // Where the home page starts, and remembering that someone has already ridden in.
 export type Start = 'ride' | 'door' | 'garage';
-// The door scene's weather: it changes from visit to visit, or pick one with ?weather=rain|snow|fog|clear.
+// The weather outside: rain by default (the garage looks best in it). Pick another with ?weather=rain|snow|fog|clear, or click the window.
 export type Weather = 'clear' | 'rain' | 'snow' | 'fog';
 export const WEATHERS: Weather[] = ['clear', 'rain', 'snow', 'fog'];
 
-export function pickWeather(search: string, rand: () => number = Math.random): Weather {
+export function pickWeather(search: string): Weather {
   const w = new URLSearchParams(search).get('weather');
-  if (w && (WEATHERS as string[]).includes(w)) return w as Weather;
-  const r = rand();
-  return r < 0.4 ? 'clear' : r < 0.6 ? 'rain' : r < 0.8 ? 'snow' : 'fog';
+  return w && (WEATHERS as string[]).includes(w) ? (w as Weather) : 'rain';
 }
 
 // The arrival's look: the Himalaya by default, or the old Windows XP wallpaper. Pick one with ?theme=xp|himalaya.
@@ -58,17 +56,6 @@ export function saveTried(list: string[]) {
 export function saveNight(on: boolean) {
   try { localStorage.setItem(NIGHT, on ? '1' : '0'); } catch { /* fine */ }
 }
-
-// Things in the garage the visitor has used. Ids that no longer exist are ignored when counting.
-export function loadFound(): string[] {
-  try { const v = JSON.parse(localStorage.getItem('rs:found') ?? '[]'); return Array.isArray(v) ? v.filter((x) => typeof x === 'string') : []; } catch { return []; }
-}
-
-export function saveFound(list: string[]) {
-  try { localStorage.setItem('rs:found', JSON.stringify(list)); } catch { /* fine */ }
-}
-
-export const countFound = (found: Iterable<string>, valid: readonly string[]) => valid.filter((id) => new Set(found).has(id)).length;
 
 // The radio plays by default. Only a visitor turning it off keeps it quiet on later visits.
 export const radioWanted = (saved: string | null) => saved !== '0';

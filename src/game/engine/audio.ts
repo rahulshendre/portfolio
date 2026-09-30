@@ -65,8 +65,9 @@ export class EngineSound {
 
 export const engine = new EngineSound();
 
-// A tiny lo-fi radio for the garage: soft chords, a lazy beat and vinyl crackle, all synthesised. Plays by default (see autostart), unless the visitor turned it off.
-const CHORDS = [[57, 60, 64, 67], [53, 57, 60, 64], [48, 52, 55, 59], [55, 59, 62, 65]]; // Am7 Fmaj7 Cmaj7 G6
+// A tiny calm radio for the garage: slow pad chords, a sparse bell-like melody and a soft echo, no beat, all synthesised. Plays by default (see autostart), unless the visitor turned it off.
+const CHORDS = [[50, 54, 57, 61], [47, 54, 57, 62], [43, 50, 54, 59], [45, 52, 57, 59]]; // Dmaj7 Bm7 Gmaj7 Aadd9
+const MELODY: Record<number, number>[] = [{ 0: 78, 3: 81, 6: 83 }, { 1: 81, 4: 78, 6: 76 }, { 0: 83, 3: 81, 5: 78 }, { 2: 76, 4: 78, 7: 74 }]; // D major pentatonic, a few notes a bar
 const mtof = (m: number) => 440 * 2 ** ((m - 69) / 12);
 
 export class RadioSound {
@@ -77,7 +78,7 @@ export class RadioSound {
   private next = 0;
   private step = 0;
   private noise?: AudioBuffer;
-  private readonly bpm = 68;
+  private readonly bpm = 54;
 
   toggle(): boolean {
     this.on = !this.on;
@@ -104,6 +105,9 @@ export class RadioSound {
       this.master.gain.value = 0;
       const lp = this.ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 1800;
       this.master.connect(lp).connect(dest(this.ctx));
+      const echo = this.ctx.createDelay(2), fb = this.ctx.createGain(), wet = this.ctx.createGain(); // a soft dotted-eighth echo: room without a reverb
+      echo.delayTime.value = 60 / this.bpm * 0.75; fb.gain.value = 0.4; wet.gain.value = 0.35;
+      lp.connect(echo); echo.connect(fb).connect(echo); echo.connect(wet).connect(dest(this.ctx));
       const len = this.ctx.sampleRate * 2, buf = this.ctx.createBuffer(1, len, this.ctx.sampleRate), d = buf.getChannelData(0);
       for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
       this.noise = buf;
@@ -131,20 +135,20 @@ export class RadioSound {
   }
 
   private play(step: number, t: number) {
-    const c = this.ctx!, bar = Math.floor(step / 8) % 4, inBar = step % 8, chord = CHORDS[bar];
-    if (inBar === 0) for (const m of chord) this.tone(mtof(m), t, 60 / this.bpm * 4 * 0.95, 0.05, 'triangle');
-    if (inBar === 0 || inBar === 3 || inBar === 6) this.tone(mtof(chord[0] - 24), t, 0.5, 0.16, 'sine');
-    if (inBar === 0 || inBar === 5) this.hit(t, 0.4, 90, 0.35);   // kick
-    if (inBar === 4) this.hit(t, 0.12, 1800, 0.12);               // snare-ish
-    if (inBar % 2 === 1) this.hit(t, 0.03, 7000, 0.04);           // hat
-    if (Math.random() < 0.5) this.hit(t + Math.random() * 0.2, 0.01, 4000, 0.03); // crackle
-    if (inBar === 2 && bar % 2 === 1) this.tone(mtof(chord[2 + (step % 2)] + 12), t, 0.5, 0.03, 'sine'); // little top note
+    const bar = Math.floor(step / 8) % 4, inBar = step % 8, chord = CHORDS[bar], barLen = 60 / this.bpm * 4;
+    if (inBar === 0) {
+      for (const m of chord) { this.tone(mtof(m), t, barLen * 1.15, 0.035, 'sine', 0.9); this.tone(mtof(m), t, barLen * 1.15, 0.01, 'triangle', 1.2); } // the pad swells in and overlaps the next bar
+      this.tone(mtof(chord[0] - 12), t, barLen * 0.9, 0.09, 'sine', 0.15); // a soft low note underneath
+    }
+    const n = MELODY[bar][inBar];
+    if (n) { this.tone(mtof(n), t, 2.6, 0.045, 'sine'); this.tone(mtof(n + 12), t, 1.2, 0.008, 'triangle'); } // a bell-like pluck
+    if (Math.random() < 0.2) this.hit(t + Math.random() * 0.3, 0.01, 4000, 0.012); // the faintest crackle
   }
 
-  private tone(f: number, t: number, dur: number, vol: number, type: OscillatorType) {
+  private tone(f: number, t: number, dur: number, vol: number, type: OscillatorType, attack = 0.04) {
     const c = this.ctx!, o = c.createOscillator(), g = c.createGain();
     o.type = type; o.frequency.value = f + (Math.random() - 0.5) * 0.6; // slightly wobbly, like tape
-    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + 0.04); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + attack); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
     o.connect(g).connect(this.master!); o.start(t); o.stop(t + dur + 0.05);
   }
 

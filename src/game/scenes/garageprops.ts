@@ -37,6 +37,24 @@ export function wallShadows(rects: [number, number, number, number][]) {
   g.restore();
 }
 
+/** Black enamel dome lamps on cords over the poster wall (they replace the two small spots). Painted after the lighting pass so they stay crisp. */
+export const PENDANTS = [200, 280];
+export function pendantLamps() {
+  const g = ctx();
+  for (const cx of PENDANTS) {
+    g.globalAlpha = 0.16; // a warm cone falling on the wall and posters below the shade
+    for (let y = 38; y < 62; y++) {
+      const hw = 9 + (y - 38) * 0.75;
+      for (let x = Math.round(cx - hw); x < cx + hw; x++) if ((1 - Math.abs(x - cx) / hw) * (1 - (y - 38) / 26) * 1.15 > bayer(x, y)) rect(x, y, 1, 1, '#ffd88a');
+    }
+    g.globalAlpha = 1;
+    rect(cx, 18, 1, 8, '#151517'); rect(cx - 2, 25, 5, 2, '#2a2a2e'); // cord and socket
+    for (const [i, hw] of [5, 7, 9, 10, 11, 11].entries()) { rect(cx - hw, 27 + i, hw * 2 + 1, 1, '#1d1d21'); rect(cx - hw, 27 + i, 2, 1, i < 2 ? '#3c3f47' : '#2b2d33'); rect(cx + hw - 1, 27 + i, 2, 1, '#0e0e10'); } // dome, lit from the window side
+    rect(cx - 12, 33, 25, 2, '#0e0e10'); rect(cx - 11, 35, 23, 1, '#c9a043'); rect(cx - 10, 36, 21, 1, '#7a6020'); // rim with a thin brass lip
+    rect(cx - 3, 36, 7, 1, '#fff4c2'); rect(cx - 5, 37, 11, 1, '#ffe08a88'); // the bulb
+  }
+}
+
 /** Soft visible shafts of tube light falling from each fitting. Painted after the lighting pass, so they add to it. */
 export function tubeBeams() {
   const g = ctx();
@@ -76,6 +94,7 @@ export function bikeGrounding(bike: HTMLImageElement, bx: number, by: number, bw
   rect(132, 238, 160, 1, '#4c4b54'); rect(122, 254, 180, 1, '#1f1f24');
   for (let y = 240; y < 254; y += 3) rect(126 + (y - 238) / 2, y, 170 - (y - 238), 1, '#3b3a43'); // ribs
   speckle(126, 239, 172, 15, '#26252b', 0.08, 130); speckle(126, 239, 172, 15, '#55545e', 0.03, 131);
+  for (const [x0, y0, x1, y1] of [[135, 241, 289, 241], [289, 241, 297, 252], [297, 252, 127, 252], [127, 252, 135, 241]]) line(x0, y0, x1, y1, '#8a7038'); // a thin brass edge inset from the rim
   const sil = document.createElement('canvas'); sil.width = bw; sil.height = bh;
   const sg = sil.getContext('2d')!; sg.imageSmoothingEnabled = false;
   sg.drawImage(bike, 0, 0, bw, bh); sg.globalCompositeOperation = 'source-in'; sg.fillStyle = '#20180f'; sg.fillRect(0, 0, bw, bh);
@@ -157,6 +176,14 @@ export function foreground() {
   ellipse(227, 254, 26, 2, '#00000040');
   poly([[205, 248], [249, 248], [254, 254], [200, 254]], '#5a5f66'); rect(205, 248, 44, 1, '#8b9096'); rect(201, 253, 52, 1, '#3a3d42');
   ellipse(227, 251, 19, 2, '#17120e'); rect(216, 250, 6, 1, '#6d6690'); rect(233, 251, 3, 1, '#6d6690'); // dark oil with a sheen
+}
+
+/** A leather satchel on the bench's lower shelf. */
+export function satchel() {
+  rect(79, 177, 15, 9, '#7a4a26'); rect(79, 177, 15, 4, '#93592f'); rect(79, 181, 15, 1, '#4f3018'); // body, flap, fold
+  rect(84, 174, 5, 3, '#5a3a1e'); rect(85, 175, 3, 1, '#3a2410'); // handle
+  rect(85, 180, 3, 3, '#c9a043'); rect(86, 181, 1, 1, '#7a6020'); // brass buckle
+  rect(79, 177, 1, 9, '#a8693a'); speckle(79, 177, 15, 9, '#00000030', 0.1, 320); // worn edge, grain
 }
 
 /** A gooseneck work lamp on the bench, warm against the cool tube light. */
@@ -260,12 +287,13 @@ export function ridesFrame() {
 
 /** A "days since" board like the ones on workshop walls; the number is days since Rahul's last pull request. */
 export function incidentBoard(days: number) {
-  rect(292, 156, 26, 26, '#00000033');
-  rect(290, 154, 26, 26, '#2a2a2e'); bevel(290, 154, 26, 26, '#4a4d55', '#101114');
-  rect(291, 155, 24, 7, C.red); textC('PR', 303, 156, '#ffffff');
-  rect(291, 162, 24, 11, '#0a0a0c'); textC(String(Math.min(99, days)), 303, 165, C.accent);
-  rect(291, 173, 24, 6, '#f1eee4'); textC('DAYS', 303, 174, C.ink);
-  for (const [x, y] of [[291, 155], [314, 155], [291, 178], [314, 178]]) rect(x, y, 1, 1, '#9a958b');
+  const y0 = 154;
+  rect(292, y0 + 2, 26, 26, '#00000033');
+  rect(290, y0, 26, 26, '#2a2a2e'); bevel(290, y0, 26, 26, '#4a4d55', '#101114');
+  rect(291, y0 + 1, 24, 7, C.red); textC('PR', 303, y0 + 2, '#ffffff');
+  rect(291, y0 + 8, 24, 11, '#0a0a0c'); textC(String(Math.min(99, days)), 303, y0 + 11, C.accent);
+  rect(291, y0 + 19, 24, 6, '#f1eee4'); textC('DAYS', 303, y0 + 20, C.ink);
+  for (const [x, y] of [[291, y0 + 1], [314, y0 + 1], [291, y0 + 24], [314, y0 + 24]]) rect(x, y, 1, 1, '#9a958b');
 }
 
 /** A small wheeled air compressor: blue tank, red pump, a gauge and a brass valve. */
@@ -274,10 +302,20 @@ export function compressor() {
   rect(412, 229, 28, 13, '#4d6b8a'); bevel(412, 229, 28, 13, '#7a9ab8', '#2a3e54'); rect(412, 235, 28, 1, '#3a5570');
   rect(418, 218, 14, 11, '#b32a1b'); bevel(418, 218, 14, 11, '#dc4a3a', '#6e160e'); for (let y = 220; y < 228; y += 2) rect(419, y, 12, 1, '#7e1c12');
   rect(432, 221, 7, 8, '#2a2c30'); rect(432, 221, 7, 1, '#4a4d55');
-  disc(415, 226, 3, '#f4f2ea'); disc(415, 226, 2, '#dcd7c8'); rect(415, 224, 1, 3, C.red); rect(412, 232, 3, 2, '#c9a043'); // gauge and the valve
+  disc(415, 226, 3, '#f4f2ea'); disc(415, 226, 2, '#dcd7c8'); rect(412, 232, 3, 2, '#c9a043'); // gauge face (the needle is live) and the valve
   line(412, 229, 408, 221, '#3a3d42'); line(408, 221, 414, 221, '#3a3d42');                                                     // carry handle
   for (const x of [416, 436]) { disc(x, 244, 3, '#151515'); disc(x, 244, 1, '#6b6f79'); }
   speckle(412, 229, 28, 13, '#00000033', 0.05, 220);
+}
+/** The gauge needle: it idles with a slight tremble, drops when the valve blows and creeps back up as the tank refills. */
+export function compressorGauge(t: number, sincePuff: number, still = false) {
+  const g = ctx();
+  const refill = sincePuff < 0 ? 1 : Math.min(1, sincePuff / 6), dip = 1 - 0.55 * (1 - refill);
+  const level = still ? 0.7 : dip * (0.74 + Math.sin(t * 2.3) * 0.015);
+  const a = Math.PI * (1.15 - level * 1.3); // sweeps from lower left round the top to lower right
+  disc(415, 226, 2, '#dcd7c8');
+  g.globalAlpha = 1;
+  line(415, 226, 415 + Math.round(Math.cos(a) * 2), 226 - Math.round(Math.sin(a) * 2), C.red);
 }
 /** The blast of air after a click: pale specks streaming out of the valve, fading. */
 export function compressorPuff(age: number) {
@@ -291,16 +329,13 @@ export function compressorPuff(age: number) {
   g.globalAlpha = 1;
 }
 
-/** A floor helmet stand: a steel pole on a three-legged base with a cradle, and the white helmet on top. */
-export const HELMET = { x: 104, y: 205 };
-export function helmetStand() {
-  const { x, y } = HELMET;
-  ellipse(x, 249, 12, 2, '#0000003a');
-  rect(x - 1, y + 8, 3, 39, '#8b9096'); rect(x - 1, y + 8, 1, 39, '#b4b9be'); rect(x + 1, y + 8, 1, 39, '#4a4e53');
-  line(x, 247, x - 11, 250, '#6b6f79'); line(x, 247, x + 11, 250, '#6b6f79'); line(x, 246, x, 250, '#6b6f79'); rect(x - 2, 245, 5, 3, '#4a4e53'); // base
-  rect(x - 6, y + 6, 13, 2, '#4a4e53'); rect(x - 6, y + 6, 13, 1, '#8b9096');                                                                  // cradle
-  disc(x, y, 9, C.ink); disc(x, y, 8, C.white);                                                                                                 // shell
-  rect(x - 8, y + 2, 9, 4, '#20242c'); rect(x - 8, y + 2, 9, 1, '#4a5060'); rect(x - 6, y + 3, 2, 1, '#8fa0c0');                                // visor
-  rect(x + 2, y - 1, 5, 6, C.whiteShade); rect(x - 3, y - 7, 4, 2, '#ffffff'); rect(x - 1, y - 9, 6, 1, '#ffffffaa');                           // shade and gloss
-  rect(x + 3, y - 3, 3, 1, C.red);                                                                                                               // a red stripe
+/** The white helmet, resting on the bottom shelf under the builds. */
+export function helmet(x: number, y: number) {
+  ellipse(x + 2, y + 9, 12, 2, '#00000040');
+  ellipse(x, y, 10, 9, C.ink); ellipse(x, y, 9, 8, C.white);                                                                                  // shell
+  ellipse(x + 4, y + 6, 7, 3, C.ink); ellipse(x + 4, y + 6, 6, 2, C.white);                                                                     // chin bar
+  rect(x, y - 4, 10, 6, '#1d2028'); rect(x + 1, y - 3, 4, 1, '#8fa0c0'); rect(x + 1, y - 2, 2, 1, '#5a6a88'); rect(x - 1, y - 5, 11, 1, C.ink); // visor and its glare
+  rect(x + 7, y + 6, 2, 1, '#1d2028');                                                                                                          // chin vent
+  rect(x - 8, y + 2, 6, 4, C.whiteShade); rect(x - 5, y - 7, 5, 1, '#ffffffaa'); rect(x - 7, y - 4, 6, 1, C.red);                                // shade, gloss, a red stripe
+  rect(x - 6, y + 7, 7, 2, '#2a2a2e');                                                                                                          // neck seal
 }

@@ -25,6 +25,7 @@ describe('panel hrefs', () => {
   });
 
   it('every internal garage hotspot can open as a panel', () => {
-    for (const h of HOTSPOTS.filter((x) => !x.external && !x.action)) expect(isPanelHref(h.href), h.id).toBe(true);
+    // '/?ride' starts the ride instead of opening a panel
+    for (const h of HOTSPOTS.filter((x) => !x.external && !x.action && !x.href.startsWith('/?'))) expect(isPanelHref(h.href), h.id).toBe(true);
   });
 });

@@ -8,7 +8,7 @@ import { RideScene } from './scenes/ride';
 import { DoorScene } from './scenes/door';
 import { GarageScene } from './scenes/garage';
 import { BAR, CONTROLS, HOTSPOTS, toPct } from './hotspots';
-import { WEATHERS, hasVisited, isNightHour, loadFound, loadMute, saveMute, loadNight, loadRadio, loadTried, markVisited, pickStart, pickTheme, pickWeather, saveFound, saveNight, saveRadio, saveTried } from './state';
+import { THEMES, WEATHERS, hasVisited, isNightHour, loadMute, saveMute, loadNight, loadRadio, loadTried, markVisited, pickStart, pickTheme, pickWeather, saveNight, saveRadio, saveTried } from './state';
 import { hiss, meow, preloadMeow, radio, setMuted } from './engine/audio';
 import { mountTerminal } from './terminal-ui';
 import { isPanelHref, mountPanel, parsePanelHash, titleFor } from './panel';
@@ -31,13 +31,6 @@ let theme = pickTheme(location.search); // the arrival's look, and the view from
 let weather = pickWeather(location.search); // one weather per visit: the door scene and the garage window show the same sky
 const LOGOS: Record<string, string> = { planetread: '/sprites/planetread-px.png', bookbox: '/sprites/bookbox-px.png' };
 let current: GarageScene | undefined;
-const found = new Set(loadFound());
-function markFound(id: string) {
-  if (found.has(id)) return;
-  found.add(id);
-  saveFound([...found]);
-  if ([...HOTSPOTS, ...CONTROLS].every((h) => found.has(h.id))) current?.cheer();
-}
 const tried = new Set(loadTried());
 const markTried = (f: 'tv' | 'cord' | 'radio') => { if (!tried.has(f)) { tried.add(f); saveTried([...tried]); } };
 
@@ -62,7 +55,7 @@ const panel = mountPanel({
 });
 
 const terminal = mountTerminal({
-  opened: () => { markTried('tv'); markFound('tv'); },
+  opened: () => { markTried('tv'); },
   go: (href) => {
     if (!isPanelHref(href)) return false;
     terminal.close(true); // the panel takes over the same history entry
@@ -83,17 +76,30 @@ soundBtn?.addEventListener('click', () => { const m = soundBtn.getAttribute('ari
 
 document.getElementById('phone-term')?.addEventListener('click', () => terminal.open()); // the TV is off-screen on a portrait phone
 
+// Garage-only buttons for the sky outside the window: the weather and the view (the window click still cycles the weather).
+const sky = document.getElementById('sky');
+const skyWeather = document.getElementById('sky-weather');
+const skyTheme = document.getElementById('sky-theme');
+const showSky = () => {
+  if (skyWeather) skyWeather.textContent = `SKY: ${weather.toUpperCase()}`;
+  if (skyTheme) skyTheme.textContent = `VIEW: ${theme === 'xp' ? 'BLISS' : 'HIMALAYA'}`;
+};
+const cycleWeather = (scene: GarageScene) => { weather = WEATHERS[(WEATHERS.indexOf(weather) + 1) % WEATHERS.length]; scene.setWeather(weather); showSky(); };
+skyWeather?.addEventListener('click', () => { if (current) cycleWeather(current); });
+skyTheme?.addEventListener('click', () => { if (current) { theme = THEMES[(THEMES.indexOf(theme) + 1) % THEMES.length]; current.setTheme(theme); showSky(); } });
+
 async function garage() {
   const img = await images;
   const scene = new GarageScene(screen, img, weather, theme);
   const q = new URLSearchParams(location.search); // ?night and ?day force the lights (handy for screenshots)
   scene.night = q.has('night') ? true : q.has('day') ? false : loadNight() ?? isNightHour(new Date().getHours()); // until they pull the cord, the room follows their clock
   scene.tried = tried;
-  scene.found = found;
   void preloadMeow();
   if (loadRadio() && !radio.on) radio.autostart(); // the radio plays unless the visitor turned it off last time
   scene.radioOn = radio.on;
   current = scene;
+  if (sky) sky.hidden = false;
+  showSky();
   director.go(scene);
   markVisited();
   mountHotspots(scene);
@@ -111,6 +117,7 @@ screen.onResize(() => { if (director.current instanceof GarageScene) requestAnim
 async function door() {
   const img = await images;
   current = undefined;
+  if (sky) sky.hidden = true;
   director.go(new DoorScene(screen, img.bike, img.mountains, () => new GarageScene(screen, img, weather, theme).roomSprite(false), garage, weather, theme, (o) => { weather = o.weather ?? weather; theme = o.theme ?? theme; void door(); }));
 }
 
@@ -124,10 +131,9 @@ function mountHotspots(scene: GarageScene) {
     if (c.id === 'cord' || c.id === 'radio') b.setAttribute('aria-pressed', String(c.id === 'radio' ? radio.on : scene.night));
     Object.assign(b.style, toPct(c.rect));
     b.addEventListener('click', () => {
-      markFound(c.id);
       if (c.id === 'cord') { toggleNight(); b.setAttribute('aria-pressed', String(scene.night)); }
       else if (c.id === 'radio') toggleRadio();
-      else if (c.id === 'window') { weather = WEATHERS[(WEATHERS.indexOf(weather) + 1) % WEATHERS.length]; scene.setWeather(weather); }
+      else if (c.id === 'window') cycleWeather(scene);
       else if (c.id === 'clock') scene.clock24 = !scene.clock24;
       else if (c.id === 'compressor') { scene.puff(); hiss(); }
       else { scene.pet(); meow(); }
@@ -148,7 +154,6 @@ function mountHotspots(scene: GarageScene) {
     a.setAttribute('aria-label', h.id === 'list' || h.id === 'ride' ? h.label.toLowerCase() : h.label.replace(' · ', ': ').toLowerCase());
     if (h.external) { a.target = '_blank'; a.rel = 'noopener'; }
     Object.assign(a.style, toPct(h.rect));
-    if (h.id !== 'list' && h.id !== 'ride') { a.addEventListener('click', () => markFound(h.id)); a.addEventListener('auxclick', () => markFound(h.id)); }
     const logo = LOGOS[h.id];
     if (logo) { // the real logo, drawn by the browser at full resolution over its plaque
       const img = document.createElement('img');
@@ -171,6 +176,7 @@ const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 async function ride() {
   await images;
   current = undefined;
+  if (sky) sky.hidden = true;
   director.go(new RideScene(screen, door, garage));
 }
 

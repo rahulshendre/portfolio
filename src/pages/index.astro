@@ -25,6 +25,10 @@ import { site, nav } from '../data/site';
     </div>
   </div>
   <button type="button" class="sound" id="sound" aria-pressed="true">SOUND ON</button>
+  <div class="sky" id="sky" hidden>
+    <button type="button" id="sky-weather" aria-label="Change the weather outside the window">SKY: CLEAR</button>
+    <button type="button" id="sky-theme" aria-label="Change the view from the window">VIEW: HIMALAYA</button>
+  </div>
   <div class="phone-bar" aria-hidden="true">
     <a href="/list" tabindex="-1">LIST</a>
     <button type="button" id="phone-term" tabindex="-1">TERMINAL</button>
@@ -51,6 +55,11 @@ import { site, nav } from '../data/site';
     .viewport::before { content: ''; position: absolute; inset: 0; background: #1b1712 url('/sprites/poster.png') center / contain no-repeat; image-rendering: pixelated; transition: opacity 0.35s; }
     .viewport.ready::before { opacity: 0; pointer-events: none; }
     .sound { position: fixed; top: 8px; left: 8px; z-index: 6; border: 0; cursor: pointer; font: 400 12px/1 'Silkscreen', monospace; background: #1b1712; color: #fff6e0; padding: 9px 11px; box-shadow: 3px 3px 0 #e8b923; }
+    .sky { position: fixed; top: 8px; left: 118px; z-index: 6; display: flex; gap: 10px; }
+    .sky[hidden] { display: none; }
+    .sky button { border: 0; cursor: pointer; font: 400 12px/1 'Silkscreen', monospace; background: #1b1712; color: #fff6e0; padding: 9px 11px; box-shadow: 3px 3px 0 #e8b923; }
+    .sky button:focus-visible { outline: 3px solid #e8b923; outline-offset: 2px; }
+    @media (max-width: 900px), (pointer: coarse) { .sky { display: none; } } /* on phones the buttons would cover the garage: the window still changes the weather */
     .sound[aria-pressed='false'] { color: #a89d8b; box-shadow: 3px 3px 0 #6b5518; }
     .sound:focus-visible { outline: 3px solid #e8b923; outline-offset: 2px; }
     .stage canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; touch-action: none; }
@@ -61,6 +70,9 @@ import { site, nav } from '../data/site';
     .hotspots a { position: absolute; pointer-events: auto; display: block; cursor: pointer; border-radius: 2px; }
     .hotspots a img { position: absolute; inset: 6% 5%; width: 90%; height: 88%; object-fit: contain; image-rendering: pixelated; pointer-events: none; transition: filter 0.3s; }
     .hotspots[data-night] a img { filter: brightness(0.45); }
+    @media (pointer: coarse) { /* a bigger invisible tap area on touch: at least 44px, but growing by no more than 6px a side so packed objects barely overlap */
+      .hotspots a::after, .hotspots button::after { content: ''; position: absolute; left: 50%; top: 50%; width: 100%; height: 100%; min-width: min(44px, calc(100% + 12px)); min-height: min(44px, calc(100% + 12px)); transform: translate(-50%, -50%); }
+    }
     .hotspots a:focus-visible { outline: 3px solid #e8b923; outline-offset: 2px; }
     .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
     .skip-plain { position: fixed; left: 8px; top: 8px; z-index: 10; transform: translateY(-200%); background: #e8b923; color: #1b1712; padding: 8px 12px; font: 600 14px/1 system-ui; }
