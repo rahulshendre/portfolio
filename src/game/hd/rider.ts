@@ -59,12 +59,11 @@ export function drawRiderAt(ctx: CanvasRenderingContext2D, cx: number, gy: numbe
     // pillion peg on the left, hung off a small plate
     poly([-0.6, -0.98, -0.5, -0.98, -0.5, -0.86, -0.6, -0.84], K.metalDark); rrect(-0.76, -0.94, 0.2, 0.07, 0.03, K.metal);
 
-    // ---- the upswept stainless silencer on the right: brushed steel body under a black heat shield, its mouth facing you
-    poly([0.48, -0.46, 0.7, -0.5, 0.76, -0.92, 0.55, -0.98], hgrad(0.48, 0.76, [[0, '#7c8088'], [0.45, '#d5d9df'], [1, '#8b9098']]));
-    poly([0.5, -0.9, 0.74, -0.86, 0.76, -0.92, 0.55, -0.98], '#1a1b20');                                                        // black heat shield on top
-    for (let k = 0; k < 3; k++) circle(0.6 + k * 0.05, -0.92 - k * 0.006, 0.014, '#8b9098');                                    // its perforations
+    // ---- the silencer on the right, as on your bike: a black canister swept up past the rear axle, a silver end cap, its mouth facing you
+    poly([0.48, -0.46, 0.7, -0.5, 0.76, -0.92, 0.55, -0.98], hgrad(0.48, 0.76, [[0, '#0f1013'], [0.55, '#2a2c32'], [1, '#141519']]));
+    poly([0.55, -0.98, 0.76, -0.92, 0.75, -0.9, 0.56, -0.95], '#5a5e66');                                                       // a lit edge along the top
     poly([0.44, -0.5, 0.52, -0.5, 0.54, -0.4, 0.46, -0.4], '#5a5e66');                                                          // the hanger bracket
-    oval(0.66, -1.0, 0.115, 0.1, '#c7ccd3'); oval(0.66, -1.0, 0.085, 0.072, '#0b0b0d'); oval(0.64, -0.985, 0.03, 0.02, '#3a3d45'); // the round mouth: steel rim, black bore
+    oval(0.66, -1.0, 0.115, 0.1, '#b9bec6'); oval(0.66, -1.0, 0.085, 0.072, '#0b0b0d'); oval(0.64, -0.985, 0.03, 0.02, '#3a3d45'); // the round mouth: silver cap, black bore
 
     // ---- tail: short fender, LED lamp with its light guides, the plate and two LED indicators
     rrect(-0.36, -1.44, 0.72, 0.38, 0.1, hgrad(-0.36, 0.36, [[0, '#1a1b1f'], [0.5, '#2c2e35'], [1, '#1a1b1f']]));

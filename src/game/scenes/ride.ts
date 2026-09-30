@@ -5,6 +5,7 @@ import { drawRider } from '../hd/rider';
 import { drawSpeedLines } from '../hd/speed';
 import { finish } from '../hd/finish';
 import { LowRes } from '../hd/pixel';
+import { drawHome, HOME_LEN } from '../hd/arrival';
 import type { Look } from '../rail';
 import { envAt, hazeAt } from '../hd/background';
 import { renderRoad } from '../hd/road';
@@ -53,6 +54,8 @@ export class RideScene implements Scene {
   private pos = 0; private px = LEFT; private speed = 0; private lean = 0; private braking = false; private lastSpeed = 0; private avgDt = 1 / 60; private lite = false; private honkT = 0; private gearNow = 0; private birdT = 2; private rung = new Set<number>();
   private photo = false; private photoT = 0; private paused = false; private lights: 'auto' | 'on' | 'off' = 'auto'; private gas = false; private brake = false; private trip = 0; private vx = 0; private bolt: Bolt | null = null; private boltIn = 6; private night = false; private nightK = 0; private gasWas = false; private rough = 0; private bumpT = 0; private rideT = 0; private topKmh = 0; private passed = 0; private honks = 0; private stopT = 0; private sky: Sky = 'clear';
   private cam: Cam = 'behind';
+  private homeT = 0;   // how long the side shot of your bike rolling into the garage has been showing
+  private bikeImg: HTMLImageElement | null = null;   // the garage's own picture of your bike, shown on the arrival card
   private pixel = typeof location !== 'undefined' && new URLSearchParams(location.search).has('pixel'); private low = new LowRes();
   private bgOff = 0; private t = 0; private odo = 0; private fade = 0; private flash = 0;
   private shown = new Set<number>();
@@ -61,6 +64,7 @@ export class RideScene implements Scene {
   constructor(private screen: Screen, private onArrive: () => void, private onSkip: () => void) {}
 
   enter() {
+    const im = new Image(); im.onload = () => { this.bikeImg = im; }; im.src = '/sprites/bike-side-lg.png';
     addEventListener('blur', this.autoPause);                          // switching away pauses the ride
     input.endFrame();
     const at = Number(new URLSearchParams(location.search).get('at'));
@@ -75,6 +79,8 @@ export class RideScene implements Scene {
       for (const c of this.cars) if (c.z < this.pos) c.z += c.v < 0.1 ? 0 : 400 * SEG_L;   // vehicles behind you reappear ahead; the slow herds stay behind
     }
   }
+  /** True once a slow device has made the ride drop its costly extras. */
+  get isLite() { return this.lite; }
   /** Reports the view, night, weather, light and look settings to the page's buttons whenever one changes. */
   onLook?: (l: Look) => void;
   private lookKey = '';
@@ -194,7 +200,8 @@ export class RideScene implements Scene {
       if (this.speed < 30) {                                                                      // pulled up: the engine settles, a summary of the ride shows, then the door opens
         if (this.stopT === 0) { this.stopT = 0.001; engine.mute(); radio.setLevel(1); }
         this.stopT += dt;
-        if (this.stopT > 3.6) { this.fade += dt; if (this.fade > 0.7) return this.onArrive(); }
+        if (this.stopT > 2.4) this.homeT += dt;                                                   // then a side shot: your bike rolls into the bay
+        if (this.homeT > HOME_LEN || (this.homeT > 0.9 && (tap === 'other' || input.anyKey()))) { this.fade += dt; if (this.fade > 0.7) return this.onArrive(); }
       }
     } else {
       // real forces: thrust against drag, rolling resistance, the slope under the wheels and the brakes. With nothing pressed
@@ -313,6 +320,13 @@ export class RideScene implements Scene {
     if (!this.photo) this.hud(FW / d, FH / d, segI);
     else if (this.photoT > 0) { const cw = FW / d; this.pill('PHOTO MODE  ·  ENTER SAVES  ·  F EXITS', cw / 2 - 150, (FH / d) - 46, 13); }
     full.restore();
+    if (this.homeT > 0) {                                                                      // the side shot wipes in from the left over the road
+      const wipe = Math.min(1, this.homeT / 0.7), w = (1 - Math.pow(1 - wipe, 3)) * FW;
+      full.save(); full.beginPath(); full.rect(0, 0, w, FH); full.clip();
+      drawHome(full, FW, FH, Math.max(0, this.homeT - 0.5), this.bikeImg, REDUCED);
+      full.restore(); use(full);
+      if (wipe < 1) box(w - 6, 0, 6, FH, ACCENT);
+    }
     if (this.flash > 0) { full.globalAlpha = 0.35; box(0, 0, FW, FH, '#000'); full.globalAlpha = 1; }
     if (this.fade > 0) { full.globalAlpha = Math.min(1, this.fade / 0.7); box(0, 0, FW, FH, INK); full.globalAlpha = 1; }
   }
@@ -367,7 +381,7 @@ export class RideScene implements Scene {
     rrect(W - 148, H - px - 22, 42, px + 10, 6, this.honkT > 0 ? ACCENT : INK);
     label('H', W - 127, H - px - 22 + px + 2, px, this.honkT > 0 ? INK : ACCENT, { font: FONT_MONO, align: 'center' });
     if (this.honkT > 0) this.peep(W, H);
-    if (this.cam !== 'pov' && this.phase !== 'arrive') {
+    {                                                                                       // the dashboard shows in every view and right up to the garage door
       const sp = this.speed / MAX_S, sg = this.segs[Math.min(N - 1, segI)], temp = 16 - (elevation(segI) - 3500) / 1859 * 22 - sg.i / FINISH * 3;
       const gear = sp < 0.02 ? 0 : Math.min(6, 1 + Math.floor(sp * 6.4));
       const beam = this.lights === 'on' || (this.lights === 'auto' && (envAt(segI, FINISH, zoneAt(segI)).tod > 0.55 || this.nightK > 0.5));
@@ -396,12 +410,13 @@ export class RideScene implements Scene {
     const g = this.screen.ctx, a = Math.min(1, (this.stopT - 0.4) / 0.5) * (1 - Math.min(1, this.fade / 0.5));
     const m = Math.floor(this.rideT / 60), s = Math.floor(this.rideT % 60);
     const rows: [string, string][] = [['TIME', `${m}:${String(s).padStart(2, '0')}`], ['DISTANCE', `${this.odo.toFixed(1)} KM`], ['TOP SPEED', `${Math.round(this.topKmh)} KM/H`], ['OVERTAKES', String(this.passed)], ['HONKS', String(this.honks)], ['NEXT STOP', 'RED HAT']];
-    const px = Math.max(13, Math.round(W / (W < 700 ? 30 : 62))), cw = Math.min(W - 32, 340), ch = 84 + rows.length * (px + 12) + 14, x = W / 2 - cw / 2, y = H * 0.24;
+    const px = Math.max(13, Math.round(W / (W < 700 ? 30 : 62))), cw = Math.min(W - 32, 340), ch = 96 + rows.length * (px + 12) + 14, x = W / 2 - cw / 2, y = H * 0.24;
     g.save(); g.globalAlpha = a;
     rrect(x, y, cw, ch, 10, 'rgba(27,23,18,0.9)'); box(x, y + 8, 4, ch - 16, ACCENT);
+    if (this.bikeImg) { g.imageSmoothingEnabled = true; g.drawImage(this.bikeImg, x + cw - 24 - 121, y + 12, 121, 57); }
     label('MADE IT', x + 24, y + 38, Math.round(px * 1.9), ACCENT, { font: FONT_DISPLAY });
-    label('TRIUMPH SCRAMBLER 400 X', x + 24, y + 60, px - 3, '#a89d8b', { font: FONT_MONO });
-    rows.forEach(([k, v], i) => { const yy = y + 84 + i * (px + 12); label(k, x + 24, yy + px, px - 1, '#a89d8b', { font: FONT_MONO }); label(v, x + cw - 24, yy + px, px, i === rows.length - 1 ? ACCENT : HUD, { font: FONT_MONO, align: 'right', weight: 500 }); });
+    label('TRIUMPH SCRAMBLER 400 X', x + 24, y + 82, px - 3, '#a89d8b', { font: FONT_MONO });
+    rows.forEach(([k, v], i) => { const yy = y + 96 + i * (px + 12); label(k, x + 24, yy + px, px - 1, '#a89d8b', { font: FONT_MONO }); label(v, x + cw - 24, yy + px, px, i === rows.length - 1 ? ACCENT : HUD, { font: FONT_MONO, align: 'right', weight: 500 }); });
     g.restore();
   }
 

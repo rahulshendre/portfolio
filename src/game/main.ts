@@ -242,11 +242,26 @@ function leanStage(dt: number) {
   stage.style.transform = Math.abs(lean.x) + Math.abs(lean.y) < 0.002 ? '' : `perspective(1200px) rotateY(${(lean.x * 2.4).toFixed(3)}deg) rotateX(${(-lean.y * 1.8).toFixed(3)}deg) scale(1.02)`;
 }
 
+// ?fps shows a small readout: frames per second, the slowest recent frame, the canvas size and whether the ride is in its light mode.
+// Open the site with it on a phone or laptop to see how the ride really runs there.
+const meter = new URLSearchParams(location.search).has('fps') ? Object.assign(document.body.appendChild(document.createElement('div')), { id: 'fps' }) : null;
+if (meter) Object.assign(meter.style, { position: 'fixed', left: '8px', bottom: '56px', zIndex: '20', font: '12px/1.4 ui-monospace, Menlo, monospace', color: '#b8f0c0', background: 'rgba(13,26,18,0.85)', padding: '6px 8px', pointerEvents: 'none', whiteSpace: 'pre' });
+let meterT = 0, meterN = 0, meterMax = 0;
+
 // If frames get slow, the garage drops its extras (dust, flicker, lean) and keeps its look.
 let last = performance.now(), slow = 0, frames = 0;
 function frame(now: number) {
-  const dt = Math.min(0.05, (now - last) / 1000);
+  const raw = (now - last) / 1000;
+  const dt = Math.min(0.05, raw);
   last = now;
+  if (meter) {
+    meterT += raw; meterN++; meterMax = Math.max(meterMax, raw);
+    if (meterT > 0.5) {
+      const cur = director.current;
+      meter.textContent = `${(meterN / meterT).toFixed(0)} fps · worst ${(meterMax * 1000).toFixed(0)} ms\n${screen.W}x${screen.H} · ${screen.mode}${cur instanceof RideScene && cur.isLite ? ' · lite' : ''}`;
+      meterT = 0; meterN = 0; meterMax = 0;
+    }
+  }
   const s = director.current;
   if (s) { s.update(dt); s.draw(); fx.render(fxWanted(screen.mode, !!current?.lowFx, location.search)); if (!viewport.classList.contains('ready')) viewport.classList.add('ready'); } // first real frame: the poster steps aside
   if (s instanceof DoorScene && viewport.scrollWidth > viewport.clientWidth) { // phone: pan along with the bike

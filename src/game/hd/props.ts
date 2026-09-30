@@ -207,7 +207,8 @@ export function drawSign(sx: number, sy: number, k: number, top?: string, sub?: 
   });
 }
 
-export function drawGarage(sx: number, sy: number, k: number) {
+/** The garage seen from the road. `bay` false leaves the bay empty, for the arrival shot where your own bike rolls in. */
+export function drawGarage(sx: number, sy: number, k: number, bay = true) {
   const s = k * 0.95;
   if (s < 0.16) return;
   at(sx, sy, s, () => {
@@ -230,11 +231,13 @@ export function drawGarage(sx: number, sy: number, k: number) {
     for (const [x, w] of [[-44, 14], [-26, 8], [-14, 18], [10, 10], [24, 16], [40, 6]] as const) box(x, -58, w, 3, 'rgba(20,10,6,0.55)'), box(x + w / 2 - 1, -58, 2, 14 + (x % 3) * 4, 'rgba(20,10,6,0.55)');
     box(-56, -10, 112, 10, '#1d1a17');                                                                      // the dark display mat
     for (const x of [-30, 30]) { stroke([x, -90, x, -78], '#17130f', 1.6); poly([x - 10, -78, x + 10, -78, x + 7, -68, x - 7, -68], '#17130f'); poly([x - 7, -68, x + 7, -68, x + 22, -40, x - 22, -40], 'rgba(255,225,150,0.14)'); circle(x, -69, 4, '#fff2c0'); }
-    for (const x of [-26, 26]) { circle(x, -17, 15, '#0f0e10'); circle(x, -17, 9.5, '#8c9098'); circle(x, -17, 7, '#17171a'); circle(x, -17, 2.5, '#c8ccd2'); for (let a = 0; a < 6; a++) stroke([x, -17, x + Math.cos(a * 1.05) * 9, -17 + Math.sin(a * 1.05) * 9], '#8c9098', 0.9); }
-    poly([-26, -17, -10, -36, 6, -38, 24, -18, 10, -26, -6, -22], '#f4f2ea');                                // frame and tank
-    poly([-8, -40, 12, -44, 15, -36, -4, -34], '#17130f'); poly([-6, -38, 8, -40, 8, -36, -4, -35], '#ffffff');  // seat and tank
-    stroke([24, -18, 30, -46], '#8c9098', 2.4); stroke([22, -47, 34, -47], '#17130f', 2.4); circle(31, -37, 4.5, '#ffe9a8');                  // fork, bars and headlight
-    stroke([-22, -28, 18, -26], '#b9bec6', 3);                                                                // the high exhaust
+    if (bay) {
+      for (const x of [-26, 26]) { circle(x, -17, 15, '#0f0e10'); circle(x, -17, 9.5, '#8c9098'); circle(x, -17, 7, '#17171a'); circle(x, -17, 2.5, '#c8ccd2'); for (let a = 0; a < 6; a++) stroke([x, -17, x + Math.cos(a * 1.05) * 9, -17 + Math.sin(a * 1.05) * 9], '#8c9098', 0.9); }
+      poly([-26, -17, -10, -36, 6, -38, 24, -18, 10, -26, -6, -22], '#f4f2ea');                                // frame and tank
+      poly([-8, -40, 12, -44, 15, -36, -4, -34], '#17130f'); poly([-6, -38, 8, -40, 8, -36, -4, -35], '#ffffff');  // seat and tank
+      stroke([24, -18, 30, -46], '#8c9098', 2.4); stroke([22, -47, 34, -47], '#17130f', 2.4); circle(31, -37, 4.5, '#ffe9a8');                  // fork, bars and headlight
+      stroke([-22, -28, 18, -26], '#b9bec6', 3);                                                                // the high exhaust
+    }
     // the cat, sitting by the bay
     oval(-72, -3, 9, 3, 'rgba(0,0,0,0.25)'); oval(-72, -9, 6, 8, '#d9d2c4'); circle(-72, -19, 5, '#d9d2c4'); poly([-76, -22, -75, -28, -72, -23], '#d9d2c4'); poly([-68, -22, -69, -28, -72, -23], '#d9d2c4'); box(-74, -20, 1.4, 1.4, '#3a5a3a'); box(-70, -20, 1.4, 1.4, '#3a5a3a'); stroke([-66, -6, -62, -10, -60, -6], '#d9d2c4', 2);
     // the neon sign on the roof
