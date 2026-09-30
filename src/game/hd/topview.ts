@@ -114,7 +114,8 @@ export function drawTop(ctx: CanvasRenderingContext2D, segs: Segment[], cars: Ca
     const bx = 0, by = 0;
     oval(bx - 7, by + 4, 9, 26, SHADOW);
     oval(bx, by + 14, 3.6, 12, '#111214'); oval(bx, by - 16, 3.6, 12, '#111214');
-    rrect(bx - 5, by - 12, 10, 24, 4, '#f3f0e8'); rrect(bx - 5, by - 12, 3, 24, 2, '#ffffff'); rrect(bx - 3, by + 8, 6, 8, 2, '#5a3d2b');
+    rrect(bx - 5, by - 12, 10, 24, 4, '#f3f0e8'); rrect(bx - 5, by - 12, 3, 24, 2, '#ffffff'); rrect(bx - 1.2, by - 12, 2.4, 20, 1, '#17181c'); rrect(bx - 3, by + 8, 6, 8, 2, '#5a3d2b');
+    stroke([bx - 4, by - 14, bx - 4, by - 26], '#d9a233', 2.4); stroke([bx + 4, by - 14, bx + 4, by - 26], '#d9a233', 2.4);   // gold forks
     stroke([bx - 17, by - 14, bx + 17, by - 14], '#1b1c20', 2.6); circle(bx - 17, by - 14, 2.4, '#141518'); circle(bx + 17, by - 14, 2.4, '#141518');
     oval(bx, by - 1, 9, 6, '#2f3747'); stroke([bx - 8, by - 4, bx - 16, by - 13], '#2f3747', 4); stroke([bx + 8, by - 4, bx + 16, by - 13], '#2f3747', 4);
     circle(bx, by - 2, 5.6, '#f4f2ea'); stroke([bx, by - 7, bx, by + 3], '#d8342b', 1.4);

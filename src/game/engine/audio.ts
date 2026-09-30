@@ -32,11 +32,14 @@ export class EngineSound {
   private river?: GainNode;
   private lake?: GainNode;
   private rain?: GainNode;
+  private squeal?: GainNode;
+  private squealF?: BiquadFilterNode;
+  private rumble?: GainNode;
 
   toggle(): boolean {
     this.on = !this.on;
     if (this.on) this.start();
-    else for (const n of [this.gain, this.wind, this.river, this.lake, this.rain]) n?.gain.setTargetAtTime(0, this.ctx!.currentTime, 0.08);   // every layer, so the river does not keep running in the garage
+    else for (const n of [this.gain, this.wind, this.river, this.lake, this.rain, this.squeal, this.rumble]) n?.gain.setTargetAtTime(0, this.ctx!.currentTime, 0.08);   // every layer, so the river does not keep running in the garage
     return this.on;
   }
 
@@ -72,7 +75,15 @@ export class EngineSound {
       const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 2600;
       const rain = ctx.createGain(); rain.gain.value = 0;
       nsrc.connect(hp).connect(rain).connect(dest(ctx)); nsrc.start(0, 0.3);
-      Object.assign(this, { ctx, gain, filter, body, thump, wind, windFilter, river, lake, rain });
+      const ssrc = ctx.createBufferSource(); ssrc.buffer = buf; ssrc.loop = true;                      // tyre squeal: a narrow, high band of noise
+      const squealF = ctx.createBiquadFilter(); squealF.type = 'bandpass'; squealF.frequency.value = 1900; squealF.Q.value = 9;
+      const squeal = ctx.createGain(); squeal.gain.value = 0;
+      ssrc.connect(squealF).connect(squeal).connect(dest(ctx)); ssrc.start(0, 0.9);
+      const gsrc = ctx.createBufferSource(); gsrc.buffer = buf; gsrc.loop = true;                      // gravel rumble: low, crunchy noise
+      const gf = ctx.createBiquadFilter(); gf.type = 'lowpass'; gf.frequency.value = 380;
+      const rumble = ctx.createGain(); rumble.gain.value = 0;
+      gsrc.connect(gf).connect(rumble).connect(dest(ctx)); gsrc.start(0, 1.7);
+      Object.assign(this, { ctx, gain, filter, body, thump, wind, windFilter, river, lake, rain, squeal, squealF, rumble });
     }
     void wake(this.ctx!);
     this.gain!.gain.setTargetAtTime(0.075, this.ctx!.currentTime, 0.1);
@@ -113,6 +124,35 @@ export class EngineSound {
     this.river!.gain.setTargetAtTime((env?.river ?? 0) * 0.05, t, 0.4);
     this.lake!.gain.setTargetAtTime((env?.lake ?? 0) * 0.07, t, 0.6);
   }
+
+  /** Continuous surface sounds, each 0 to 1: tyres complaining in a hard lean, and gravel under the wheels. */
+  surface(squeal: number, rumble: number) {
+    if (!this.ctx || !this.squeal || !this.rumble || !this.on) return;
+    const t = this.ctx.currentTime;
+    this.squeal.gain.setTargetAtTime(squeal * 0.035, t, 0.05); this.squealF!.frequency.setTargetAtTime(1700 + squeal * 700, t, 0.1);
+    this.rumble.gain.setTargetAtTime(rumble * 0.11, t, 0.08);
+  }
+
+  /** A dull bump: you touched something. */
+  thud() {
+    if (!this.on || !this.ctx) return;
+    const c = this.ctx, t = c.currentTime, o = c.createOscillator(), g = c.createGain();
+    o.type = 'sine'; o.frequency.setValueAtTime(120, t); o.frequency.exponentialRampToValueAtTime(40, t + 0.2);
+    g.gain.setValueAtTime(0.16, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.28); o.connect(g).connect(dest(c)); o.start(t); o.stop(t + 0.3);
+    this.crackle(t, 0.12, 900, 0.1);
+  }
+
+  /** Thunder: a crack, then a long low roll, `delay` seconds after the flash. */
+  thunder(delay = 0.6, size = 1) {
+    if (!this.on || !this.ctx) return;
+    const c = this.ctx, t = c.currentTime + delay, len = Math.floor(c.sampleRate * 3.2), b = c.createBuffer(1, len, c.sampleRate), d = b.getChannelData(0);
+    for (let i = 0; i < len; i++) { const x = i / len; d[i] = (Math.random() * 2 - 1) * (Math.exp(-x * 2.4) * (0.5 + 0.5 * Math.sin(x * 40 + Math.sin(x * 9) * 4))); }
+    const s = c.createBufferSource(); s.buffer = b; const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.setValueAtTime(900, t); lp.frequency.exponentialRampToValueAtTime(90, t + 2.6);
+    const g = c.createGain(); g.gain.value = 0.32 * size; s.connect(lp).connect(g).connect(dest(c)); s.start(t);
+  }
+
+  /** The exhaust pops and crackles when you roll off the throttle at speed. */
+  pop() { if (this.on && this.ctx) { const t = this.ctx.currentTime; this.crackle(t, 0.09, 1500, 0.06); this.crackle(t + 0.07, 0.06, 1200, 0.04); } }
 
   /** Turn the rain on (0 to 1), or off. */
   setRain(v: number) { if (this.ctx && this.rain) this.rain.gain.setTargetAtTime(v * 0.05, this.ctx.currentTime, 0.6); }

@@ -51,10 +51,6 @@ export function carAhead(cars: Car[], playerZ: number, px: number, within: numbe
   return best;
 }
 
-export function autopilotLane(cars: Car[], playerZ: number): number {
-  return cars.some((c) => c.o < 0 && c.z > playerZ && c.z - playerZ < 14 * SEG_L) ? RIGHT : LEFT;
-}
-
 export function capBehind(cars: Car[], playerZ: number, px: number, speed: number, maxS: number): { speed: number; blocker?: Car } {
   const c = carAhead(cars, playerZ, px, 4 * SEG_L);
   // slow down smoothly behind it: the closer you get, the nearer to its speed you are held

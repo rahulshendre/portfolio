@@ -73,3 +73,16 @@ describe('grip', () => {
     expect(t100(0.6)).toBeGreaterThan(t100(1));
   });
 });
+
+describe('the edges of the road', () => {
+  it('gravel drags the bike down to a crawl-ish pace even with the throttle open', () => {
+    const v = run(V_CRUISE, 30, { gas: true, rough: 1 });
+    expect(v * 3.6).toBeLessThan(60);
+    expect(v * 3.6).toBeGreaterThan(25);
+  });
+  it('swerving costs speed', () => {
+    const straight = run(V_TOP, 3, { gas: true, top: 40 });
+    const swerve = run(V_TOP, 3, { gas: true, top: 40, side: 1.4 });
+    expect(swerve).toBeLessThan(straight);
+  });
+});

@@ -18,8 +18,15 @@ export function drawPOV(ctx: CanvasRenderingContext2D, W: number, H: number, spe
   // tank
   poly([m - U(90), H, m - U(42), b - U(36), m + U(42), b - U(36), m + U(90), H], '#f1efe9');
   poly([m + U(18), b - U(36), m + U(42), b - U(36), m + U(90), H, m + U(50), H], '#c9c6bd');
-  box(m - U(5), b - U(36), U(10), U(36), '#2a2a2e'); // stripe
+  box(m - U(7), b - U(36), U(14), U(36), '#17181c'); // the black centre stripe on the white tank
+  rrect(m - U(48), b - U(30), U(14), U(30), U(5), '#17181c'); rrect(m + U(34), b - U(30), U(14), U(30), U(5), '#17181c'); // rubber knee pads
   circle(m, b - U(18), U(7), '#b8bcc2');
+  // the gold upside-down forks running down from the yokes either side of the tank: the Scrambler's signature
+  for (const sd of [-1, 1]) {
+    poly([m + sd * U(34), b - U(36), m + sd * U(52), b - U(36), m + sd * U(66), b - U(6), m + sd * U(48), b - U(6)], '#d9a233');
+    poly([m + sd * U(34), b - U(36), m + sd * U(40), b - U(36), m + sd * U(54), b - U(6), m + sd * U(48), b - U(6)], '#f0c766');
+    box(m + sd * U(34) - (sd < 0 ? U(20) : 0), b - U(42), U(20), U(8), '#1a1b20');
+  }
   // bars
   box(m - U(60), b - U(58), U(120), U(10), '#2a2a2e');
   circle(m - U(52), b - U(53), U(7), '#d9a441');

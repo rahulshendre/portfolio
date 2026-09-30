@@ -18,6 +18,10 @@ export interface Inputs {
   top: number;
   /** How well the tyres bite: 1 on dry tarmac, less in rain and on snow. It limits both drive and braking. */
   grip?: number;
+  /** 0 on the tarmac, 1 on gravel and dust off the edge: it drags hard and lowers the top speed. */
+  rough?: number;
+  /** Sideways speed in road half-widths per second: swerving costs speed, more of it the faster you go. */
+  side?: number;
 }
 
 /** Advance the speed `v` (m/s) by `dt` seconds. */
@@ -32,8 +36,10 @@ export function step(v: number, dt: number, o: Inputs): number {
   const hill = m * G * o.grade;
   const engineBraking = !o.gas && !o.brake && v > o.cruise ? 0.06 * m * G : 0;              // lifting off slows you toward the cruise
   const braking = o.brake && v > 0.05 ? BIKE.brake * grip * m * G : 0;
-  const next = v + ((drive - drag - rolling - hill - engineBraking - braking) / m) * dt;
-  return Math.min(o.top, Math.max(0, next));
+  const rough = (o.rough ?? 0) * 0.42 * m * G * Math.min(1, v / 8);
+  const scrub = Math.min(1, Math.abs(o.side ?? 0) / 1.4) * 0.05 * m * G * Math.min(1, v / V_TOP);
+  const next = v + ((drive - drag - rolling - hill - engineBraking - braking - rough - scrub) / m) * dt;
+  return Math.min(o.top * (1 - 0.45 * (o.rough ?? 0)), Math.max(0, next));
 }
 
 /** How much a bike answers its bars: none at a standstill, a slow wobble at walking pace, full authority above about 30 km/h. `v` is in m/s. */

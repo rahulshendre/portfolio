@@ -28,6 +28,20 @@ export const BRO = [
   { i: 640, lines: ['IF MARRIED', 'DIVORCE SPEED'] },
   { i: 820, lines: ['BE GENTLE ON', 'THE ACCELERATOR'] },
   { i: 1110, lines: ['HOME IS NEAR', 'CHAI IS READY'] },
+  { i: 105, lines: ['BE MISTER LATE', 'THAN LATE MISTER'] },
+  { i: 250, lines: ['LIFE IS SHORT', "DON'T MAKE IT SHORTER"] },
+  { i: 290, lines: ['ON THE CURVE', 'BE NERVE'] },
+  { i: 385, lines: ['SPEED THRILLS', 'BUT KILLS'] },
+  { i: 455, lines: ['SAFETY ON ROAD', 'SAFE TEA AT HOME'] },
+  { i: 520, lines: ['DO NOT GOSSIP', 'LET HIM DRIVE'] },
+  { i: 580, lines: ['NO HURRY', 'NO WORRY'] },
+  { i: 665, lines: ['DRIVE LIKE HELL', 'YOU WILL BE THERE'] },
+  { i: 745, lines: ['I AM CURVACEOUS', 'BE SLOW'] },
+  { i: 780, lines: ['THIN AIR AHEAD', 'BREATHE AND BREAK'] },
+  { i: 850, lines: ['ALWAYS END YOUR DRIVE', 'BEFORE THE DRIVE ENDS YOU'] },
+  { i: 935, lines: ['WATCH THE EDGE', 'ENJOY THE LEDGE'] },
+  { i: 970, lines: ['ALTITUDE IS A GIFT', 'OPEN IT SLOWLY'] },
+  { i: 1040, lines: ['HORN OK PLEASE', 'PEEP PEEP'] },
 ] as const;
 
 export const LAKE_FROM = 990;

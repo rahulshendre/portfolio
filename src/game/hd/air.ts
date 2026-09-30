@@ -51,6 +51,28 @@ export function drawRain(g: CanvasRenderingContext2D, W: number, H: number, t: n
 }
 
 /** Grey the whole picture for the weather: cool and dark for rain, milky for fog, pale for snow. */
+/** Night: a cool multiply over the whole picture (`k` is 0 to 1), so everything the world drew turns deep blue and only lights stay bright. */
+export function drawNight(g: CanvasRenderingContext2D, W: number, H: number, k: number) {
+  if (k < 0.01) return;
+  g.save(); g.globalCompositeOperation = 'multiply'; g.globalAlpha = k;
+  g.fillStyle = '#4b5a9c'; g.fillRect(0, 0, W, H);
+  g.restore();
+  g.save(); g.globalAlpha = 0.16 * k; g.fillStyle = '#020616'; g.fillRect(0, 0, W, H); g.restore();
+}
+
+/** Draw the lit things of the night (windows, lamps, signs) as warm additive glows on top of the darkness. */
+export function drawLights(g: CanvasRenderingContext2D, lights: readonly { x: number; y: number; r: number; a: number; color: string }[]) {
+  if (!lights.length) return;
+  g.save(); g.globalCompositeOperation = 'lighter';
+  for (const l of lights) {
+    if (l.x < -l.r || l.x > g.canvas.width + l.r) continue;
+    const gr = g.createRadialGradient(l.x, l.y, 0, l.x, l.y, l.r);
+    gr.addColorStop(0, l.color + Math.round(l.a * 255).toString(16).padStart(2, '0')); gr.addColorStop(1, l.color + '00');
+    g.fillStyle = gr; g.fillRect(l.x - l.r, l.y - l.r, l.r * 2, l.r * 2);
+  }
+  g.restore();
+}
+
 export function drawSkyTint(g: CanvasRenderingContext2D, W: number, H: number, HZ: number, sky: Sky) {
   if (sky === 'clear') return;
   const top = H * HZ;
@@ -82,18 +104,18 @@ export function drawHeadlight(g: CanvasRenderingContext2D, W: number, H: number,
 }
 
 /** Slow cloud shadows crossing the ground, and a warm sheen on the tarmac toward the sun as evening comes. Drawn over the world, under the bike. */
-export function drawGround(g: CanvasRenderingContext2D, W: number, H: number, HZ: number, t: number, speed: number, tod: number, segI: number, wet = 0) {
-  const top = H * HZ, alt = altitude(segI);
+export function drawGround(g: CanvasRenderingContext2D, W: number, H: number, HZ: number, t: number, speed: number, tod: number, segI: number, wet = 0, dim = 0) {
+  const top = H * HZ, alt = altitude(segI), lit = 1 - 0.8 * dim;                       // pale mist and snow must not glow at night
   const white = smooth(815, 850, segI) * (1 - smooth(880, 912, segI));                    // a snow squall near the top of the climb, thinning as you crest
   if (white > 0.01) {
-    g.globalAlpha = 0.3 * white; g.fillStyle = '#eef1f5'; g.fillRect(0, 0, W, H); g.globalAlpha = 1;
-    const gr = g.createLinearGradient(0, top - H * 0.1, 0, top + (H - top) * 0.5); gr.addColorStop(0, 'rgba(240,243,247,0)'); gr.addColorStop(0.5, `rgba(240,243,247,${0.55 * white})`); gr.addColorStop(1, 'rgba(240,243,247,0)');
+    g.globalAlpha = 0.3 * white * lit; g.fillStyle = '#eef1f5'; g.fillRect(0, 0, W, H); g.globalAlpha = 1;
+    const gr = g.createLinearGradient(0, top - H * 0.1, 0, top + (H - top) * 0.5); gr.addColorStop(0, 'rgba(240,243,247,0)'); gr.addColorStop(0.5, `rgba(240,243,247,${0.55 * white * lit})`); gr.addColorStop(1, 'rgba(240,243,247,0)');
     g.fillStyle = gr; g.fillRect(0, top - H * 0.1, W, (H - top) * 0.6 + H * 0.1);
   }
   if (alt > 0.4) {                                                                     // low cloud sliding through the pass
     for (let i = 0; i < 3; i++) {
       const p = (t * 0.02 + i / 3) % 1, y = top + (H - top) * (0.03 + 0.4 * p * p), h = (H - top) * (0.05 + 0.2 * p * p), a = 0.3 * (alt - 0.3) * Math.sin(p * Math.PI);
-      const gr = g.createLinearGradient(0, y - h, 0, y + h); gr.addColorStop(0, 'rgba(244,240,236,0)'); gr.addColorStop(0.5, `rgba(244,240,236,${a})`); gr.addColorStop(1, 'rgba(244,240,236,0)');
+      const gr = g.createLinearGradient(0, y - h, 0, y + h); gr.addColorStop(0, 'rgba(244,240,236,0)'); gr.addColorStop(0.5, `rgba(244,240,236,${a * lit})`); gr.addColorStop(1, 'rgba(244,240,236,0)');
       g.fillStyle = gr; g.fillRect(0, y - h, W, h * 2);
     }
   }
@@ -107,7 +129,7 @@ export function drawGround(g: CanvasRenderingContext2D, W: number, H: number, HZ
   }
   if (segI >= LAKE_FROM - 30) {                                                        // mist lying on the water, thickest at the far shore
     const a = smooth(LAKE_FROM - 30, LAKE_FROM + 20, segI) * (0.16 + tod * 0.12);
-    const gr = g.createLinearGradient(0, top - H * 0.02, 0, top + (H - top) * 0.22); gr.addColorStop(0, 'rgba(255,236,214,0)'); gr.addColorStop(0.35, `rgba(255,236,214,${a})`); gr.addColorStop(1, 'rgba(255,236,214,0)');
+    const gr = g.createLinearGradient(0, top - H * 0.02, 0, top + (H - top) * 0.22); gr.addColorStop(0, 'rgba(255,236,214,0)'); gr.addColorStop(0.35, `rgba(255,236,214,${a * lit})`); gr.addColorStop(1, 'rgba(255,236,214,0)');
     g.fillStyle = gr; g.fillRect(W * 0.5, top - H * 0.02, W * 0.5, (H - top) * 0.24 + H * 0.02);
   }
   if (wet > 0) {                                                                       // wet tarmac mirrors the sky: a pale sheen, brightest toward the horizon
@@ -132,6 +154,29 @@ export function drawFlare(g: CanvasRenderingContext2D, W: number, H: number, HZ:
     const x = sx + dx * t, y = sy + dy * t, rad = H * r;
     const gr = g.createRadialGradient(x, y, 0, x, y, rad); gr.addColorStop(0, col + '00'); gr.addColorStop(0.75, col + Math.round(a * 255).toString(16).padStart(2, '0')); gr.addColorStop(1, col + '00');
     g.fillStyle = gr; g.fillRect(x - rad, y - rad, rad * 2, rad * 2);
+  }
+  g.restore();
+}
+
+export interface Bolt { age: number; x: number; seed: number }
+
+/** A fork of lightning from the cloud to the horizon, with the sky and land flashing white. `bolt.age` is seconds since the strike. */
+export function drawLightning(g: CanvasRenderingContext2D, W: number, H: number, HZ: number, bolt: Bolt) {
+  const a = bolt.age, top = H * HZ;
+  const flash = a < 0.07 ? 0.5 : a < 0.14 ? 0.08 : a < 0.22 ? 0.42 : Math.max(0, 0.2 - (a - 0.22) * 0.5);   // a strike, a flicker, the return stroke, then it fades
+  if (flash <= 0) return;
+  g.save();
+  g.fillStyle = `rgba(214,224,255,${flash})`; g.fillRect(0, 0, W, H);
+  if (a < 0.3) {
+    let x = bolt.x * W, y = 0; const pts: [number, number][] = [[x, y]];
+    for (let i = 1; y < top - 4; i++) { y += (top / 9) * (0.7 + hash(bolt.seed + i) * 0.6); x += (hash(bolt.seed * 3 + i) - 0.5) * W * 0.07; pts.push([x, Math.min(y, top)]); }
+    g.lineCap = 'round'; g.lineJoin = 'round';
+    for (const [w, al] of [[10, 0.18], [4, 0.5], [1.6, 1]] as const) {
+      g.strokeStyle = `rgba(235,240,255,${al})`; g.lineWidth = w * Math.max(1, H / 700); g.beginPath();
+      pts.forEach(([px, py], i) => (i ? g.lineTo(px, py) : g.moveTo(px, py))); g.stroke();
+    }
+    const [bx, by] = pts[Math.floor(pts.length / 2)];
+    g.lineWidth = 1.2 * Math.max(1, H / 700); g.strokeStyle = 'rgba(235,240,255,0.7)'; g.beginPath(); g.moveTo(bx, by); g.lineTo(bx + W * 0.06, by + top * 0.16); g.lineTo(bx + W * 0.09, by + top * 0.3); g.stroke();   // a branch
   }
   g.restore();
 }

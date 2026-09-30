@@ -34,6 +34,7 @@ export function drawCluster(g: CanvasRenderingContext2D, x: number, y: number, s
   label('GEAR', gx + 15 * s, y + 58 * s, 8 * s, DIM, { font: MONO, align: 'center' });
   if (d.lights) { circle(gx + 5 * s, y + 74 * s, 3.2 * s, '#7fd0ff'); label('LT', gx + 11 * s, y + 77 * s, 8 * s, DIM, { font: MONO }); }
   const rx = gx + 42 * s;
+  label('SCRAMBLER 400 X', x + w - 10 * s, y + 12 * s, 7.5 * s, DIM, { font: MONO, align: 'right' });
   label('ALT', rx, y + 24 * s, 8 * s, DIM, { font: MONO }); label(d.elev.toLocaleString('en-US') + ' m', rx, y + 38 * s, 12 * s, HUD, { font: MONO, weight: 500 });
   label('TEMP', rx, y + 56 * s, 8 * s, DIM, { font: MONO }); label(Math.round(d.temp) + ' C', rx, y + 70 * s, 12 * s, d.temp < 0 ? '#9cc4d4' : HUD, { font: MONO, weight: 500 });
   label('TRIP', rx, y + 86 * s, 8 * s, DIM, { font: MONO }); label(d.trip.toFixed(1) + ' km', rx + 30 * s, y + 86 * s, 9 * s, HUD, { font: MONO });

@@ -3,6 +3,7 @@ import { CAM_DEPTH, project, type Projected } from '../ride/project';
 import { drawBackground, type Env } from './background';
 import { mix, poly as fillPoly, smooth, use } from './draw';
 import { drawProp, setTod } from './props';
+export { LIGHTS } from './props';
 import { altitude, FINISH, LAKE_FROM, N, shore, ROAD_W, SEG_L, type Prop, type Segment } from './track-ladakh';
 import { drawCar, type Car } from './traffic';
 
@@ -74,7 +75,7 @@ function wires(g: CanvasRenderingContext2D, x1: number, y1: number, s1: number, 
 
 export function renderRoad(g: CanvasRenderingContext2D, segs: Seg[], v: View, cars: Car[]) {
   use(g);
-  setTod(v.env.tod);
+  setTod(v.env.tod, v.env.night ?? 0);
   drawBackground(g, v.W, v.H, v.HZ, v.bgOff, v.t, v.env);
   const { W, H, HZ } = v;
   const baseI = Math.floor(v.pos / SEG_L), pct = (v.pos % SEG_L) / SEG_L;

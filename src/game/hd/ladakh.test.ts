@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildTrack, FINISH, BOARDS, MILESTONE_SEGS, N, PASS_TOP, altitude, calm, zoneAt } from './track-ladakh';
-import { autopilotLane, capBehind, carAhead, LEFT, RIGHT, type Car } from './traffic';
+import { capBehind, carAhead, LEFT, RIGHT, type Car } from './traffic';
 import { milestones } from '../../data/site';
 
 describe('ladakh track', () => {
@@ -30,10 +30,6 @@ describe('ladakh traffic', () => {
   it('finds the car ahead in your lane only', () => {
     expect(carAhead(cars, 1000, LEFT, 2000)).toBe(cars[0]);
     expect(carAhead(cars, 1000, RIGHT, 2000)).toBeUndefined();
-  });
-  it('autopilot pulls right to overtake', () => {
-    expect(autopilotLane(cars, 1000)).toBe(RIGHT);
-    expect(autopilotLane(cars, 1600)).toBe(LEFT);
   });
   it('holds you to its speed when close, easing off as the gap opens', () => {
     const close = capBehind([{ ...cars[0], z: 1100 }], 1000, LEFT, 9000, 9600).speed;

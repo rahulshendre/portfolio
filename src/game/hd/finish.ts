@@ -2,20 +2,20 @@
 // a cached overlay so it costs a single drawImage per frame. This is what makes flat vector shapes feel photographed and lit.
 import { rnd } from './draw';
 
-let cache: { W: number; H: number; HZ: number; tod: number; canvas: HTMLCanvasElement } | null = null;
+let cache: { W: number; H: number; HZ: number; tod: number; night: boolean; canvas: HTMLCanvasElement } | null = null;
 
-function build(W: number, H: number, HZ: number, tod: number) {
+function build(W: number, H: number, HZ: number, tod: number, night: boolean) {
   const c = document.createElement('canvas'); c.width = W; c.height = H;
   const g = c.getContext('2d')!;
   // warm bloom from the low sun on the right, cooler shadow on the left
   const sx = W * 0.74, sy = H * HZ - H * (0.26 - 0.15 * tod) * 0.6;
   const bloom = g.createRadialGradient(sx, sy, 0, sx, sy, Math.max(W, H) * 0.75);
   bloom.addColorStop(0, `rgba(255,214,150,${0.2 + tod * 0.06})`); bloom.addColorStop(0.5, 'rgba(255,170,110,0.06)'); bloom.addColorStop(1, 'rgba(255,170,110,0)');
-  g.fillStyle = bloom; g.fillRect(0, 0, W, H);
+  if (!night) { g.fillStyle = bloom; g.fillRect(0, 0, W, H); }
   // shafts of light fanning out from the sun through the haze, stronger toward evening
   const ry = H * HZ - H * (0.26 - 0.15 * tod);
   g.save(); g.globalCompositeOperation = 'lighter';
-  for (let k = 0; k < 9; k++) {
+  for (let k = 0; !night && k < 9; k++) {
     const a = 1.75 + (k - 4) * 0.21 + rnd(k * 3.3) * 0.08, wd = 0.035 + rnd(k * 1.9) * 0.05, len = Math.hypot(W, H);
     const gr = g.createRadialGradient(sx, ry, 0, sx, ry, len * 0.8);
     gr.addColorStop(0, `rgba(255,214,150,${0.07 + tod * 0.05})`); gr.addColorStop(1, 'rgba(255,214,150,0)');
@@ -43,8 +43,8 @@ function build(W: number, H: number, HZ: number, tod: number) {
 }
 
 /** Draw the finishing pass. `tod` 0..1 shifts the bloom slightly as the day goes on; it is rebuilt only when the size or the hour changes noticeably. */
-export function finish(ctx: CanvasRenderingContext2D, W: number, H: number, HZ: number, tod: number) {
+export function finish(ctx: CanvasRenderingContext2D, W: number, H: number, HZ: number, tod: number, night = false) {
   const q = Math.round(tod * 6) / 6;
-  if (!cache || cache.W !== W || cache.H !== H || cache.HZ !== HZ || cache.tod !== q) cache = { W, H, HZ, tod: q, canvas: build(W, H, HZ, q) };
+  if (!cache || cache.W !== W || cache.H !== H || cache.HZ !== HZ || cache.tod !== q || cache.night !== night) cache = { W, H, HZ, tod: q, night, canvas: build(W, H, HZ, q, night) };
   ctx.drawImage(cache.canvas, 0, 0);
 }

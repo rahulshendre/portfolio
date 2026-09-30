@@ -144,7 +144,7 @@ export function drawBro(sx: number, sy: number, k: number, lines?: readonly stri
     rrect(-44, -66, 88, 48, 3, '#1b1712');
     if (lines) {
       lines.forEach((ln, i) => {
-        label(ln, 0, -48 + i * 16, 9, '#e8b923', { align: 'center', weight: 600 });
+        fit(ln, 0, -48 + i * 16, 82, 9, '#e8b923', 600);                                      // long slogans shrink to fit the board
       });
     }
   });
@@ -500,11 +500,20 @@ export function drawLamp(sx: number, sy: number, k: number) {
 }
 
 /** The hour of the ride (0 afternoon to 1 dusk), set by the road renderer, so signs can catch the last light. */
-let TOD = 0;
-export const setTod = (t: number) => { TOD = t; };
+let TOD = 0, NIGHT = 0;
+export const setTod = (t: number, night = 0) => { TOD = t; NIGHT = night; LIGHTS.length = 0; };
+/** Light sources met this frame, drawn on top of the night so lamps, windows and signs stay bright. */
+export interface Light { x: number; y: number; r: number; a: number; color: string }
+export const LIGHTS: Light[] = [];
+const EMIT: Record<string, [number, number, number, number, string]> = {   // [dx, dy, radius, alpha, colour], in prop units
+  garage: [0, -50, 170, 0.4, '#ffb862'], lamp: [26, -98, 56, 0.3, '#ffe0a0'], dhaba: [-4, -34, 64, 0.45, '#ffb860'],
+  bro: [0, -42, 70, 0.28, '#ffd070'], sign: [0, -46, 66, 0.28, '#d8f0d0'], chevron: [0, -80, 56, 0.3, '#ffe060'], board: [0, -60, 90, 0.3, '#fff0d0'], ms: [0, -40, 70, 0.3, '#fff0d0'],
+};
 const GLOW: Record<string, [number, number]> = { bro: [-52, 90], sign: [-60, 90], chevron: [-80, 70], board: [-70, 110], ms: [-40, 80] };
 
 export function drawProp(type: string, sx: number, sy: number, k: number, p: { label?: string; sub?: string; lines?: readonly string[]; v?: number }) {
+  const em = EMIT[type];
+  if (em && NIGHT > 0.3 && k > 0.12) LIGHTS.push({ x: sx + em[0] * k, y: sy + em[1] * k, r: em[2] * k, a: em[3] * Math.min(1, (NIGHT - 0.3) * 2), color: em[4] });
   const gl = GLOW[type];
   if (gl && TOD > 0.5 && k > 0.16) at(sx, sy, k * (PROP_GLOW[type] ?? 1), () => glow(0, gl[0], gl[1], '#ffc878', Math.min(0.55, (TOD - 0.5) * 1.1)));   // reflective paint lit by the last sun and your lamp
   switch (type) {

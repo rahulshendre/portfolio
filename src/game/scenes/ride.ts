@@ -1,5 +1,5 @@
 // Title card, then the Ladakh ride through four chapters, then pulling up at the garage.
-import { box, circle, label, rrect, smooth, use } from '../hd/draw';
+import { box, circle, label, mix, rrect, smooth, use } from '../hd/draw';
 import { CAM_HEIGHT, CAM_NAMES, CAMS, drawPOV, drawTop, RIDER_SCALE, type Cam } from '../hd/cameras';
 import { drawRider } from '../hd/rider';
 import { drawSpeedLines } from '../hd/speed';
@@ -7,8 +7,9 @@ import { finish } from '../hd/finish';
 import { envAt, hazeAt } from '../hd/background';
 import { renderRoad } from '../hd/road';
 import { altitude, buildTrack, PASS_TOP, elevation, FINISH, LAKE_FROM, MILESTONE_SEGS, N, SEG_L, zoneAt, type Segment } from '../hd/track-ladakh';
-import { autopilotLane, capBehind, honkAt, LEFT, spawnTraffic, type Car } from '../hd/traffic';
-import { drawAir, drawFlare, drawGround, drawHeadlight, drawRain, drawSkyTint, SKIES, type Sky } from '../hd/air';
+import { capBehind, honkAt, LEFT, spawnTraffic, type Car } from '../hd/traffic';
+import { LIGHTS } from '../hd/props';
+import { drawAir, drawLights, drawFlare, drawGround, drawHeadlight, drawLightning, drawNight, drawRain, drawSkyTint, SKIES, type Bolt, type Sky } from '../hd/air';
 import { agility, lateralStep, step as bikeStep, V_CRUISE, V_TOP } from '../hd/physics';
 import { drawCluster, drawPedals, pedalAt } from '../hd/cluster';
 import { CAM_DEPTH } from '../ride/project';
@@ -47,10 +48,9 @@ export class RideScene implements Scene {
   private segs: Segment[] = buildTrack(milestones);
   private cars: Car[] = spawnTraffic();
   private pos = 0; private px = LEFT; private speed = 0; private lean = 0; private braking = false; private lastSpeed = 0; private avgDt = 1 / 60; private lite = false; private honkT = 0; private gearNow = 0; private birdT = 2; private rung = new Set<number>();
-  private photo = false; private photoT = 0; private paused = false; private lights: 'auto' | 'on' | 'off' = 'auto'; private gas = false; private brake = false; private trip = 0; private vx = 0; private rideT = 0; private topKmh = 0; private passed = 0; private honks = 0; private stopT = 0; private sky: Sky = 'clear';
+  private photo = false; private photoT = 0; private paused = false; private lights: 'auto' | 'on' | 'off' = 'auto'; private gas = false; private brake = false; private trip = 0; private vx = 0; private bolt: Bolt | null = null; private boltIn = 6; private night = false; private nightK = 0; private gasWas = false; private rough = 0; private bumpT = 0; private rideT = 0; private topKmh = 0; private passed = 0; private honks = 0; private stopT = 0; private sky: Sky = 'clear';
   private cam: Cam = 'behind';
   private bgOff = 0; private t = 0; private odo = 0; private fade = 0; private flash = 0;
-  private manualUntil = 0;
   private shown = new Set<number>();
   private banner = { lines: [] as string[], t: 0, big: false, total: 2.6 };
 
@@ -62,6 +62,7 @@ export class RideScene implements Scene {
     const at = Number(new URLSearchParams(location.search).get('at'));
     const w = new URLSearchParams(location.search).get('weather') as Sky | null;
     if (w && SKIES.includes(w)) this.sky = w;
+    if (new URLSearchParams(location.search).has('night')) { this.night = true; this.nightK = 1; }
     if (OG) { this.pos = 400 * SEG_L; return; }
     if (at > 0) {
       this.startSound(); this.phase = 'ride'; this.pos = at * SEG_L; this.speed = V_CRUISE * K;
@@ -125,6 +126,12 @@ export class RideScene implements Scene {
     if (!this.lite && this.t > 2 && this.avgDt > 0.032) this.lite = true;
     this.banner.t -= dt;
     this.honkT -= dt;
+    if (this.sky === 'rain') {                                                                    // storms throw lightning now and then, with thunder that lags the flash
+      this.boltIn -= dt;
+      if (this.boltIn <= 0) { this.boltIn = 7 + Math.random() * 14; this.bolt = { age: 0, x: 0.12 + Math.random() * 0.76, seed: Math.random() * 100 }; engine.thunder(0.5 + Math.random() * 1.8, 0.6 + Math.random() * 0.7); }
+    }
+    if (this.bolt && (this.bolt.age += dt) > 0.9) this.bolt = null;
+    this.nightK += ((this.night ? 1 : 0) - this.nightK) * Math.min(1, dt * 1.6);
     this.photoT -= dt;
     this.flash -= dt;
     const tap = this.handleTap();
@@ -138,9 +145,10 @@ export class RideScene implements Scene {
     if (this.phase !== 'title') {
       if (input.pressed('KeyP') || (this.paused && tap === 'other')) { this.paused = !this.paused; if (this.paused) engine.update(0, 0, { river: 0, lake: 0, alt: 0 }); }   // a tap carries on too, for phones
       if (input.pressed('KeyL')) { this.lights = this.lights === 'on' ? 'off' : 'on'; this.show(this.lights === 'on' ? 'HEADLIGHT ON' : 'HEADLIGHT OFF', false, 1.2); }
+      if (input.pressed('KeyN')) { this.night = !this.night; this.show(this.night ? 'NIGHT RIDE|LIGHTS ON' : 'DAYLIGHT', false, 1.6); }
       if (input.pressed('KeyT')) { this.sky = SKIES[(SKIES.indexOf(this.sky) + 1) % SKIES.length]; engine.setRain(this.sky === 'rain' ? 1 : 0); this.show(`WEATHER|${this.sky.toUpperCase()}`, false, 1.6); }
       if (input.pressed('KeyR')) this.show(radio.toggle() ? 'RADIO ON' : 'RADIO OFF', false, 1.2);
-      if (input.pressed('KeyK')) this.show('W GAS · S BRAKE · A D STEER|H HONK · L LIGHT · P PAUSE|V OR 1-4 CAMERA · F PHOTO · R RADIO|T WEATHER · M SOUND · ESC EXIT', false, 4.5);
+      if (input.pressed('KeyK')) this.show('W GAS · S BRAKE · A D STEER|H HONK · L LIGHT · P PAUSE|V OR 1-4 CAMERA · F PHOTO · R RADIO|T WEATHER · N NIGHT · M SOUND · ESC EXIT', false, 4.5);
     }
     CAMS.forEach((c, i) => { if (input.pressed('Digit' + (i + 1))) this.setCam(c); });
     if (this.phase !== 'title' && input.pressed('KeyF')) { this.photo = !this.photo; this.photoT = 3; }
@@ -178,7 +186,7 @@ export class RideScene implements Scene {
       // real forces: thrust against drag, rolling resistance, the slope under the wheels and the brakes. With nothing pressed
       // the bike settles to a relaxed 55 km/h; gas climbs toward 110, and the climb up to the pass costs it speed.
       const grade = ((seg.y2 - seg.y1) / SEG_L) * 0.6;
-      this.speed = bikeStep(this.speed / K, dt, { gas: this.gas, brake: this.brake, grade, cruise: V_CRUISE, top: V_TOP * (seg.zone === 'pass' ? 0.92 : 1), grip: { clear: 1, fog: 0.95, rain: 0.65, snow: 0.55 }[this.sky] }) * K;
+      this.speed = bikeStep(this.speed / K, dt, { gas: this.gas, brake: this.brake, grade, cruise: V_CRUISE, top: V_TOP * (seg.zone === 'pass' ? 0.92 : 1), rough: this.rough, side: this.vx, grip: { clear: 1, fog: 0.95, rain: 0.65, snow: 0.55 }[this.sky] }) * K;
     }
 
     for (const c of this.cars) {
@@ -195,19 +203,30 @@ export class RideScene implements Scene {
     }
     const capped = capBehind(this.cars, playerZ, this.px, this.speed, MAX_S);
     this.speed = capped.speed;
-    if (capped.blocker && !capped.blocker.warned && this.t <= this.manualUntil) {
+    if (capped.blocker && !capped.blocker.warned) {
       capped.blocker.warned = true;
-      this.show(matchMedia('(pointer: coarse)').matches ? 'STUCK BEHIND A TRUCK|TAP THE HORN' : 'STUCK BEHIND A TRUCK|H TO HONK, OR STEER');
+      this.show(matchMedia('(pointer: coarse)').matches ? 'STUCK BEHIND A TRUCK|HONK, OR STEER AROUND' : 'STUCK BEHIND A TRUCK|H TO HONK, OR STEER AROUND');
     }
 
     const steer = held ? 0 : input.steer();   // a finger on a pedal is not a steering touch
-    if (steer) this.manualUntil = this.t + 2.5;
-    const target = this.phase === 'arrive' ? LEFT : autopilotLane(this.cars, playerZ);
-    // sideways motion has inertia and depends on forward speed: a bike that is not moving does not slide about
-    const vNow = this.speed / K, auto = !steer && this.t > this.manualUntil;
-    this.vx = lateralStep(this.vx, dt, { v: vNow, steer, laneError: auto ? target - this.px : 0 });
-    this.px += this.vx * dt - seg.curve * sp * sp * dt * 0.05 * agility(vNow);
-    if (this.px > 1.25 || this.px < -1.25) { this.px = Math.max(-1.25, Math.min(1.25, this.px)); this.vx = 0; }
+    // nothing steers the bike but you. Sideways motion has inertia and depends on forward speed: a bike that is not moving does not slide about
+    const vNow = this.speed / K;
+    this.vx = lateralStep(this.vx, dt, { v: vNow, steer, laneError: 0 });
+    // a bend pushes a fast bike wide: the harder the bend and the faster you are, the more you must lean into it
+    this.px += this.vx * dt - seg.curve * sp * sp * dt * 0.1 * agility(vNow);
+    // sideswipe: touching a vehicle beside you shoves you away from it and scrubs speed
+    for (const c of this.cars) {
+      if (c.lat || c.kind === 'marmot') continue;
+      const gap = c.z - playerZ;
+      if (Math.abs(gap) < 0.7 * SEG_L && Math.abs(c.o - this.px) < 0.3) {
+        this.vx += (this.px >= c.o ? 1 : -1) * 2.2 * dt * 8; this.speed *= 1 - dt * 1.5;
+        if (this.bumpT <= 0) { this.bumpT = 1.2; engine.thud(); this.show('CAREFUL|WATCH THE TRAFFIC', false, 1.2); }
+      }
+    }
+    this.bumpT -= dt;
+    // the tarmac ends near |1.1|: past it the ground is gravel, dust and stones
+    this.rough = Math.min(1, Math.max(0, (Math.abs(this.px) - 1.08) / 0.12));
+    if (this.px > 1.3 || this.px < -1.3) { this.px = Math.max(-1.3, Math.min(1.3, this.px)); this.vx *= -0.2; }
     const leanTo = Math.max(-1, Math.min(1, this.vx / 1.4)) + seg.curve * 0.25 * agility(vNow);     // lean follows the sideways motion and the bend, and vanishes at a standstill
     this.lean += (Math.max(-1, Math.min(1, leanTo)) - this.lean) * Math.min(1, dt * 8);
 
@@ -217,6 +236,11 @@ export class RideScene implements Scene {
     this.bgOff += seg.curve * sp * dt * 12;
     this.odo += (this.speed * dt) / 9000;
     this.trip = this.odo;
+    const lift = this.gasWas && !this.gas && !this.brake && sp > 0.6;                             // rolled off the throttle at speed
+    if (lift) engine.pop();
+    this.gasWas = this.gas;
+    const lean = Math.abs(this.vx) / 1.4 * sp + Math.abs(seg.curve) * sp * sp * 0.1;                 // how hard the tyres are working
+    engine.surface(Math.min(1, Math.max(0, lean - 0.45) * 2.4) * (this.sky === 'rain' ? 1.4 : 1), this.rough * Math.min(1, sp * 2));
     this.rideT += dt; this.topKmh = Math.max(this.topKmh, sp * KMH);
     const gr = sp < 0.02 ? 0 : Math.min(6, 1 + Math.floor(sp * 6.4));
     if (gr !== this.gearNow) { if (this.gearNow && gr) engine.shift(); this.gearNow = gr; }
@@ -224,7 +248,7 @@ export class RideScene implements Scene {
       river: smooth(270, 300, segI) * (1 - smooth(670, 700, segI)), lake: smooth(LAKE_FROM - 30, LAKE_FROM + 20, segI), alt: altitude(segI),
     }, this.gas ? 1 : this.brake ? 0 : 0.3);
     this.birdT -= dt;
-    if (this.birdT < 0) { this.birdT = 3 + Math.random() * 7; if (altitude(segI) < 0.5 && this.speed < MAX_S * 0.95) engine.chirp(); }   // birds in the valley and by the lake, none up in the snow
+    if (this.birdT < 0) { this.birdT = 3 + Math.random() * 7; if (altitude(segI) < 0.5 && this.speed < MAX_S * 0.95 && !this.night) engine.chirp(); }   // birds in the valley and by the lake, none up in the snow
     if (!this.rung.has(segI) && seg.props.some((p) => p.type === 'stupahill' || p.type === 'palace' || p.type === 'gompa')) { this.rung.add(segI); engine.gong(); }
 
     for (const e of EVENTS) if (segI >= e.i && !this.shown.has(e.i)) { this.shown.add(e.i); engine.chime(); this.show(`${e.top}|${e.sub}`, true); }
@@ -238,7 +262,7 @@ export class RideScene implements Scene {
     const g = this.screen.ctx, { W, H, HZ } = this.screen.size;
     use(g);
     const sp = this.speed / MAX_S, segI = Math.floor(this.pos / SEG_L);
-    const env = { ...envAt(segI, FINISH, zoneAt(segI)), lite: this.lite };
+    const env = { ...envAt(segI, FINISH, zoneAt(segI)), lite: this.lite, night: this.nightK };
     if (this.cam === 'top') {
       drawTop(g, this.segs, this.cars, W, H, this.pos, this.px, this.t);
       if (!this.lite) finish(g, W, H, HZ, env.tod);
@@ -248,17 +272,21 @@ export class RideScene implements Scene {
       const punch = REDUCED ? 1 : 1 + Math.max(0, sp - 0.8) * 0.2 + (this.gas && sp > 0.9 ? 0.012 : 0);   // at full throttle the view widens a touch
       g.translate(W / 2, H * HZ); g.scale(punch, punch); g.translate(-W / 2, -H * HZ);
       if (!REDUCED) g.translate(0, Math.round(Math.sin(this.t * 47) * sp * sp * 1.6 + Math.sin(this.t * 19) * sp * 0.7)); // the road hums up through the suspension at speed
-      renderRoad(g, this.segs, { W, H, HZ, pos: this.pos, px: this.px, camH: CAM_HEIGHT[this.cam], bgOff: this.bgOff, t: this.t, env, lite: this.lite, haze: hazeAt(env.tod), fogK: this.sky === 'fog' ? 2.4 : 1 }, this.cars);
+      renderRoad(g, this.segs, { W, H, HZ, pos: this.pos, px: this.px, camH: CAM_HEIGHT[this.cam], bgOff: this.bgOff, t: this.t, env, lite: this.lite, haze: this.nightK > 0.01 ? mix(hazeAt(env.tod), '#232b58', this.nightK) : hazeAt(env.tod), fogK: this.sky === 'fog' ? 2.4 : 1 }, this.cars);
       g.restore();
       if (!this.lite) drawSpeedLines(g, W, H, HZ, sp, this.t);
       drawSkyTint(g, W, H, HZ, this.sky);
-      if (!this.lite) drawGround(g, W, H, HZ, this.t, sp, env.tod, segI, this.sky === 'rain' ? 1 : 0);
+      drawNight(g, W, H, this.nightK);
+      if (this.nightK > 0.3) drawLights(g, LIGHTS);
+      if (!this.lite) drawGround(g, W, H, HZ, this.t, sp, this.nightK > 0.5 ? 0 : env.tod, segI, this.sky === 'rain' ? 1 : 0, this.nightK);
       if (!this.lite) drawAir(g, W, H, HZ, this.t, sp, segI, env.tod, this.sky);
-      if (!this.lite && this.sky === 'clear') drawFlare(g, W, H, HZ, env.tod);
+      if (!this.lite && this.sky === 'clear' && this.nightK < 0.3) drawFlare(g, W, H, HZ, env.tod);
       if (!this.lite && this.sky === 'rain') drawRain(g, W, H, this.t, sp);
-      if (!this.lite) finish(g, W, H, HZ, env.tod);   // grade, vignette and grain over the world, under the rider and the HUD
-      const beam = this.lights === 'off' ? 0 : Math.max(this.lights === 'on' ? 0.5 : 0, env.tod > 0.55 ? (env.tod - 0.55) / 0.45 : 0);
-      if (!this.lite && beam > 0) drawHeadlight(g, W, H, HZ, this.lean, beam);
+      if (this.bolt) drawLightning(g, W, H, HZ, this.bolt);
+      if (!this.lite) finish(g, W, H, HZ, env.tod, this.nightK > 0.5);   // grade, vignette and grain over the world, under the rider and the HUD
+      const beam = this.lights === 'off' ? 0 : Math.max(this.lights === 'on' ? 0.5 : 0, env.tod > 0.55 ? (env.tod - 0.55) / 0.45 : 0, this.nightK * 1.4);
+      const beamA = Math.min(1, beam);
+      if (!this.lite && beamA > 0) drawHeadlight(g, W, H, HZ, this.lean, beamA);
       if (this.cam === 'behind' || this.cam === 'high') drawRider(g, W, H, this.lean, this.t, sp, this.braking, RIDER_SCALE[this.cam]);
       else drawPOV(g, W, H, sp, this.t, sp * KMH);
     }
@@ -324,7 +352,7 @@ export class RideScene implements Scene {
     if (this.cam !== 'pov' && this.phase !== 'arrive') {
       const sp = this.speed / MAX_S, sg = this.segs[Math.min(N - 1, segI)], temp = 16 - (elevation(segI) - 3500) / 1859 * 22 - sg.i / FINISH * 3;
       const gear = sp < 0.02 ? 0 : Math.min(6, 1 + Math.floor(sp * 6.4));
-      const beam = this.lights === 'on' || (this.lights === 'auto' && envAt(segI, FINISH, zoneAt(segI)).tod > 0.55);
+      const beam = this.lights === 'on' || (this.lights === 'auto' && (envAt(segI, FINISH, zoneAt(segI)).tod > 0.55 || this.nightK > 0.5));
       drawCluster(g, 12, H - px - 22 - 106 - (coarse ? 132 : 0), narrow ? 0.9 : 1, { kmh: sp * KMH, frac: sp, gear, elev: elevation(segI), temp, trip: this.trip, lights: beam }, narrow);
     }
     if (coarse && this.phase === 'ride') drawPedals(g, W, H, this.gas, this.brake);
@@ -354,6 +382,7 @@ export class RideScene implements Scene {
     g.save(); g.globalAlpha = a;
     rrect(x, y, cw, ch, 10, 'rgba(27,23,18,0.9)'); box(x, y + 8, 4, ch - 16, ACCENT);
     label('MADE IT', x + 24, y + 38, Math.round(px * 1.9), ACCENT, { font: FONT_DISPLAY });
+    label('TRIUMPH SCRAMBLER 400 X', x + cw - 24, y + 36, px - 2, '#a89d8b', { font: FONT_MONO, align: 'right' });
     rows.forEach(([k, v], i) => { const yy = y + 66 + i * (px + 12); label(k, x + 24, yy + px, px - 1, '#a89d8b', { font: FONT_MONO }); label(v, x + cw - 24, yy + px, px, HUD, { font: FONT_MONO, align: 'right', weight: 500 }); });
     g.restore();
   }

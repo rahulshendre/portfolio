@@ -1,6 +1,6 @@
 // The rider seen from behind on the white Scrambler 400 X: shaded vector art with lean, tread motion and a brake light.
 // Units: 1 unit = one wheel-hand-span; the whole rider is about 3.2 units tall. (0, 0) is where the rear tyre meets the road.
-import { at, circle, g, hgrad, oval, poly, rrect, stroke, use, vgrad } from './draw';
+import { at, box, circle, g, hgrad, oval, poly, rrect, stroke, use, vgrad } from './draw';
 
 const C = {
   helmet: '#f4f2ea', helmetShade: '#c9c5b8', visor: '#1c1f26', stripe: '#d8342b',
@@ -8,6 +8,7 @@ const C = {
   pants: '#232a38', pantsLit: '#333c50', boot: '#17181c', bootLit: '#34363e', glove: '#141518',
   seat: '#5a3d2b', seatLit: '#7a5640', metal: '#b9bec6', metalDark: '#6b7079', black: '#121316', tyre: '#141416',
   red: '#d8342b', amber: '#f0a020', plate: '#f2eee2',
+  tank: '#f3f1ea', tankShade: '#c9c6bc', stripe2: '#17181c', fork: '#d9a233',
 };
 
 export interface Look { colors?: Partial<typeof C>; bag?: boolean; }
@@ -42,7 +43,8 @@ export function drawRiderAt(ctx: CanvasRenderingContext2D, cx: number, gy: numbe
     const phase = moving ? (t * (2 + speedFrac * 7)) % 1 : 0;
     for (let i = -1; i < 9; i++) {
       const y = -1.2 + (i + phase) * 0.15;
-      stroke([-tw * 0.9, y, tw * 0.9, y - 0.03], '#26262a', 0.035);
+      stroke([-tw * 0.9, y, -tw * 0.14, y - 0.03], '#2c2c30', 0.05); stroke([tw * 0.14, y, tw * 0.9, y - 0.03], '#2c2c30', 0.05);   // knobbly dual-sport blocks with a channel down the middle
+      stroke([-tw * 0.55, y - 0.075, -tw * 0.2, y - 0.09], '#1d1d20', 0.04); stroke([tw * 0.2, y - 0.075, tw * 0.55, y - 0.09], '#1d1d20', 0.04);
     }
     g.restore();
     rrect(-tw * 0.16, -1.18, tw * 0.32, 1.18, 0.05, '#ffffff10');
@@ -53,13 +55,13 @@ export function drawRiderAt(ctx: CanvasRenderingContext2D, cx: number, gy: numbe
     circle(0, -0.56, 0.1, K.metal);
     for (const s of [-1, 1]) {
       stroke([s * 0.44, -0.6, s * 0.46, -1.28], K.black, 0.13);
-      for (let i = 0; i < 5; i++) stroke([s * 0.39, -0.7 - i * 0.11, s * 0.53, -0.74 - i * 0.11], '#c9a043', 0.035); // gold spring
+      for (let i = 0; i < 5; i++) stroke([s * 0.39, -0.7 - i * 0.11, s * 0.53, -0.74 - i * 0.11], '#3a3c44', 0.04);   // black spring, lit on its edge
     }
 
     // ---- exhaust: the high pipe on the right, seen end-on
-    poly([0.52, -0.35, 0.64, -0.35, 0.66, -1.05, 0.5, -1.05], vgrad(-1.05, -0.35, [[0, '#d7dbe1'], [1, '#7d828b']]));
-    circle(0.58, -1.05, 0.1, K.metalDark);
-    circle(0.58, -1.05, 0.065, '#0b0b0d');
+    poly([0.5, -0.5, 0.7, -0.56, 0.74, -0.9, 0.52, -0.98], vgrad(-0.98, -0.5, [[0, '#2a2c32'], [1, '#0f1013']]));   // the black silencer, low on the right, angled out
+    poly([0.5, -0.98, 0.52, -0.94, 0.72, -0.86, 0.74, -0.9], '#8c9098');                                                       // brushed silver header shield
+    oval(0.63, -0.53, 0.115, 0.095, '#8c9098'); oval(0.63, -0.53, 0.085, 0.07, '#0b0b0d');                                     // its end cap: a silver rim round a black mouth
 
     // ---- tail: fender, lamp, plate and indicators
     rrect(-0.36, -1.4, 0.72, 0.34, 0.1, hgrad(-0.36, 0.36, [[0, '#1a1b1f'], [0.5, '#2c2e35'], [1, '#1a1b1f']]));
@@ -75,6 +77,10 @@ export function drawRiderAt(ctx: CanvasRenderingContext2D, cx: number, gy: numbe
     if (look.bag) { rrect(-0.5, -1.98, 1.0, 0.58, 0.14, '#6b4a2a'); rrect(-0.5, -1.98, 1.0, 0.16, 0.08, '#8a6238'); stroke([-0.2, -1.98, -0.2, -1.4], '#2a1c10', 0.04); stroke([0.2, -1.98, 0.2, -1.4], '#2a1c10', 0.04); }
     // the rider is drawn a touch smaller than life, so the bike carries the picture
     g.save(); g.translate(0, -1.5); g.scale(0.92, 0.92); g.translate(0, 1.5);
+    // ---- the white tank, its black stripe and the rubber knee pads: what shows of the bike beside the rider
+    poly([-0.72, -1.94, -0.62, -2.36, 0.62, -2.36, 0.72, -1.94, 0.52, -1.7, -0.52, -1.7], hgrad(-0.66, 0.66, [[0, K.tankShade], [0.3, K.tank], [0.7, K.tank], [1, K.tankShade]]));
+    box(-0.08, -2.34, 0.16, 0.64, K.stripe2);
+    rrect(-0.74, -2.16, 0.22, 0.36, 0.07, K.black); rrect(0.52, -2.16, 0.22, 0.36, 0.07, K.black);
     // ---- legs and boots (the rider sits with knees out a touch)
     for (const s of [-1, 1]) {
       poly([s * 0.2, -1.95, s * 0.5, -1.9, s * 0.62, -1.42, s * 0.5, -1.22, s * 0.26, -1.4],
@@ -94,6 +100,7 @@ export function drawRiderAt(ctx: CanvasRenderingContext2D, cx: number, gy: numbe
     stroke([-0.82, -2.16, 0.82, -2.16], K.black, 0.07);
     for (const s of [-1, 1]) {
       rrect(s * 0.8 - 0.06, -2.24, 0.12, 0.2, 0.04, K.glove);
+      rrect(s * 0.86 - 0.05, -2.4, 0.1, 0.44, 0.05, '#1a1b20'); rrect(s * 0.86 - 0.05, -2.4, 0.03, 0.44, 0.03, '#ffffff1c');   // the black hand guards
       stroke([s * 0.74, -2.2, s * 0.78, -2.62], K.black, 0.03);
       oval(s * 0.8, -2.72, 0.1, 0.07, '#1a1c22');
       oval(s * 0.8, -2.72, 0.07, 0.045, '#8aa3b8');
