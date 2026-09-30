@@ -98,4 +98,18 @@ export function label(s: string, x: number, y: number, px: number, color: string
   g.fillText(s, x, y);
 }
 
+/** Text that shrinks to fit a width. */
+export function fit(str: string, x: number, y: number, maxW: number, px: number, color: string, weight = 600) {
+  g.font = `${weight} ${px}px "IBM Plex Mono", ui-monospace, monospace`;
+  while (px > 4 && g.measureText(str).width > maxW) { px -= 0.5; g.font = `${weight} ${px}px "IBM Plex Mono", ui-monospace, monospace`; }
+  label(str, x, y, px, color, { align: 'center', weight });
+}
+
+/** A rocky hill in the light of the low sun: lit on the right, shaded on the left. */
+export function hill(w: number, h: number, col: string, lit: string, shade: string) {
+  poly([-w, 0, -w * 0.78, -h * 0.4, -w * 0.4, -h * 0.82, 0, -h, w * 0.42, -h * 0.84, w * 0.8, -h * 0.4, w, 0], col);
+  poly([0, -h, w * 0.42, -h * 0.84, w * 0.8, -h * 0.4, w, 0, w * 0.3, -h * 0.12], lit);
+  poly([-w, 0, -w * 0.78, -h * 0.4, -w * 0.4, -h * 0.82, -w * 0.2, -h * 0.4, -w * 0.45, 0], shade);
+}
+
 export const rnd = (i: number) => Math.abs(Math.sin(i * 12.9898 + 78.233) * 43758.5453) % 1;

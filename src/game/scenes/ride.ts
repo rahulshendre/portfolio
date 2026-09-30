@@ -5,9 +5,10 @@ import { drawRider } from '../hd/rider';
 import { drawSpeedLines } from '../hd/speed';
 import { finish } from '../hd/finish';
 import { LowRes } from '../hd/pixel';
+import type { Look } from '../rail';
 import { envAt, hazeAt } from '../hd/background';
 import { renderRoad } from '../hd/road';
-import { altitude, buildTrack, PASS_TOP, elevation, FINISH, LAKE_FROM, MILESTONE_SEGS, N, SEG_L, zoneAt, type Segment } from '../hd/track-ladakh';
+import { altitude, buildTrack, TOWNS, townAt, PASS_TOP, elevation, FINISH, LAKE_FROM, MILESTONE_SEGS, N, SEG_L, zoneAt, type Segment } from '../hd/track-ladakh';
 import { capBehind, honkAt, LEFT, spawnTraffic, type Car } from '../hd/traffic';
 import { LIGHTS } from '../hd/props';
 import { drawAir, drawLights, drawFlare, drawGround, drawHeadlight, drawLightning, drawNight, drawRain, drawSkyTint, SKIES, type Bolt, type Sky } from '../hd/air';
@@ -34,10 +35,11 @@ const EVENTS = [
   { i: 8, top: 'LEH', sub: '3,500 M · THE START' },
   { i: PASS_TOP, top: 'KHARDUNG LA', sub: '5,359 M · YOU MADE IT' },
   { i: LAKE_FROM + 40, top: 'THE LAKE', sub: '4,225 M · NEARLY HOME' },
+  ...TOWNS.filter((t) => t.sub).map((t) => ({ i: t.gate + 3, top: t.name, sub: t.sub })),
 ];
-const CHAPTER = (i: number) =>
-  i >= FINISH - 90 ? 'ALMOST THERE'
-    : ({ leh: 'LEH TOWN', valley: 'INDUS VALLEY', pass: 'KHARDUNG LA', lake: 'THE LAKE' } as const)[zoneAt(i)];
+const CHAPTER = (i: number) => townAt(i) ??
+  (i >= FINISH - 90 ? 'ALMOST THERE'
+    : ({ leh: 'LEH TOWN', valley: 'INDUS VALLEY', pass: 'KHARDUNG LA', lake: 'THE LAKE' } as const)[zoneAt(i)]);
 
 const FONT_DISPLAY = '"Fraunces", Georgia, serif';
 const FONT_MONO = '"IBM Plex Mono", ui-monospace, monospace';
@@ -73,12 +75,13 @@ export class RideScene implements Scene {
       for (const c of this.cars) if (c.z < this.pos) c.z += c.v < 0.1 ? 0 : 400 * SEG_L;   // vehicles behind you reappear ahead; the slow herds stay behind
     }
   }
-  private heldPause = false;
-  /** The help drawer opened or closed: hold still while it is open, and carry on after unless the rider had paused it themselves. */
-  hold(on: boolean) {
-    if (this.phase !== 'ride') return;
-    if (on) { this.heldPause = this.paused; this.autoPause(); }
-    else if (!this.heldPause) this.paused = false;
+  /** Reports the view, night, weather, light and look settings to the page's buttons whenever one changes. */
+  onLook?: (l: Look) => void;
+  private lookKey = '';
+  private publishLook() {
+    const l: Look = { cam: CAM_NAMES[this.cam], night: this.night, sky: this.sky, lights: this.lights, pixel: this.pixel };
+    const k = JSON.stringify(l);
+    if (k !== this.lookKey) { this.lookKey = k; this.onLook?.(l); }
   }
   private autoPause = () => { if (this.phase === 'ride' && !this.paused) { this.paused = true; engine.update(0, 0, { river: 0, lake: 0, alt: 0 }); } };
   exit() { engine.mute(); radio.setLevel(1); removeEventListener('blur', this.autoPause); }
@@ -130,6 +133,7 @@ export class RideScene implements Scene {
   update(dt: number) {
     this.t += dt;
     input.poll();
+    this.publishLook();
     // a slow device (frames longer than about 32 ms for a while) drops the priciest effects; it never switches back, so it can't flicker
     this.avgDt += (Math.min(dt, 0.25) - this.avgDt) * 0.05;
     if (!this.lite && this.t > 2 && this.avgDt > 0.032) this.lite = true;
@@ -168,7 +172,7 @@ export class RideScene implements Scene {
       this.bgOff += dt * 3;
       if (tap === 'other' || input.anyKey()) {
         this.phase = 'ride'; this.startSound();
-        this.show(matchMedia('(pointer: coarse)').matches ? 'TAP SIDES TO STEER|GAS AND BRAKE BELOW' : 'W GAS · S BRAKE · A D STEER|HELP FOR ALL KEYS', false, 3.5);
+        this.show(matchMedia('(pointer: coarse)').matches ? 'TAP SIDES TO STEER|GAS AND BRAKE BELOW' : 'W GAS · S BRAKE · A D STEER|K FOR ALL KEYS', false, 3.5);
       }
       input.endFrame();
       return;

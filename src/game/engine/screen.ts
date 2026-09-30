@@ -50,6 +50,8 @@ export class Screen {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d', { alpha: false })!;
     addEventListener('resize', () => this.resize());
+    const vp = canvas.parentElement?.parentElement;                 // the page can leave room beside the game (the ride's controls panel), so size to the viewport, not the window
+    if (vp && typeof ResizeObserver !== 'undefined') new ResizeObserver(() => { if (this.size) this.resize(); }).observe(vp);
   }
 
   get W() { return this.size.W; }
@@ -63,7 +65,8 @@ export class Screen {
   onResize(fn: () => void) { this.listeners.push(fn); }
 
   resize() {
-    this.size = computeSize(this.mode, innerWidth, innerHeight, devicePixelRatio || 1);
+    const vp = this.canvas.parentElement?.parentElement;
+    this.size = computeSize(this.mode, vp?.clientWidth || innerWidth, vp?.clientHeight || innerHeight, devicePixelRatio || 1);
     const { W, H, cssW, cssH } = this.size;
     this.canvas.width = W;
     this.canvas.height = H;

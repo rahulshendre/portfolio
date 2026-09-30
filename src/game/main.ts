@@ -11,7 +11,7 @@ import { BAR, CONTROLS, HOTSPOTS, toPct } from './hotspots';
 import { THEMES, WEATHERS, hasVisited, isNightHour, loadMute, saveMute, loadNight, loadRadio, loadTried, markVisited, pickStart, pickTheme, pickWeather, saveNight, saveRadio, saveTried } from './state';
 import { engine, hiss, meow, preloadMeow, radio, setMuted } from './engine/audio';
 import { mountTerminal } from './terminal-ui';
-import { mountHelp } from './help';
+import { mountRail } from './rail';
 import { isPanelHref, mountPanel, parsePanelHash, titleFor } from './panel';
 
 const canvas = document.getElementById('game') as HTMLCanvasElement;
@@ -75,8 +75,7 @@ const showMute = (m: boolean) => { if (soundBtn) { soundBtn.setAttribute('aria-p
 setMuted(loadMute()); showMute(loadMute());
 soundBtn?.addEventListener('click', () => { const m = soundBtn.getAttribute('aria-pressed') === 'true'; setMuted(m); saveMute(m); showMute(m); });
 
-// The help drawer: the ride holds still while it is open.
-mountHelp({ held: (open) => { if (director.current instanceof RideScene) director.current.hold(open); } });
+const rail = mountRail();
 const setScene = (name: 'door' | 'garage' | 'ride') => { document.body.dataset.scene = name; }; // the drawer shows the help for whichever scene is up
 
 document.getElementById('phone-term')?.addEventListener('click', () => terminal.open()); // the TV is off-screen on a portrait phone
@@ -184,7 +183,9 @@ async function ride() {
   await images;
   current = undefined;
   if (sky) sky.hidden = true;
-  director.go(new RideScene(screen, door, garage));
+  const r = new RideScene(screen, door, garage);
+  r.onLook = (l) => rail.look(l);
+  director.go(r);
   setScene('ride');
 }
 

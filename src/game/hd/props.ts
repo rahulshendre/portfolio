@@ -1,8 +1,10 @@
 // Roadside props for the Ladakh ride, drawn in local unit space via at().
 import { LOGOS, type LogoId } from './logos';
-import { at, box, circle, g, glow, hgrad, label, oval, poly, rrect, stroke, vgrad } from './draw';
+import { at, box, circle, fit, g, glow, hgrad, hill, label, oval, poly, rrect, stroke, vgrad } from './draw';
 import { drawCar } from './traffic';
 import { drawCanopy, drawDarchog, drawFlagMound, drawFlags } from './flags';
+import { drawGate, drawMonk, drawParkedBike, drawShop, drawStall } from './town';
+import { drawBuddha, drawCheckPost, drawGurdwara, drawMonastery } from './landmarks';
 import { drawCamel, drawCamp, drawCone, drawCrew, drawLimit, drawSummit, drawVillage } from './scenery';
 
 /** A long shadow thrown across the ground from something tall, away from the low sun on the right. */
@@ -150,13 +152,6 @@ export function drawBro(sx: number, sy: number, k: number, lines?: readonly stri
   });
 }
 
-/** Text that shrinks to fit a width. */
-function fit(str: string, x: number, y: number, maxW: number, px: number, color: string, weight = 600) {
-  g.font = `${weight} ${px}px "IBM Plex Mono", ui-monospace, monospace`;
-  while (px > 4 && g.measureText(str).width > maxW) { px -= 0.5; g.font = `${weight} ${px}px "IBM Plex Mono", ui-monospace, monospace`; }
-  label(str, x, y, px, color, { align: 'center', weight });
-}
-
 /** A milestone: a white stone with a yellow head, like the ones along the road, carrying the year and what happened. */
 export function drawMilestone(sx: number, sy: number, k: number, top?: string, sub?: string) {
   const s = k;
@@ -260,13 +255,6 @@ export function drawGarage(sx: number, sy: number, k: number) {
     poly([146, 0, 150, -26, 166, -26, 170, 0], '#7a5a3c'); box(150, -24, 16, 20, '#1b2a26'); label('OPEN', 158, -14, 6, '#fff6e0', { align: 'center', weight: 700 }); label('CHAI', 158, -7, 5.5, '#e8b923', { align: 'center', weight: 700 });
     poly([-170, 0, -166, -12, -152, -12, -148, 0], '#2a2622'); for (const [x, y, r] of [[-159, -20, 8], [-153, -26, 6], [-165, -26, 6]] as const) circle(x, y, r, '#4a7a4a');
   });
-}
-
-/** A rocky hill in the light of the low sun: lit on the right, shaded on the left. */
-function hill(w: number, h: number, col: string, lit: string, shade: string) {
-  poly([-w, 0, -w * 0.78, -h * 0.4, -w * 0.4, -h * 0.82, 0, -h, w * 0.42, -h * 0.84, w * 0.8, -h * 0.4, w, 0], col);
-  poly([0, -h, w * 0.42, -h * 0.84, w * 0.8, -h * 0.4, w, 0, w * 0.3, -h * 0.12], lit);
-  poly([-w, 0, -w * 0.78, -h * 0.4, -w * 0.4, -h * 0.82, -w * 0.2, -h * 0.4, -w * 0.45, 0], shade);
 }
 
 /** A hilltop monastery: stacked whitewashed tiers with a red band, a gold roof and prayer flags. */
@@ -506,7 +494,7 @@ export const setTod = (t: number, night = 0) => { TOD = t; NIGHT = night; LIGHTS
 export interface Light { x: number; y: number; r: number; a: number; color: string }
 export const LIGHTS: Light[] = [];
 const EMIT: Record<string, [number, number, number, number, string]> = {   // [dx, dy, radius, alpha, colour], in prop units
-  garage: [0, -50, 170, 0.4, '#ffb862'], lamp: [26, -98, 56, 0.3, '#ffe0a0'], dhaba: [-4, -34, 64, 0.45, '#ffb860'],
+  shop: [-10, -22, 60, 0.4, '#ffb860'], gate: [0, -134, 120, 0.3, '#ffe0a0'], garage: [0, -50, 170, 0.4, '#ffb862'], lamp: [26, -98, 56, 0.3, '#ffe0a0'], dhaba: [-4, -34, 64, 0.45, '#ffb860'],
   bro: [0, -42, 70, 0.28, '#ffd070'], sign: [0, -46, 66, 0.28, '#d8f0d0'], chevron: [0, -80, 56, 0.3, '#ffe060'], board: [0, -60, 90, 0.3, '#fff0d0'], ms: [0, -40, 70, 0.3, '#fff0d0'],
 };
 const GLOW: Record<string, [number, number]> = { bro: [-52, 90], sign: [-60, 90], chevron: [-80, 70], board: [-70, 110], ms: [-40, 80] };
@@ -557,5 +545,14 @@ export function drawProp(type: string, sx: number, sy: number, k: number, p: { l
     case 'lamp': return drawLamp(sx, sy, k);
     case 'dhaba': return drawDhaba(sx, sy, k);
     case 'parked': return drawParked(sx, sy, k);
+    case 'shop': return drawShop(sx, sy, k, p.v ?? 0);
+    case 'gate': return drawGate(sx, sy, k, p.label);
+    case 'stall': return drawStall(sx, sy, k, p.v ?? 0);
+    case 'monk': return drawMonk(sx, sy, k, p.v ?? 0);
+    case 'tourer': return drawParkedBike(sx, sy, k, p.v ?? 0);
+    case 'gurdwara': return drawGurdwara(sx, sy, k);
+    case 'checkpost': return drawCheckPost(sx, sy, k);
+    case 'buddha': return drawBuddha(sx, sy, k, p.v ?? 0);
+    case 'monastery': return drawMonastery(sx, sy, k);
   }
 }

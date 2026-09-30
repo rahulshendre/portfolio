@@ -66,6 +66,15 @@ export function drawTop(ctx: CanvasRenderingContext2D, segs: Segment[], cars: Ca
         case 'house': g.fillStyle = SHADOW; g.fillRect(x - 21, y - 7, 30, 22); rrect(x - 15, y - 11, 30, 22, 2, ['#f0ebe0', '#e8d8c0', '#d8c8a8'][(p.v ?? 0) % 3]); rrect(x - 15, y - 11, 30, 3, 1, '#c8b898'); circle(x + 7, y - 1, 3.4, '#2a2a2e'); break;
         case 'chorten': sh(10, 5); circle(x, y, 8, '#ebe4d4'); circle(x, y, 4.6, '#dcd2bc'); circle(x, y, 1.8, '#e8b923'); break;
         case 'boulder': sh(11, 6); poly([x - 9, y + 2, x - 5, y - 8, x + 4, y - 9, x + 10, y - 1, x + 5, y + 8, x - 4, y + 8], '#8a7060'); poly([x + 4, y - 9, x + 10, y - 1, x + 5, y + 8, x, y], '#a08472'); break;
+        case 'shop': g.fillStyle = SHADOW; g.fillRect(x - 21, y - 7, 36, 26); rrect(x - 17, y - 12, 34, 24, 2, ['#f0ebe0', '#e8d8c0', '#f0dca8', '#d8c8a8'][(p.v ?? 0) % 4]); rrect(x - 17, y - 12, 34, 4, 1, '#c8b898'); rrect(x - 12, y + 3, 24, 5, 1, ['#c8392b', '#2c6eb0', '#e8b923', '#3c8a48'][(p.v ?? 0) % 4]); break;
+        case 'gate': rrect(x - half * 1.5 - 6, y - 6, 12, 12, 2, '#f2ede2'); rrect(x + half * 1.5 - 6, y - 6, 12, 12, 2, '#f2ede2'); rrect(x - half * 1.5, y - 3, half * 3, 6, 1, '#f6f1e6'); rrect(x - half * 0.8, y - 2, half * 1.6, 4, 1, '#1b4a2a'); break;
+        case 'tourer': sh(4, 9); rrect(x - 3, y - 9, 6, 18, 2, '#1b1c20'); rrect(x - 4, y - 5, 8, 6, 2, ['#e8641f', '#3c8a48', '#c8392b', '#2c6eb0'][(p.v ?? 0) % 4]); break;
+        case 'gurdwara': sh(24, 10); rrect(x - 22, y - 14, 44, 28, 3, '#f6f2e8'); circle(x, y, 9, '#f4c95a'); break;
+        case 'checkpost': sh(12, 8); rrect(x - 9, y - 9, 18, 18, 2, '#8a8f6a'); rrect(x + 10, y - 2, 18, 3, 1, '#d8342b'); break;
+        case 'stall': sh(10, 5); circle(x, y, 9, '#c8392b'); circle(x, y, 4.5, '#f4f2ea'); break;
+        case 'monk': circle(x, y, 3.4, '#8a1f2a'); circle(x, y - 1, 1.8, '#c98a5a'); break;
+        case 'buddha': sh(16, 8); circle(x, y, 13, '#c49a78'); circle(x, y, 8, '#e3b23c'); circle(x, y, 3.4, '#f4c95a'); break;
+        case 'monastery': sh(24, 10); rrect(x - 26, y - 16, 52, 32, 3, '#efe6d2'); rrect(x - 16, y - 10, 32, 20, 2, '#f6eedc'); rrect(x - 8, y - 5, 16, 10, 2, '#b8342b'); break;
         case 'snow': oval(x, y, 12, 6, '#eef3f8'); oval(x - 2, y - 1, 8, 3.5, '#dfe8f0'); break;
         case 'yak': sh(11, 6); oval(x, y, 11, 6, '#3a3028'); circle(x + 11, y, 4, '#2a2218'); break;
         case 'kiang': for (const dx of [-16, 0, 16]) { oval(x + dx - 4, y + 2, 9, 3, SHADOW); oval(x + dx, y + (dx ? 2 : -2), 8, 3.5, '#a2673c'); circle(x + dx + 8, y + (dx ? 2 : -2), 2.4, '#efe6d2'); } break;

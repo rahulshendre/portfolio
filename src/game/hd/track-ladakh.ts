@@ -44,13 +44,26 @@ export const BRO = [
   { i: 1040, lines: ['HORN OK PLEASE', 'PEEP PEEP'] },
 ] as const;
 
+/** The named towns along the way: a welcome gate, a street of shops either side, and a card as you ride in. `sparse` towns are villages. */
+export interface Town { name: string; gate: number; to: number; sub: string; sparse?: boolean; leftOnly?: boolean }
+export const TOWNS: Town[] = [
+  { name: 'LEH', gate: 16, to: 62, sub: '' },
+  { name: 'SHEY', gate: 224, to: 264, sub: 'THE OLD ROYAL PALACE', sparse: true },
+  { name: 'THIKSEY', gate: 322, to: 352, sub: 'THE MONASTERY ON THE HILL' },
+  { name: 'HUNDER', gate: 436, to: 472, sub: 'DUNES AND TWO-HUMPED CAMELS', sparse: true },
+  { name: 'DISKIT', gate: 556, to: 606, sub: 'THE 32 M MAITREYA BUDDHA' },
+  { name: 'SPANGMIK', gate: 1066, to: 1102, sub: 'HOMESTAYS ON THE LAKE SHORE', sparse: true, leftOnly: true },
+];
+/** The town a segment lies in or is just about to enter, if any. */
+export const townAt = (i: number) => TOWNS.find((t) => i >= t.gate - 8 && i <= t.to)?.name;
+
 export const LAKE_FROM = 990;
 /** Where the lake shore lies, in road half-widths to the right of the centre line. */
 export const shore = (i: number) => 3.7 + 1.0 * Math.sin(i * 0.03) + 0.4 * Math.sin(i * 0.11);
 
 export type Zone = 'leh' | 'valley' | 'pass' | 'lake';
 export type PropType =
-  | 'house' | 'chorten' | 'poplar' | 'flags' | 'canopy' | 'mani' | 'boulder' | 'bro' | 'ms' | 'board' | 'stone' | 'snow' | 'yak' | 'garage' | 'sign' | 'pole' | 'scrub' | 'tuft' | 'cairn' | 'chevron' | 'gompa' | 'palace' | 'stupahill' | 'reed' | 'duck' | 'dhaba' | 'parked' | 'kiang' | 'marmot' | 'lamp' | 'dog' | 'darchog' | 'flagmound' | 'village' | 'camel' | 'limit' | 'cone' | 'crew' | 'summit' | 'camp';
+  | 'house' | 'chorten' | 'poplar' | 'flags' | 'canopy' | 'mani' | 'boulder' | 'bro' | 'ms' | 'board' | 'stone' | 'snow' | 'yak' | 'garage' | 'sign' | 'pole' | 'scrub' | 'tuft' | 'cairn' | 'chevron' | 'gompa' | 'palace' | 'stupahill' | 'reed' | 'duck' | 'dhaba' | 'parked' | 'kiang' | 'marmot' | 'lamp' | 'dog' | 'darchog' | 'flagmound' | 'village' | 'camel' | 'limit' | 'cone' | 'crew' | 'summit' | 'camp' | 'shop' | 'gate' | 'stall' | 'monk' | 'buddha' | 'monastery' | 'tourer' | 'gurdwara' | 'checkpost';
 export interface Prop { o: number; type: PropType; label?: string; sub?: string; lines?: readonly string[]; v?: number }
 export interface Segment { i: number; y1: number; y2: number; curve: number; props: Prop[]; zone: Zone }
 
@@ -152,6 +165,32 @@ export function buildTrack(milestones: readonly { top: string; label: string }[]
     if (i > LAKE_FROM && i % 3 === 0 && rnd(i * 5.3) > 0.25) add(i, { o: sh + 0.1 + rnd(i * 2.1) * 0.6, type: 'reed', v: Math.floor(rnd(i) * 3) });
     if (i > LAKE_FROM + 20 && i % 19 === 5) add(i, { o: sh + 2.2 + rnd(i * 7.7) * 5, type: 'duck', v: i });
   }
+  // the towns: a gate across the road, then a street of shops on both sides with stalls, monks and street lamps, the country's own clutter cleared away
+  for (const town of TOWNS) {
+    const step = town.sparse ? 10 : 6, homey = [1, 6, 5, 3];
+    add(town.gate, { o: 0, type: 'gate', label: town.name });
+    add(town.gate - 3, { o: 1.95, type: 'limit', v: 30 });
+    for (let i = town.gate; i <= town.to; i++) segs[i].props = segs[i].props.filter((p) => p.type === 'stone' || p.type === 'pole' || p.type === 'gate' || p.type === 'limit' || p.type === 'ms' || p.type === 'board' || p.type === 'bro' || p.type === 'sign' || Math.abs(p.o) > 3.4);
+    for (let i = town.gate + 6, n = 0; i <= town.to; i += step, n++) {
+      const pick = (s: number) => (town.sparse ? homey[Math.floor(rnd(s) * homey.length)] : Math.floor(rnd(s) * 8));
+      if (!clear(i)) add(i, { o: -(1.95 + rnd(i) * 0.15), type: 'shop', v: pick(i * 1.3) });
+      if (!town.leftOnly && !clear(i + step / 2)) add(i + Math.floor(step / 2), { o: 1.95 + rnd(i + 5) * 0.15, type: 'shop', v: pick(i * 2.7) });
+      if (n % 3 === 1 && !clear(i + 2)) add(i + 2, { o: (n % 2 ? 1 : -1) * (town.leftOnly ? -1 : 1) * 1.45, type: 'stall', v: n });
+      if (n % 2 === 0 && !clear(i + 1)) add(i + 1, { o: (n % 4 ? -1 : 1) * (town.leftOnly ? -1 : 1) * 1.38, type: 'monk', v: n });
+      if (!town.sparse && n % 2 === 1) add(i, { o: -1.62, type: 'lamp' });
+      if (n % 3 === 0 && !clear(i + 4)) for (let b = 0; b < 2; b++) add(i + 3 + b * 2, { o: (n % 2 ? 1 : -1) * (town.leftOnly ? -1 : 1) * 1.36, type: 'tourer', v: n + b });   // a row of touring bikes outside the cafe
+    }
+    // the way in: a distance board, then a chorten and a mani wall at the edge of town, and a darchog pole once you are through the gate
+    const board = MILESTONE_SEGS.some((m) => Math.abs(m - (town.gate - 26)) < 14) ? town.gate - 42 : town.gate - 26;   // keep the distance board off the milestone
+    if (!clear(board)) add(board, { o: -1.85, type: 'sign', label: town.name, sub: `${3 + (town.gate % 5)} KM` });
+    if (town.gate > 30) { add(town.gate - 7, { o: 2.9, type: 'chorten' }); for (let i = town.gate - 10; i < town.gate - 3; i += 2) add(i, { o: -2.7, type: 'mani' }); add(town.gate + 12, { o: 3.6, type: 'darchog' }); }
+  }
+  add(236, { o: -9, type: 'buddha', v: 1 }); add(244, { o: 12, type: 'palace' });      // Shey: the gilded Buddha and the old palace above the village
+  add(340, { o: 11, type: 'monastery' });                                              // Thiksey, stacked up its hill
+  add(578, { o: 10, type: 'buddha', v: 0 }); add(590, { o: 14, type: 'gompa' });       // Diskit: the Maitreya and the gompa above the town
+  for (const [i, o] of [[446, 5.8], [468, -5.4]] as const) add(i, { o, type: 'camp' });    // Hunder's dune camps
+  add(198, { o: 3.1, type: 'gurdwara' }); add(206, { o: 1.85, type: 'sign', label: 'MAGNETIC HILL', sub: 'ZONE' });   // the Leh-Kargil highway's landmarks
+  add(664, { o: 2.3, type: 'checkpost' });                                                                              // the army check post at the foot of the pass
   add(40, { o: 1.8, type: 'sign', label: 'GARAGE', sub: '140 KM' });
   add(FINISH - 90, { o: 1.8, type: 'sign', label: 'GARAGE', sub: 'NEXT LEFT' });
   add(FINISH, { o: -4.1, type: 'garage' });

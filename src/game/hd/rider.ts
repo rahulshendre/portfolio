@@ -11,12 +11,14 @@ const C = {
   tank: '#f3f1ea', tankShade: '#c9c6bc', stripe2: '#17181c', fork: '#d9a233',
 };
 
-export interface Look { colors?: Partial<typeof C>; bag?: boolean; }
+export interface Look { colors?: Partial<typeof C>; bag?: boolean; plate?: string; }
+/** Your registration: Pune, Maharashtra. Other riders on the road carry a Ladakh plate unless they say otherwise. */
+export const MY_PLATE = 'MH12';
 
 /** Rear view of the hero rider. `lean` runs -1 (left) to 1 (right); `braking` lights the tail lamp. */
 export function drawRider(ctx: CanvasRenderingContext2D, W: number, H: number, lean: number, t: number, speedFrac: number, braking = false, scale = 1) {
   const sc = Math.min(H * 0.074, W * 0.1) * scale;          // pixels per unit
-  drawRiderAt(ctx, W / 2 + lean * sc * 0.25, H - Math.max(14, H * 0.03), sc, lean, t, speedFrac, braking);
+  drawRiderAt(ctx, W / 2 + lean * sc * 0.25, H - Math.max(14, H * 0.03), sc, lean, t, speedFrac, braking, { plate: MY_PLATE });
 }
 
 /** The same rider anywhere on screen, at any size, with their own gear: used for the other riders on the road. */
@@ -49,27 +51,30 @@ export function drawRiderAt(ctx: CanvasRenderingContext2D, cx: number, gy: numbe
     g.restore();
     rrect(-tw * 0.16, -1.18, tw * 0.32, 1.18, 0.05, '#ffffff10');
 
-    // ---- swingarm, hub and shocks
+    // ---- swingarm and hub. The 400 X has one shock (hidden behind the tyre), so no twin springs; a chain guard runs down the left
     poly([-0.54, -0.62, -0.36, -0.6, -0.34, -0.5, -0.54, -0.52], K.metalDark);
     poly([0.54, -0.62, 0.36, -0.6, 0.34, -0.5, 0.54, -0.52], K.metalDark);
     circle(0, -0.56, 0.1, K.metal);
-    for (const s of [-1, 1]) {
-      stroke([s * 0.44, -0.6, s * 0.46, -1.28], K.black, 0.13);
-      for (let i = 0; i < 5; i++) stroke([s * 0.39, -0.7 - i * 0.11, s * 0.53, -0.74 - i * 0.11], '#3a3c44', 0.04);   // black spring, lit on its edge
-    }
+    poly([-0.5, -0.66, -0.4, -0.66, -0.4, -1.02, -0.47, -1.04], K.black);
+    // pillion peg on the left, hung off a small plate
+    poly([-0.6, -0.98, -0.5, -0.98, -0.5, -0.86, -0.6, -0.84], K.metalDark); rrect(-0.76, -0.94, 0.2, 0.07, 0.03, K.metal);
 
-    // ---- exhaust: the high pipe on the right, seen end-on
-    poly([0.5, -0.5, 0.7, -0.56, 0.74, -0.9, 0.52, -0.98], vgrad(-0.98, -0.5, [[0, '#2a2c32'], [1, '#0f1013']]));   // the black silencer, low on the right, angled out
-    poly([0.5, -0.98, 0.52, -0.94, 0.72, -0.86, 0.74, -0.9], '#8c9098');                                                       // brushed silver header shield
-    oval(0.63, -0.53, 0.115, 0.095, '#8c9098'); oval(0.63, -0.53, 0.085, 0.07, '#0b0b0d');                                     // its end cap: a silver rim round a black mouth
+    // ---- the upswept stainless silencer on the right: brushed steel body under a black heat shield, its mouth facing you
+    poly([0.48, -0.46, 0.7, -0.5, 0.76, -0.92, 0.55, -0.98], hgrad(0.48, 0.76, [[0, '#7c8088'], [0.45, '#d5d9df'], [1, '#8b9098']]));
+    poly([0.5, -0.9, 0.74, -0.86, 0.76, -0.92, 0.55, -0.98], '#1a1b20');                                                        // black heat shield on top
+    for (let k = 0; k < 3; k++) circle(0.6 + k * 0.05, -0.92 - k * 0.006, 0.014, '#8b9098');                                    // its perforations
+    poly([0.44, -0.5, 0.52, -0.5, 0.54, -0.4, 0.46, -0.4], '#5a5e66');                                                          // the hanger bracket
+    oval(0.66, -1.0, 0.115, 0.1, '#c7ccd3'); oval(0.66, -1.0, 0.085, 0.072, '#0b0b0d'); oval(0.64, -0.985, 0.03, 0.02, '#3a3d45'); // the round mouth: steel rim, black bore
 
-    // ---- tail: fender, lamp, plate and indicators
-    rrect(-0.36, -1.4, 0.72, 0.34, 0.1, hgrad(-0.36, 0.36, [[0, '#1a1b1f'], [0.5, '#2c2e35'], [1, '#1a1b1f']]));
-    rrect(-0.2, -1.32, 0.4, 0.11, 0.03, braking ? '#ff4a3a' : K.red);
-    if (braking) { g.globalAlpha = 0.5; circle(0, -1.27, 0.34, '#ff3a2a'); g.globalAlpha = 1; }
-    rrect(-0.13, -1.14, 0.26, 0.13, 0.02, K.plate);
-    rrect(-0.1, -1.1, 0.2, 0.02, 0.01, '#6a665a');
-    for (const s of [-1, 1]) { circle(s * 0.44, -1.26, 0.055, K.amber); stroke([s * 0.4, -1.26, s * 0.37, -1.3], K.black, 0.025); }
+    // ---- tail: short fender, LED lamp with its light guides, the plate and two LED indicators
+    rrect(-0.36, -1.44, 0.72, 0.38, 0.1, hgrad(-0.36, 0.36, [[0, '#1a1b1f'], [0.5, '#2c2e35'], [1, '#1a1b1f']]));
+    rrect(-0.27, -1.37, 0.54, 0.09, 0.04, braking ? '#ff4a3a' : '#a82820');
+    for (const sd of [-1, 1]) rrect(sd * 0.145 - 0.11, -1.352, 0.22, 0.032, 0.015, braking ? '#ffd0c4' : '#e0584a');           // the two light guides
+    if (braking) { g.globalAlpha = 0.5; circle(0, -1.33, 0.36, '#ff3a2a'); g.globalAlpha = 1; }
+    rrect(-0.2, -1.24, 0.4, 0.2, 0.02, K.plate);                                                                                  // an Indian plate: black letters on white
+    g.fillStyle = '#141416'; g.font = '700 0.105px "IBM Plex Mono", monospace'; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillText(look.plate ?? 'LA01', 0, -1.185); g.fillRect(-0.15, -1.12, 0.3, 0.012); g.fillRect(-0.15, -1.09, 0.3, 0.012);
+    for (const sd of [-1, 1]) { rrect(sd * 0.47 - 0.04, -1.31, 0.08, 0.06, 0.025, K.amber); stroke([sd * 0.41, -1.28, sd * 0.37, -1.3], K.black, 0.025); }
 
     // ---- seat, lit from the window side
     poly([-0.4, -1.52, 0.4, -1.52, 0.5, -1.4, -0.5, -1.4], hgrad(-0.5, 0.5, [[0, K.seat], [0.35, K.seatLit], [1, K.seat]]));
