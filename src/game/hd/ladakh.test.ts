@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildTrack, FINISH, BOARDS, MILESTONE_SEGS, N, PASS_TOP, TOWNS, altitude, calm, townAt, zoneAt } from './track-ladakh';
+import { buildTrack, FINISH, BOARDS, LAKE_FROM, MILESTONE_SEGS, N, PASS_TOP, TOWNS, altitude, calm, elevation, townAt, zoneAt } from './track-ladakh';
 import { capBehind, carAhead, LEFT, RIGHT, type Car } from './traffic';
 import { milestones } from '../../data/site';
 
@@ -32,6 +32,15 @@ describe('ladakh track', () => {
     for (const s of segs) for (const p of s.props) if (p.type === 'shop') expect(Math.abs(p.o)).toBeGreaterThan(1.8);
     const boardSegs = new Set([...BOARDS.map((b) => b.i)]);
     for (const b of boardSegs) expect(segs[b].props.some((p) => p.type === 'shop' && Math.sign(p.o) === Math.sign(segs[b].props.find((q) => q.type === 'board')!.o))).toBe(false);
+  });
+  it('reads the altitudes the cards and boards claim', () => {
+    expect(elevation(0)).toBe(3500);
+    expect(elevation(PASS_TOP)).toBeGreaterThanOrEqual(5350);
+    expect(elevation(PASS_TOP)).toBeLessThanOrEqual(5360);
+    expect(elevation(FINISH)).toBe(4225);                                                       // the lake card says 4,225 m and the garage is there
+    for (let i = PASS_TOP + 40; i < LAKE_FROM + 60; i++) expect(elevation(i + 1)).toBeLessThanOrEqual(elevation(i));   // a steady descent, no bump, from the pass to the lake
+    const top = segs.flatMap((s) => s.props).find((p) => p.type === 'bro' && p.lines?.[0] === 'KHARDUNG LA');
+    expect(top?.lines?.[1]).toBe('TOP 17582 FT');                                                // the board agrees with the 5,359 m summit board
   });
   it('climbs at the pass then eases to the garage', () => {
     expect(altitude(PASS_TOP)).toBeGreaterThan(0.9);

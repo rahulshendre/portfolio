@@ -1,11 +1,12 @@
 // Roadside props for the Ladakh ride, drawn in local unit space via at().
-import { LOGOS, type LogoId } from './logos';
 import { at, box, circle, fit, g, glow, hgrad, hill, label, oval, poly, rrect, stroke, vgrad } from './draw';
 import { drawCar } from './traffic';
 import { drawCanopy, drawDarchog, drawFlagMound, drawFlags } from './flags';
 import { drawGate, drawMonk, drawParkedBike, drawShop, drawStall } from './town';
+import { drawGarage } from './garage';
+import { drawBoard, drawBro, drawChevron, drawLimit, drawSign, setSignLight, SIGN_EMIT, SIGN_GLOW } from './signs';
 import { drawBuddha, drawCheckPost, drawGurdwara, drawMonastery } from './landmarks';
-import { drawCamel, drawCamp, drawCone, drawCrew, drawLimit, drawSummit, drawVillage } from './scenery';
+import { drawCamel, drawCamp, drawCone, drawCrew, drawSummit, drawVillage } from './scenery';
 
 /** A long shadow thrown across the ground from something tall, away from the low sun on the right. */
 function cast(h: number, w: number, a = 0.17) {
@@ -138,20 +139,6 @@ export function drawStone(sx: number, sy: number, k: number, hazard = 0) {
   });
 }
 
-export function drawBro(sx: number, sy: number, k: number, lines?: readonly string[]) {
-  const s = k;
-  if (s < 0.16) return;
-  at(sx, sy, s, () => {
-    rrect(-48, -70, 96, 56, 4, '#e8b923');
-    rrect(-44, -66, 88, 48, 3, '#1b1712');
-    if (lines) {
-      lines.forEach((ln, i) => {
-        fit(ln, 0, -48 + i * 16, 82, 9, '#e8b923', 600);                                      // long slogans shrink to fit the board
-      });
-    }
-  });
-}
-
 /** A milestone: a white stone with a yellow head, like the ones along the road, carrying the year and what happened. */
 export function drawMilestone(sx: number, sy: number, k: number, top?: string, sub?: string) {
   const s = k;
@@ -170,93 +157,6 @@ export function drawMilestone(sx: number, sy: number, k: number, top?: string, s
       lines.forEach((ln, i) => fit(ln, 0, -50 + i * 15 - (lines.length > 1 ? 6 : 0), 48, 11, '#1b1712', 600));
     }
     box(-31, -8, 62, 6, '#c8c2b2');
-  });
-}
-
-export function drawBoard(sx: number, sy: number, k: number, id?: string) {
-  const s = k;
-  if (s < 0.16) return;
-  at(sx, sy, s, () => {
-    box(-4, -10, 8, 90, '#5a5048');
-    rrect(-70, -120, 140, 80, 4, '#2a2a2e');
-    rrect(-66, -116, 132, 72, 3, id === 'pipecd' ? '#0b1f3a' : '#f4f2ea');
-    if (id && id in LOGOS) {
-      const path = new Path2D(LOGOS[id as LogoId]);
-      g.save();
-      g.translate(-13, -112);
-      g.scale(2, 2);
-      g.fillStyle = id === 'github' || id === 'x' ? '#1b1712' : id === 'linkedin' ? '#0a66c2' : id === 'youtube' ? '#ff0000' : '#24b5d9';
-      g.fill(path);
-      g.restore();
-    } else if (id === 'pipecd') {
-      label('PipeCD', 0, -70, 16, '#24b5d9', { align: 'center', weight: 600, font: '"IBM Plex Sans", system-ui, sans-serif' });
-    }
-    if (id && id !== 'pipecd') label(id === 'x' ? 'X / TWITTER' : id.toUpperCase(), 0, -52, 11, '#1b1712', { align: 'center', weight: 600 });
-  });
-}
-
-export function drawSign(sx: number, sy: number, k: number, top?: string, sub?: string) {
-  const s = k;
-  if (s < 0.16) return;
-  at(sx, sy, s, () => {
-    box(-3, -8, 6, 70, '#6a6058');
-    rrect(-40, -90, 80, 50, 3, '#2c5aa0');
-    rrect(-36, -86, 72, 42, 2, '#f4f2ea');
-    if (top) label(top, 0, -68, 11, '#1b1712', { align: 'center', weight: 600 });
-    if (sub) label(sub, 0, -50, 9, '#2c5aa0', { align: 'center' });
-  });
-}
-
-/** The garage seen from the road. `bay` false leaves the bay empty, for the arrival shot where your own bike rolls in. */
-export function drawGarage(sx: number, sy: number, k: number, bay = true) {
-  const s = k * 0.95;
-  if (s < 0.16) return;
-  at(sx, sy, s, () => {
-    // warm light spilling out over the forecourt
-    poly([-70, 0, 70, 0, 160, 60, -160, 60], vgrad(0, 60, [[0, 'rgba(255,196,110,0.55)'], [1, 'rgba(255,196,110,0)']]));
-    cast(120, 200, 0.16);
-    // the building: dark brick with a pale concrete coping, wood cladding on the left wing, a hazard stripe along the base
-    box(-118, -112, 236, 112, vgrad(-112, 0, [[0, '#6a4a3c'], [1, '#4a3128']]));
-    for (let r = 0; r < 18; r++) for (let x = -118 + (r % 2) * 7; x < 118; x += 14) box(x, -110 + r * 6, 0.8, 6, 'rgba(20,10,6,0.35)'), box(-118, -110 + r * 6, 236, 0.8, 'rgba(20,10,6,0.35)');
-    box(-118, -112, 236, 12, 'rgba(255,214,170,0.08)');
-    box(-122, -122, 244, 12, '#a99676'); box(-122, -122, 244, 3, '#cdbd9c');
-    box(-118, -100, 50, 100, '#7a5a3c'); for (let x = -118; x < -68; x += 6) box(x, -100, 0.9, 100, 'rgba(0,0,0,0.3)'); box(-118, -100, 50, 4, 'rgba(255,255,255,0.08)');
-    for (let x = -118; x < 118; x += 16) box(x, -8, 8, 8, '#1b1712'), box(x + 8, -8, 8, 8, '#e8b923');
-    // the bay: a black steel frame, the shutter rolled up, a dark mat and a white Scrambler waiting under two dome lamps
-    box(-60, -94, 120, 94, '#17130f');
-    box(-56, -90, 112, 90, vgrad(-90, 0, [[0, '#ffd88a'], [0.55, '#f2a458'], [1, '#b8683a']]));
-    box(-56, -90, 112, 26, 'rgba(40,24,14,0.5)');
-    for (let y = -90; y < -66; y += 6) box(-56, y, 112, 4, '#8b8f94');
-    box(-50, -62, 100, 40, 'rgba(60,34,20,0.45)');                                                          // the pegboard on the back wall
-    for (const [x, w] of [[-44, 14], [-26, 8], [-14, 18], [10, 10], [24, 16], [40, 6]] as const) box(x, -58, w, 3, 'rgba(20,10,6,0.55)'), box(x + w / 2 - 1, -58, 2, 14 + (x % 3) * 4, 'rgba(20,10,6,0.55)');
-    box(-56, -10, 112, 10, '#1d1a17');                                                                      // the dark display mat
-    for (const x of [-30, 30]) { stroke([x, -90, x, -78], '#17130f', 1.6); poly([x - 10, -78, x + 10, -78, x + 7, -68, x - 7, -68], '#17130f'); poly([x - 7, -68, x + 7, -68, x + 22, -40, x - 22, -40], 'rgba(255,225,150,0.14)'); circle(x, -69, 4, '#fff2c0'); }
-    if (bay) {
-      for (const x of [-26, 26]) { circle(x, -17, 15, '#0f0e10'); circle(x, -17, 9.5, '#8c9098'); circle(x, -17, 7, '#17171a'); circle(x, -17, 2.5, '#c8ccd2'); for (let a = 0; a < 6; a++) stroke([x, -17, x + Math.cos(a * 1.05) * 9, -17 + Math.sin(a * 1.05) * 9], '#8c9098', 0.9); }
-      poly([-26, -17, -10, -36, 6, -38, 24, -18, 10, -26, -6, -22], '#f4f2ea');                                // frame and tank
-      poly([-8, -40, 12, -44, 15, -36, -4, -34], '#17130f'); poly([-6, -38, 8, -40, 8, -36, -4, -35], '#ffffff');  // seat and tank
-      stroke([24, -18, 30, -46], '#8c9098', 2.4); stroke([22, -47, 34, -47], '#17130f', 2.4); circle(31, -37, 4.5, '#ffe9a8');                  // fork, bars and headlight
-      stroke([-22, -28, 18, -26], '#b9bec6', 3);                                                                // the high exhaust
-    }
-    // the cat, sitting by the bay
-    oval(-72, -3, 9, 3, 'rgba(0,0,0,0.25)'); oval(-72, -9, 6, 8, '#d9d2c4'); circle(-72, -19, 5, '#d9d2c4'); poly([-76, -22, -75, -28, -72, -23], '#d9d2c4'); poly([-68, -22, -69, -28, -72, -23], '#d9d2c4'); box(-74, -20, 1.4, 1.4, '#3a5a3a'); box(-70, -20, 1.4, 1.4, '#3a5a3a'); stroke([-66, -6, -62, -10, -60, -6], '#d9d2c4', 2);
-    // the neon sign on the roof
-    rrect(-84, -172, 168, 44, 5, '#1b1712'); rrect(-80, -168, 160, 36, 3, '#2a1a1a');
-    g.save(); g.shadowColor = '#ff6a5a'; g.shadowBlur = 16;
-    label("RAHUL'S", 0, -150, 17, '#ff8c78', { align: 'center', weight: 700 });
-    label('GARAGE', 0, -135, 13, '#ffd0a0', { align: 'center', weight: 700 });
-    g.restore();
-    stroke([-66, -128, -66, -118], '#17130f', 3); stroke([66, -128, 66, -118], '#17130f', 3);
-    // black gooseneck lamps, a lit window on the right and a painted line of type
-    for (const x of [-92, 92]) { stroke([x, -84, x + (x < 0 ? 10 : -10), -96], '#17130f', 2.2); poly([x + (x < 0 ? 4 : -4), -98, x + (x < 0 ? 16 : -16), -98, x + (x < 0 ? 14 : -14), -90, x + (x < 0 ? 6 : -6), -90], '#17130f'); circle(x + (x < 0 ? 10 : -10), -88, 12, 'rgba(255,220,140,0.28)'); circle(x + (x < 0 ? 10 : -10), -90, 3, '#fff0b8'); }
-    box(72, -78, 30, 30, '#17130f'); box(74, -76, 26, 26, '#ffd88a'); box(86, -76, 2, 26, '#17130f'); box(74, -64, 26, 2, '#17130f');
-    // the forecourt: a stack of tyres, oil drums, a chalkboard, a vintage pump and a potted plant
-    for (const [x, y] of [[-150, -8], [-150, -22], [-150, -36], [-136, -8]] as const) { oval(x, y, 13, 6.5, '#141416'); oval(x, y, 7, 3.2, '#2a2a2e'); }
-    box(-132, -30, 16, 22, '#2f5a48'); box(-132, -30, 16, 3, '#1f4030'); oval(-124, -30, 8, 2.5, '#3c6e58');
-    box(122, -20, 22, 20, '#e8e0cf'); rrect(126, -16, 14, 12, 1, '#2a2622');
-    poly([100, 0, 106, -34, 130, -34, 136, 0], '#c8392b'); rrect(104, -50, 28, 18, 4, '#f4f2ea'); rrect(107, -47, 22, 10, 2, '#e8b923'); box(102, -34, 32, 3, '#17130f'); stroke([134, -26, 146, -16, 146, -6], '#17130f', 2);
-    poly([146, 0, 150, -26, 166, -26, 170, 0], '#7a5a3c'); box(150, -24, 16, 20, '#1b2a26'); label('OPEN', 158, -14, 6, '#fff6e0', { align: 'center', weight: 700 }); label('CHAI', 158, -7, 5.5, '#e8b923', { align: 'center', weight: 700 });
-    poly([-170, 0, -166, -12, -152, -12, -148, 0], '#2a2622'); for (const [x, y, r] of [[-159, -20, 8], [-153, -26, 6], [-165, -26, 6]] as const) circle(x, y, r, '#4a7a4a');
   });
 }
 
@@ -354,21 +254,6 @@ export function drawCairn(sx: number, sy: number, k: number) {
 }
 
 /** A yellow chevron sign on the outside of a bend: `dir` 1 means the road bends right. */
-export function drawChevron(sx: number, sy: number, k: number, dir = 1) {
-  const s = k;
-  if (s < 0.16) return;
-  at(sx, sy, s, () => {
-    oval(0, 0, 9, 1.6, SH);
-    cast(100, 4);
-    box(-2, -60, 4, 60, '#5a5048');
-    rrect(-28, -102, 56, 46, 5, '#1b1712');
-    rrect(-25, -99, 50, 40, 3, '#f2c318');
-    g.save(); g.scale(dir, 1);
-    for (const x of [-12, 4]) poly([x, -92, x + 12, -79, x, -66, x + 6, -66, x + 18, -79, x + 6, -92], '#1b1712');
-    g.restore();
-  });
-}
-
 /** Cattails and reeds standing in the shallows. */
 export function drawReed(sx: number, sy: number, k: number, v = 0) {
   const s = k * (0.8 + (v % 3) * 0.2);
@@ -492,15 +377,15 @@ export function drawLamp(sx: number, sy: number, k: number) {
 
 /** The hour of the ride (0 afternoon to 1 dusk), set by the road renderer, so signs can catch the last light. */
 let TOD = 0, NIGHT = 0;
-export const setTod = (t: number, night = 0) => { TOD = t; NIGHT = night; LIGHTS.length = 0; };
+export const setTod = (t: number, night = 0) => { TOD = t; NIGHT = night; LIGHTS.length = 0; setSignLight(t, night); };
 /** Light sources met this frame, drawn on top of the night so lamps, windows and signs stay bright. */
 export interface Light { x: number; y: number; r: number; a: number; color: string }
 export const LIGHTS: Light[] = [];
 const EMIT: Record<string, [number, number, number, number, string]> = {   // [dx, dy, radius, alpha, colour], in prop units
   shop: [-10, -22, 60, 0.4, '#ffb860'], gate: [0, -134, 120, 0.3, '#ffe0a0'], garage: [0, -50, 170, 0.4, '#ffb862'], lamp: [26, -98, 56, 0.3, '#ffe0a0'], dhaba: [-4, -34, 64, 0.45, '#ffb860'],
-  bro: [0, -42, 70, 0.28, '#ffd070'], sign: [0, -46, 66, 0.28, '#d8f0d0'], chevron: [0, -80, 56, 0.3, '#ffe060'], board: [0, -60, 90, 0.3, '#fff0d0'], ms: [0, -40, 70, 0.3, '#fff0d0'],
+  ...SIGN_EMIT, ms: [0, -40, 70, 0.3, '#fff0d0'],
 };
-const GLOW: Record<string, [number, number]> = { bro: [-52, 90], sign: [-60, 90], chevron: [-80, 70], board: [-70, 110], ms: [-40, 80] };
+const GLOW: Record<string, [number, number]> = { ...SIGN_GLOW, ms: [-40, 80] };
 
 export function drawProp(type: string, sx: number, sy: number, k: number, p: { label?: string; sub?: string; lines?: readonly string[]; v?: number }) {
   const em = EMIT[type];

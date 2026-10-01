@@ -5,7 +5,7 @@ import { drawRider } from '../hd/rider';
 import { drawSpeedLines } from '../hd/speed';
 import { finish } from '../hd/finish';
 import { LowRes } from '../hd/pixel';
-import { drawHome, HOME_LEN } from '../hd/arrival';
+import { setGarageBike } from '../hd/garage';
 import type { Look } from '../rail';
 import { envAt, hazeAt } from '../hd/background';
 import { renderRoad } from '../hd/road';
@@ -40,7 +40,9 @@ const EVENTS = [
 ];
 const CHAPTER = (i: number) => townAt(i) ??
   (i >= FINISH - 90 ? 'ALMOST THERE'
-    : ({ leh: 'LEH TOWN', valley: 'INDUS VALLEY', pass: 'KHARDUNG LA', lake: 'THE LAKE' } as const)[zoneAt(i)]);
+    : i >= LAKE_FROM ? 'THE LAKE'                                        // the water is in sight from here, so the label matches the view
+    : i >= 720 ? 'KHARDUNG LA'                                           // the climb itself, not the valley floor before it
+    : ({ leh: 'LEH TOWN', valley: 'INDUS VALLEY', pass: 'INDUS VALLEY', lake: 'THE LAKE' } as const)[zoneAt(i)]);
 
 const FONT_DISPLAY = '"Fraunces", Georgia, serif';
 /** The name on the opening card: the pixel font the site's buttons and the garage sign use. */
@@ -57,7 +59,6 @@ export class RideScene implements Scene {
   private photo = false; private photoT = 0; private paused = false; private lights: 'auto' | 'on' | 'off' = 'auto'; private gas = false; private brake = false; private trip = 0; private vx = 0; private bolt: Bolt | null = null; private boltIn = 6; private night = false; private nightK = 0; private gasWas = false; private rough = 0; private bumpT = 0; private rideT = 0; private topKmh = 0; private passed = 0; private honks = 0; private stopT = 0; private sky: Sky = 'clear';
   private cam: Cam = 'behind';
   private pitchK = 0;   // the bike's nose: dips under braking, lifts under power, and the headlight follows
-  private homeT = 0;   // how long the side shot of your bike rolling into the garage has been showing
   private bikeImg: HTMLImageElement | null = null;   // the garage's own picture of your bike, shown on the arrival card
   private pixel = typeof location !== 'undefined' && new URLSearchParams(location.search).has('pixel'); private low = new LowRes();
   private bgOff = 0; private t = 0; private odo = 0; private fade = 0; private flash = 0;
@@ -68,7 +69,7 @@ export class RideScene implements Scene {
 
   enter() {
     void document.fonts?.load(`400 32px ${FONT_NAME}`);                       // the canvas needs the pixel font loaded before the opening card can use it
-    const im = new Image(); im.onload = () => { this.bikeImg = im; }; im.src = '/sprites/bike-side-lg.png';
+    const im = new Image(); im.onload = () => { this.bikeImg = im; setGarageBike(im); }; im.src = '/sprites/bike-side-lg.png';   // the garage's bike, for the arrival card and for the bay of the garage on the road
     addEventListener('blur', this.autoPause);                          // switching away pauses the ride
     input.endFrame();
     const at = Number(new URLSearchParams(location.search).get('at'));
@@ -204,8 +205,7 @@ export class RideScene implements Scene {
       if (this.speed < 30) {                                                                      // pulled up: the engine settles, a summary of the ride shows, then the door opens
         if (this.stopT === 0) { this.stopT = 0.001; engine.mute(); radio.setLevel(1); }
         this.stopT += dt;
-        if (this.stopT > 2.4) this.homeT += dt;                                                   // then a side shot: your bike rolls into the bay
-        if (this.homeT > HOME_LEN || (this.homeT > 0.9 && (tap === 'other' || input.anyKey()))) { this.fade += dt; if (this.fade > 0.7) return this.onArrive(); }
+        if (this.stopT > 3.6) { this.fade += dt; if (this.fade > 0.7) return this.onArrive(); }
       }
     } else {
       // real forces: thrust against drag, rolling resistance, the slope under the wheels and the brakes. With nothing pressed
@@ -307,7 +307,7 @@ export class RideScene implements Scene {
       if (!this.lite) finish(g, W, H, HZ, env.tod, this.nightK > 0.5, !small);   // grade, vignette and grain over the world, under the rider and the HUD
       const beam = this.lights === 'off' ? 0 : Math.max(this.lights === 'on' ? 0.5 : 0, env.tod > 0.55 ? (env.tod - 0.55) / 0.45 : 0, this.nightK * 1.4);
       const beamA = Math.min(1, beam);
-      if (!this.lite && beamA > 0) drawHeadlight(g, W, H, HZ, this.lean, beamA, { wet: this.sky === 'rain' ? 1 : 0, mist: this.sky === 'fog' || this.sky === 'snow' ? 1 : 0, t: this.t, pitch: this.pitchK });
+      if (!this.lite && beamA > 0) drawHeadlight(g, W, H, HZ, this.lean, beamA, { wet: this.sky === 'rain' ? 1 : 0, mist: this.sky === 'fog' || this.sky === 'snow' ? 1 : 0, t: this.t, pitch: this.pitchK, dark: Math.min(1, this.nightK * 1.25 + Math.max(0, env.tod - 0.45) * 0.9) });
       if (this.cam === 'behind' || this.cam === 'high') drawRider(g, W, H, this.lean, this.t, sp, this.braking, RIDER_SCALE[this.cam]);
       else drawPOV(g, W, H, sp, this.t, sp * KMH);
     }
@@ -318,13 +318,6 @@ export class RideScene implements Scene {
     if (!this.photo) this.hud(FW / d, FH / d, segI);
     else if (this.photoT > 0) { const cw = FW / d; this.pill('PHOTO MODE  ·  ENTER SAVES  ·  F EXITS', cw / 2 - 150, (FH / d) - 46, 13); }
     full.restore();
-    if (this.homeT > 0) {                                                                      // the side shot wipes in from the left over the road
-      const wipe = Math.min(1, this.homeT / 0.7), w = (1 - Math.pow(1 - wipe, 3)) * FW;
-      full.save(); full.beginPath(); full.rect(0, 0, w, FH); full.clip();
-      drawHome(full, FW, FH, Math.max(0, this.homeT - 0.5), this.bikeImg, REDUCED);
-      full.restore(); use(full);
-      if (wipe < 1) box(w - 6, 0, 6, FH, ACCENT);
-    }
     if (this.flash > 0) { full.globalAlpha = 0.35; box(0, 0, FW, FH, '#000'); full.globalAlpha = 1; }
     if (this.fade > 0) { full.globalAlpha = Math.min(1, this.fade / 0.7); box(0, 0, FW, FH, INK); full.globalAlpha = 1; }
   }

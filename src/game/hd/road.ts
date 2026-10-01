@@ -43,7 +43,7 @@ export const DRAW_DIST = 180;
 /** Props are drawn in a unit space about 55 units to a house, against a road 2200 units across, so they scale up from the road's own scale. */
 const PROP_K = ROAD_W / 55;
 /** Signs and boards were drawn in bigger units than houses, so each gets its own size against the road (a board is about the road's half-width). */
-const PROP_SIZE: Record<string, number> = { board: 0.42, bro: 0.42, sign: 0.5, stone: 0.26, chevron: 0.3, pole: 0.9, gompa: 3, palace: 3, stupahill: 3, ms: 0.75, lamp: 0.9, kiang: 1.5, marmot: 1.6, darchog: 0.9, cone: 0.5, crew: 0.9, summit: 0.6, camp: 1.1, village: 3, buddha: 1.5, monastery: 1.5, monk: 0.55, tourer: 0.8, stall: 0.85, camel: 1.5, limit: 0.5, flagmound: 1.1, dog: 1.2 };
+const PROP_SIZE: Record<string, number> = { board: 0.46, bro: 0.44, sign: 0.52, stone: 0.26, chevron: 0.3, pole: 0.9, gompa: 3, palace: 3, stupahill: 3, ms: 0.75, lamp: 0.9, kiang: 1.5, marmot: 1.6, darchog: 0.9, cone: 0.5, crew: 0.9, summit: 0.6, camp: 1.1, village: 3, buddha: 1.5, monastery: 1.5, monk: 0.55, tourer: 0.8, stall: 0.85, camel: 1.5, limit: 0.5, flagmound: 1.1, dog: 1.2 };
 
 const NEAR_HIDE = new Set(['chevron', 'pole', 'scrub', 'tuft', 'reed', 'cairn', 'lamp', 'cone', 'monk', 'stall', 'tourer']);
 

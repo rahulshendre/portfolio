@@ -87,7 +87,7 @@ export function drawSkyTint(g: CanvasRenderingContext2D, W: number, H: number, H
   }
 }
 
-export interface BeamOpts { wet?: number; mist?: number; t?: number; pitch?: number }
+export interface BeamOpts { wet?: number; mist?: number; t?: number; pitch?: number; dark?: number }
 
 /**
  * Your headlight, thrown down the road. A pool of light lies on the tarmac in perspective (nothing at the far end, a hot spot a little way ahead of
@@ -95,7 +95,8 @@ export interface BeamOpts { wet?: number; mist?: number; t?: number; pitch?: num
  * shows as a soft column, stronger in rain, mist and dust, with glints in it and a long reflection down a wet road. Braking dips the nose and
  * shortens the throw.
  */
-export function drawHeadlight(g: CanvasRenderingContext2D, W: number, H: number, HZ: number, lean: number, a: number, o: BeamOpts = {}) {
+export function drawHeadlight(g: CanvasRenderingContext2D, W: number, H: number, HZ: number, lean: number, strength: number, o: BeamOpts = {}) {
+  const dark = o.dark ?? 1, a = strength * (0.28 + 0.72 * dark);          // a lamp barely shows against a bright sky and comes into its own as the light goes
   const wet = o.wet ?? 0, mist = o.mist ?? 0, t = o.t ?? 0, pitch = Math.max(-1, Math.min(1, o.pitch ?? 0));
   const hy = H * HZ, span = H * 0.93 - hy, lamp = H * 0.24;
   const yAt = (u: number) => hy + span * u;                                          // u runs from 1 at the bike toward 0 at the horizon

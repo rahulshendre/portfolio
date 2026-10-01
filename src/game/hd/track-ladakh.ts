@@ -21,7 +21,7 @@ export const BRO = [
   { i: 320, lines: ['BE GENTLE', 'ON MY CURVES'] },
   { i: 545, lines: ['AFTER WHISKY', 'DRIVING RISKY'] },
   { i: 700, lines: ["IT'S NOT A RALLY", 'ENJOY THE VALLEY'] },
-  { i: PASS_TOP - 12, lines: ['KHARDUNG LA', 'TOP 18380 FT'] },
+  { i: PASS_TOP - 12, lines: ['KHARDUNG LA', 'TOP 17582 FT'] },
   { i: 1010, lines: ['PEEP PEEP', "DON'T SLEEP"] },
   { i: 190, lines: ['HURRY BURRY', 'SPOIL THE CURRY'] },
   { i: 270, lines: ['DARLING I LIKE YOU', 'BUT NOT SO FAST'] },
@@ -73,8 +73,8 @@ const smooth = (a: number, b: number, x: number) => { const t = Math.min(1, Math
 export const zoneAt = (i: number): Zone => (i < 270 ? 'leh' : i < 640 ? 'valley' : i < 1060 ? 'pass' : 'lake');
 /** 0 in the valley, 1 near the top of the pass. Drives snow, peaks, curves and the colder light. */
 export const altitude = (i: number) => smooth(620, PASS_TOP, i) * (1 - smooth(PASS_TOP + 40, 1080, i));
-/** Metres above sea level: Leh at 3500, the valley climbing, Khardung La at its real 5359 at the top, down to the lake at about 4250. */
-export const elevation = (i: number) => Math.round(3500 + 200 * smooth(0, 620, i) + 1659 * altitude(i) + 350 * smooth(1040, 1160, i));
+/** Metres above sea level: Leh at 3500, the valley climbing, Khardung La at its real 5359 at the top, down to the lake at 4,225 m, where the garage is. */
+export const elevation = (i: number) => Math.round(3500 + 200 * smooth(0, 620, i) + 1659 * altitude(i) + 525 * smooth(990, 1050, i));
 /** 1 on the open road, easing to 0 so the last stretch before the garage is flat and straight. */
 export const calm = (i: number) => (1 - smooth(1040, 1140, i)) * smooth(0, 60, i);
 

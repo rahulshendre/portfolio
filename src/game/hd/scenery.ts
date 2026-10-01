@@ -44,18 +44,6 @@ export function drawCamel(sx: number, sy: number, k: number, v = 0) {
   });
 }
 
-/** A round speed-limit sign on a post. */
-export function drawLimit(sx: number, sy: number, k: number, kmh = 40) {
-  if (k < 0.16) return;
-  at(sx, sy, k, () => {
-    oval(0, 0, 9, 1.6, SH);
-    box(-1.8, -74, 3.6, 74, '#5a5048'); box(-1.8, -74, 1.2, 74, '#7a6e64');
-    circle(0, -92, 20, '#c8312a'); circle(0, -92, 15, '#f7f5ef');
-    label(String(kmh), 0, -86, 19, '#1b1712', { align: 'center', weight: 800 });
-    rrect(-22, -62, 44, 12, 3, '#f7f5ef'); label('BRO', 0, -53, 8, '#1b1712', { align: 'center', weight: 700 });
-  });
-}
-
 /** An orange traffic cone. */
 export function drawCone(sx: number, sy: number, k: number) {
   if (k < 0.16) return;

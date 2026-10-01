@@ -2,6 +2,7 @@
 // Every ridge has a sunlit face and a shaded face (the sun is on the right), so the layers read as solid land, not cut paper.
 import { altitude } from './track-ladakh';
 import { box, circle, mix, oval, rnd, smooth, stroke, use, vgrad } from './draw';
+import { drawRange, massif } from './mountains';
 
 export interface Env {
   tod: number; // 0 afternoon .. 1 dusk
@@ -42,8 +43,9 @@ function ridged(seed: number, crest: number, gain: number): Float32Array {
   return out;
 }
 
-const FAR = ridged(1, 0.95, 1.7);     // snow range
-const MID = ridged(2, 0.8, 1.45);     // violet range
+const GIANTS = massif(11, 3, 7);      // the far white giants
+const HIGH = massif(1, 4, 8);         // the snow range
+const MIDR = massif(2, 5, 9);         // the nearer, darker range
 const FOOT = ridged(3, 0.5, 1.25);    // ochre foothills
 const NEAR = ridged(4, 0.25, 1.1);    // rolling dunes
 const CLOSE = ridged(5, 0.1, 1.0);    // low ground swell
@@ -183,12 +185,14 @@ export function drawBackground(g: CanvasRenderingContext2D, W: number, H: number
 
   const base = horizon + 2, tall = Math.max(1, H / 420), snow = smooth(0.2, 0.85, env.alt);
   const lum = (c: string) => (parseInt(c.slice(1, 3), 16) + parseInt(c.slice(3, 5), 16) + parseInt(c.slice(5, 7), 16)) / 3;
-  const dusk = (day: string, dk: string) => {                                          // day colours slide to dusk ones, then to cold blue at night (lit faces stay lighter than shaded ones)
+  const dusk = (day: string, dk: string, moon?: string) => {                           // day colours slide to dusk ones, then to cold blue at night (lit faces stay lighter than shaded ones)
     const c = mix(day, dk, env.tod);
-    return night > 0 ? mix(c, lum(c) > 130 ? '#39457f' : '#141c42', night * 0.86) : c;
+    return night > 0 ? mix(c, moon ?? (lum(c) > 130 ? '#39457f' : '#141c42'), night * 0.86) : c;   // `moon` lets snow keep a pale glow in the moonlight
   };
-  layer(g, W, hazeCol, { prof: FAR, base, amp: (86 + env.alt * 50) * tall, off: off * 0.03 + 300, lit: dusk('#c9d6f0', '#c8b0d8'), shade: dusk('#7f94c8', '#7e6ea8'), haze: 0.52, snow: snow * 0.95 }, env.lite);
-  layer(g, W, hazeCol, { prof: MID, base: base + 3, amp: (60 + env.alt * 28) * tall, off: off * 0.08, lit: dusk('#a6a4cc', '#b088b0'), shade: dusk('#6a6aa4', '#6a5088'), haze: 0.36, snow: snow * 0.55 }, env.lite);
+  const sn = 0.6 + 0.4 * snow;                                                          // the big peaks carry snow all year, more of it as you climb
+  drawRange(g, W, hazeCol, { prof: GIANTS, base, amp: (160 + env.alt * 50) * tall, off: off * 0.015 + 700, seed: 11, rockLit: dusk('#9aa6c6', '#a88cb8'), rockShade: dusk('#6a7aa8', '#66588c'), snowLit: dusk('#ffffff', '#ffd8c2', '#8d9cdc'), snowShade: dusk('#b2c0e6', '#a496c8', '#4a5896'), haze: 0.6, snowLine: 0.44 - 0.1 * env.alt, snow: sn, plume: true }, t, env.lite);
+  drawRange(g, W, hazeCol, { prof: HIGH, base, amp: (112 + env.alt * 52) * tall, off: off * 0.035 + 300, seed: 1, rockLit: dusk('#b49279', '#bb7f7b'), rockShade: dusk('#6f6680', '#604c72'), snowLit: dusk('#ffffff', '#ffdcc4', '#95a4e0'), snowShade: dusk('#aebde4', '#9c8cc0', '#4e5c9c'), haze: 0.42, snowLine: 0.5 - 0.14 * env.alt, snow: sn }, t, env.lite);
+  drawRange(g, W, hazeCol, { prof: MIDR, base: base + 3, amp: (70 + env.alt * 30) * tall, off: off * 0.08, seed: 2, rockLit: dusk('#c4926c', '#c8806a'), rockShade: dusk('#7c5e64', '#6a4858'), snowLit: dusk('#fbfcff', '#ffdcc8', '#8494d0'), snowShade: dusk('#b4c0e4', '#a494c4', '#444f8c'), haze: 0.26, snowLine: 0.74 - 0.3 * env.alt, snow: 0.2 + 0.7 * snow }, t, env.lite);
   layer(g, W, hazeCol, { prof: FOOT, base: base + 6, amp: 40 * tall, off: off * 0.18 + 900, lit: dusk('#dca062', '#d88a68'), shade: dusk('#a86c3e', '#8a5058'), haze: 0.2, snow: 0 }, env.lite);
   layer(g, W, hazeCol, { prof: NEAR, base: base + 10, amp: 26 * tall, off: off * 0.34 + 200, lit: dusk('#d08a48', '#c87050'), shade: dusk('#98582c', '#784048'), haze: 0.1, snow: 0 }, env.lite);
   layer(g, W, hazeCol, { prof: CLOSE, base: base + 14, amp: 14 * tall, off: off * 0.6 + 1400, lit: dusk('#b87a40', '#a85e48'), shade: dusk('#83502a', '#66393e'), haze: 0.04, snow: 0 }, env.lite);
