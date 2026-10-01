@@ -14,7 +14,7 @@ import { site } from '../../data/site';
 import { idleMessage } from '../hints';
 import { istHMS, istLabel } from '../ist';
 import { tick } from '../engine/audio';
-import type { Theme, Weather } from '../state';
+import type { Theme, Time, Weather } from '../state';
 import { stormFlash, windowFall, windowSky } from './weather';
 import { CLOCK, FAN, wallShadows, POSTER_AT, SUN, TUBES, benchLamp, benchLampGlow, bikeGrounding, ceilingMech, helmet, compressor, satchel, pendantLamps, compressorGauge, compressorPuff, fanLive, fanStatic, foreground, posterFrame, POSTER, incidentBoard, ridesFrame, clockFace, clockHands, conduit, depthShading, floorDetail, floorProps, charger, chargerLive, mothLive, sunSprite, sunStrength, tubeBeams } from './garageprops';
 import github from '../../data/github.json';
@@ -81,20 +81,26 @@ export class GarageScene implements Scene {
   // dust drifting through the tube-light beams: fixed seeds, so it looks the same every visit
   private motes = Array.from({ length: 28 }, (_, i) => ({ x: TUBES[i % 2] + ((i * 37) % 70) - 35, y: 24 + ((i * 53) % 166), k: i }));
 
-  constructor(private screen: Screen, private img: GarageImages, private weather: Weather = 'clear', private theme: Theme = 'himalaya') {}
+  constructor(private screen: Screen, private img: GarageImages, private weather: Weather = 'clear', private theme: Theme = 'himalaya', private hour: 'day' | 'dusk' = 'dusk') {}
 
   enter() {
     this.bg = this.roomSprite();
     this.layers();
     addEventListener('pointermove', this.onMove);
-    this.sun = sunSprite(this.weather);
+    this.sun = sunSprite(this.weather, this.hour);
     this.t = 0;
     this.nightT = this.night ? 1 : 0;
   }
 
   /** Change what is outside the window (repaints the room, since the sky is part of the still picture). */
   setTheme(th: Theme) { this.theme = th; this.bg = this.roomSprite(); this.layers(); }
-  setWeather(w: Weather) { this.weather = w; this.bg = this.roomSprite(); this.layers(); this.sun = sunSprite(w); }
+  setWeather(w: Weather) { this.weather = w; this.bg = this.roomSprite(); this.layers(); this.sun = sunSprite(w, this.hour); }
+  /** The hour outside: a blue day or a dusk through the window, and at night the lights come on (instantly, unless the cord is pulled). */
+  setTime(t: Time, instant = false) {
+    const hour = t === 'day' ? 'day' : 'dusk';
+    if (hour !== this.hour) { this.hour = hour; this.bg = this.roomSprite(); this.layers(); this.sun = sunSprite(this.weather, hour); }
+    this.setNight(t === 'night', instant);
+  }
 
   exit() { removeEventListener('pointermove', this.onMove); clearTimeout(this.layerTimer); }
 
@@ -269,7 +275,7 @@ export class GarageScene implements Scene {
   private window() {
     const { x, y, w, h } = WIN, g = ctx(), snow = this.weather === 'snow';
     rect(x - 3, y - 3, w + 6, h + 6, '#3e3127'); rect(x - 3, y - 3, w + 6, 1, '#5a4636');
-    windowSky(g, x, y, w, h, this.weather, this.theme);
+    windowSky(g, x, y, w, h, this.weather, this.theme, this.hour);
     rect(x + w / 2 - 1, y, 2, h, '#3e3127'); rect(x, y + Math.round(h * 0.45), w, 2, '#3e3127');
     rect(x - 5, y + h + 3, w + 10, 3, '#6b5a45'); rect(x - 5, y + h + 3, w + 10, 1, '#8a7860');
     if (snow) { rect(x - 3, y - 5, w + 6, 2, '#eef2fa'); rect(x - 5, y + h + 1, w + 10, 2, '#eef2fa'); }
@@ -650,7 +656,7 @@ export class GarageScene implements Scene {
     if (this.nightT < 0.01) return;
     const { x, y, w, h } = WIN;
     g.save(); g.beginPath(); g.rect(x, y, w, h); g.clip();
-    g.globalAlpha = this.nightT; windowSky(g, x, y, w, h, this.weather, this.theme);
+    g.globalAlpha = this.nightT; windowSky(g, x, y, w, h, this.weather, this.theme, this.hour);
     g.globalAlpha = this.nightT * 0.62; rect(x, y, w, h, '#0a1230');
     g.globalAlpha = this.nightT;
     if (this.weather === 'clear' || this.weather === 'snow') {

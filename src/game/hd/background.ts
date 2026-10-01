@@ -10,6 +10,7 @@ export interface Env {
   lake: number; // 0 .. 1 near the lake chapter
   lite?: boolean; // slow device: skip the priciest shading
   night?: number; // 0 day .. 1 full night: a dark navy sky, a moon and cold mountains
+  theme?: 'himalaya' | 'xp'; // the land: the Himalaya, or the green hills of the old Windows XP wallpaper
 }
 
 const NIGHT_SKY = ['#040816', '#08113a', '#101c50', '#1c2c66', '#2c3c7c', '#425088'];
@@ -21,7 +22,14 @@ const SKIES = [
   ['#3a75b8', '#5e8fc0', '#a4a8c0', '#e0b8a0', '#f2b080', '#f8c088'],
   ['#2c4a86', '#565c98', '#a06e98', '#e0806c', '#f2985c', '#f8b070'],
 ];
+// The Bliss land: the old Windows XP wallpaper's deep blue sky, the same afternoon-to-dusk slide, and rolling green hills in place of the peaks.
+const BLISS_SKIES = [
+  ['#1d5cc8', '#2f78d8', '#5a9ae6', '#8abcee', '#b4d6f4', '#d6e8f8'],
+  ['#2a5cb0', '#4f80c6', '#9a98c4', '#e2aa9e', '#f4b690', '#f9cca2'],
+  ['#27407f', '#4d5a9a', '#a070a0', '#e08c86', '#f4a478', '#fbc490'],
+];
 const HAZE = ['#f0dcb4', '#f0bc98', '#f0a878']; // the colour distant land fades to
+const BLISS_HAZE = ['#d6e8f6', '#f2d4c0', '#f0b090']; // the same, over the green hills: a pale blue day, then the warm light of the evening
 
 const PERIOD = 2400;
 
@@ -46,6 +54,7 @@ function ridged(seed: number, crest: number, gain: number): Float32Array {
 const GIANTS = massif(11, 3, 7);      // the far white giants
 const HIGH = massif(1, 4, 8);         // the snow range
 const MIDR = massif(2, 5, 9);         // the nearer, darker range
+const HILL_A = ridged(21, 0, 1.5), HILL_B = ridged(22, 0.05, 1.25), HILL_C = ridged(23, 0, 1.05), HILL_D = ridged(24, 0, 0.95);   // the Bliss hills, soft and rolling
 const FOOT = ridged(3, 0.5, 1.25);    // ochre foothills
 const NEAR = ridged(4, 0.25, 1.1);    // rolling dunes
 const CLOSE = ridged(5, 0.1, 1.0);    // low ground swell
@@ -116,15 +125,62 @@ function cloud(g: CanvasRenderingContext2D, x: number, y: number, s: number, tod
   g.globalAlpha = 1;
 }
 
+/** A big soft cumulus, as on the wallpaper: round lobes shaded toward a flat, cool base. */
+function puff(g: CanvasRenderingContext2D, x: number, y: number, s: number, tod: number, a: number, lite: boolean) {
+  const top = mix('#ffffff', '#ffe4d0', tod), under = mix('#b8cdea', '#dca4a8', tod);
+  g.globalAlpha = a;
+  oval(x, y + 10 * s, 64 * s, 9 * s, under);
+  for (const [dx, dy, r] of [[-44, 3, 20], [-22, -8, 27], [3, -17, 31], [28, -8, 26], [47, 3, 19], [0, 1, 28]] as const) {
+    if (lite) { circle(x + dx * s, y + dy * s, r * s, top); continue; }
+    const gr = g.createRadialGradient(x + dx * s, y + (dy - r * 0.3) * s, 0, x + dx * s, y + dy * s, r * s);
+    gr.addColorStop(0, top); gr.addColorStop(0.6, top); gr.addColorStop(1, mix(top, under, 0.6));
+    circle(x + dx * s, y + dy * s, r * s, gr);
+  }
+  g.globalAlpha = 1;
+}
+
+interface Hill { prof: Float32Array; base: number; amp: number; off: number; lit: string; shade: string; haze: number; trees?: number; seed?: number }
+
+/** One rolling hill: bright on top, darker toward its foot, lit along the crest and on the slopes that face the sun, fading into the haze with distance. */
+function hillLayer(g: CanvasRenderingContext2D, W: number, hazeCol: string, L: Hill, lite = false) {
+  const n = Math.ceil(W / 2) + 6, ys = new Float32Array(n);
+  for (let i = 0; i < n; i++) ys[i] = L.base - L.prof[(((Math.floor((i - 3) * 2 + L.off)) % PERIOD) + PERIOD) % PERIOD] * L.amp;
+  const at = (i: number) => ys[i + 3];
+  const gr = g.createLinearGradient(0, L.base - L.amp, 0, L.base + 6);
+  gr.addColorStop(0, mix(L.lit, hazeCol, L.haze * 0.55)); gr.addColorStop(1, mix(L.shade, hazeCol, L.haze));
+  g.fillStyle = gr; g.beginPath(); g.moveTo(0, L.base + 90);
+  for (let i = 0; i * 2 <= W; i++) g.lineTo(i * 2, at(i));
+  g.lineTo(W, L.base + 90); g.closePath(); g.fill();
+  if (lite) return;
+  const lit = mix(L.lit, '#fffbd0', 0.3), shade = mix(L.shade, '#1a3a1a', 0.45);
+  for (let i = 0; i * 2 < W; i++) {                                                  // slopes falling away to the right face the sun
+    const slope = (at(i + 5) - at(i - 5)) / 3;
+    if (slope > 0.12) { g.globalAlpha = Math.min(0.34, slope * 0.34) * (1 - L.haze * 0.6); g.fillStyle = lit; g.fillRect(i * 2, at(i), 2, L.amp * 0.55); }
+    else if (slope < -0.12) { g.globalAlpha = Math.min(0.3, -slope * 0.3) * (1 - L.haze * 0.6); g.fillStyle = shade; g.fillRect(i * 2, at(i), 2, L.amp * 0.55); }
+  }
+  g.globalAlpha = 0.5 * (1 - L.haze * 0.7); g.strokeStyle = mix(L.lit, '#ffffff', 0.45); g.lineWidth = 1.4; g.lineJoin = 'round';   // the crest catches the light
+  g.beginPath(); for (let i = 0; i * 2 <= W; i++) (i ? g.lineTo(i * 2, at(i) + 0.8) : g.moveTo(0, at(0) + 0.8)); g.stroke(); g.globalAlpha = 1;
+  if (L.trees) {                                                                      // little round trees dotted along the crest, fixed to the land so they scroll with it
+    const cell = 16, c0 = Math.floor(L.off / cell), c1 = Math.floor((L.off + W) / cell) + 1;
+    for (let c = c0; c <= c1; c++) {
+      const r = rnd(c * 3.7 + (L.seed ?? 0)); if (r > L.trees) continue;
+      const x = c * cell - L.off + rnd(c * 1.3) * 10, i = Math.round(x / 2) + 3; if (i < 0 || i >= n) continue;
+      const h = (5 + rnd(c * 2.9) * 7) * (L.amp / 60 + 0.6), y = ys[i] + 1, col = mix(mix('#3f7a2a', L.shade, 0.35), hazeCol, L.haze * 0.8);
+      box(x - 0.6, y - h * 0.4, 1.2, h * 0.4, col); circle(x, y - h * 0.7, h * 0.46, col); circle(x + h * 0.14, y - h * 0.82, h * 0.26, mix(col, '#b4e36c', 0.18));
+    }
+  }
+}
+
 export function drawBackground(g: CanvasRenderingContext2D, W: number, H: number, HZ: number, off: number, t: number, env: Env) {
   use(g);
-  const f = env.tod * (SKIES.length - 1);
-  const a = Math.min(SKIES.length - 2, Math.floor(f));
-  skyFill(g, W, H, HZ, SKIES[a]);
-  if (f - a > 0.01) { g.globalAlpha = f - a; skyFill(g, W, H, HZ, SKIES[a + 1]); g.globalAlpha = 1; }
+  const xp = env.theme === 'xp', skies = xp ? BLISS_SKIES : SKIES;
+  const f = env.tod * (skies.length - 1);
+  const a = Math.min(skies.length - 2, Math.floor(f));
+  skyFill(g, W, H, HZ, skies[a]);
+  if (f - a > 0.01) { g.globalAlpha = f - a; skyFill(g, W, H, HZ, skies[a + 1]); g.globalAlpha = 1; }
   const night = env.night ?? 0;
   if (night > 0.01) { g.globalAlpha = night; skyFill(g, W, H, HZ, NIGHT_SKY); g.globalAlpha = 1; }
-  const hazeCol = night > 0 ? mix(hazeAt(env.tod), NIGHT_HAZE, night) : hazeAt(env.tod);
+  const hazeCol = night > 0 ? mix(hazeAt(env.tod, env.theme), NIGHT_HAZE, night) : hazeAt(env.tod, env.theme);
 
   const horizon = Math.round(H * HZ);
   if ((env.tod > 0.7 || night > 0) && !env.lite) {                                    // the first stars, out at the top of the sky as evening comes, thick at night
@@ -163,7 +219,8 @@ export function drawBackground(g: CanvasRenderingContext2D, W: number, H: number
   const span = W + 260;
   for (const [cx0, cy0, s, sp] of [[80, 0.14, 1.5, 1.0], [330, 0.08, 1.1, 0.7], [560, 0.19, 1.9, 1.3], [820, 0.11, 1.3, 0.9], [1040, 0.22, 1.6, 1.1]] as const) {
     const cx = (((cx0 - off * 0.03 - t * 2.2 * sp) % span) + span) % span - 130;
-    cloud(g, cx, cy0 * H, s * (H / 480), env.tod, (0.5 + env.tod * 0.18) * (1 - night * 0.72));
+    if (xp) puff(g, cx, cy0 * H * 1.15 + H * 0.04, s * (H / 600), env.tod, (0.78 + env.tod * 0.1) * (1 - night * 0.8), !!env.lite);
+    else cloud(g, cx, cy0 * H, s * (H / 480), env.tod, (0.5 + env.tod * 0.18) * (1 - night * 0.72));
   }
 
   // a few birds, riding the air high up
@@ -189,6 +246,18 @@ export function drawBackground(g: CanvasRenderingContext2D, W: number, H: number
     const c = mix(day, dk, env.tod);
     return night > 0 ? mix(c, moon ?? (lum(c) > 130 ? '#39457f' : '#141c42'), night * 0.86) : c;   // `moon` lets snow keep a pale glow in the moonlight
   };
+  if (xp) {                                                                             // Bliss: rolling green hills in place of the Himalaya
+    const c = (day: string, dk: string, moon: string) => dusk(day, dk, moon);
+    const climb = 1 + env.alt * 0.35;                                                  // the hills swell as the road climbs
+    hillLayer(g, W, hazeCol, { prof: HILL_A, base, amp: 92 * tall * climb, off: off * 0.015 + 300, lit: c('#9cd47e', '#c8b89a', '#46678a'), shade: c('#62ac5c', '#7a8668', '#263d5c'), haze: 0.4, trees: 0.5, seed: 1 }, !!env.lite);
+    hillLayer(g, W, hazeCol, { prof: HILL_B, base: base + 3, amp: 64 * tall * climb, off: off * 0.04 + 900, lit: c('#aadc5e', '#cdb868', '#3f6a58'), shade: c('#70b440', '#7e8a46', '#223f48'), haze: 0.34, trees: 0.45, seed: 2 }, !!env.lite);
+    hillLayer(g, W, hazeCol, { prof: HILL_C, base: base + 7, amp: 42 * tall * climb, off: off * 0.1 + 1500, lit: c('#b6e064', '#d0b86a', '#3a6a4c'), shade: c('#78bc3e', '#80904a', '#1f3f3c'), haze: 0.16, trees: 0.3, seed: 3 }, !!env.lite);
+    hillLayer(g, W, hazeCol, { prof: HILL_D, base: base + 12, amp: 22 * tall * climb, off: off * 0.34 + 200, lit: c('#a8d84e', '#c4b45c', '#34624a'), shade: c('#6cac34', '#76843e', '#1b3a38'), haze: 0.05 }, !!env.lite);
+    const grass = g.createLinearGradient(0, base + 10, 0, H);                          // the ground under the hills, so the road never shows through
+    grass.addColorStop(0, c('#82c040', '#8a9a48', '#27484a')); grass.addColorStop(1, c('#6aac30', '#68823a', '#1d3a3a'));
+    g.fillStyle = grass; g.fillRect(0, base + 10, W, H - base);
+    return;
+  }
   const sn = 0.6 + 0.4 * snow;                                                          // the big peaks carry snow all year, more of it as you climb
   drawRange(g, W, hazeCol, { prof: GIANTS, base, amp: (160 + env.alt * 50) * tall, off: off * 0.015 + 700, seed: 11, rockLit: dusk('#9aa6c6', '#a88cb8'), rockShade: dusk('#6a7aa8', '#66588c'), snowLit: dusk('#ffffff', '#ffd8c2', '#8d9cdc'), snowShade: dusk('#b2c0e6', '#a496c8', '#4a5896'), haze: 0.6, snowLine: 0.44 - 0.1 * env.alt, snow: sn, plume: true }, t, env.lite);
   drawRange(g, W, hazeCol, { prof: HIGH, base, amp: (112 + env.alt * 52) * tall, off: off * 0.035 + 300, seed: 1, rockLit: dusk('#b49279', '#bb7f7b'), rockShade: dusk('#6f6680', '#604c72'), snowLit: dusk('#ffffff', '#ffdcc4', '#95a4e0'), snowShade: dusk('#aebde4', '#9c8cc0', '#4e5c9c'), haze: 0.42, snowLine: 0.5 - 0.14 * env.alt, snow: sn }, t, env.lite);
@@ -218,9 +287,10 @@ export function drawBackground(g: CanvasRenderingContext2D, W: number, H: number
 }
 
 /** The colour of the air at the horizon: distant land and road fade toward it. */
-export function hazeAt(tod: number): string {
-  const f = tod * (HAZE.length - 1), a = Math.min(HAZE.length - 2, Math.floor(f));
-  return mix(HAZE[a], HAZE[a + 1], f - a);
+export function hazeAt(tod: number, theme: 'himalaya' | 'xp' = 'himalaya'): string {
+  const hz = theme === 'xp' ? BLISS_HAZE : HAZE;
+  const f = tod * (hz.length - 1), a = Math.min(hz.length - 2, Math.floor(f));
+  return mix(hz[a], hz[a + 1], f - a);
 }
 
 export function envAt(segI: number, finish: number, zone: string): Env {

@@ -1,7 +1,7 @@
-// The ride's settings buttons (view, night, weather, light, look, photo). Each presses the key the ride already handles and shows the
+// The ride's settings buttons (view, time, weather, land, light, look, photo). Each presses the key the ride already handles and shows the
 // current setting, which the ride reports through `look`.
 
-export interface Look { cam: string; night: boolean; sky: string; lights: string; pixel: boolean }
+export interface Look { cam: string; time: string; sky: string; land: string; lights: string; pixel: boolean }
 
 export function mountRail() {
   const rail = document.getElementById('rail');
@@ -23,8 +23,9 @@ export function mountRail() {
   return {
     look(l: Look) {
       set('cam', `VIEW: ${l.cam}`);
-      set('night', `NIGHT: ${l.night ? 'ON' : 'OFF'}`, l.night);
+      set('time', `TIME: ${l.time.toUpperCase()}`, l.time !== 'auto');
       set('sky', `WEATHER: ${l.sky.toUpperCase()}`, l.sky !== 'clear');
+      set('land', `LAND: ${l.land === 'xp' ? 'BLISS' : 'HIMALAYA'}`, l.land === 'xp');
       set('lights', `LIGHT: ${l.lights.toUpperCase()}`, l.lights === 'on');
       set('pixel', `LOOK: ${l.pixel ? 'PIXEL' : 'SMOOTH'}`, l.pixel);
     },

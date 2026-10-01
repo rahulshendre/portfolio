@@ -9,7 +9,8 @@ import { glow } from '../engine/light';
 import { BEAM, THUNDER_AT, fall, grade, ground } from './weather';
 import { PANELS, paintDoor, paintFrame, sprayPaint, wallWear } from './garagedoor';
 import { panelSlots } from './doorlift';
-import { THEMES, WEATHERS, type Theme, type Weather } from '../state';
+import { THEMES, TIMES, WEATHERS, type Theme, type Time, type Weather } from '../state';
+import { paintBackdrop, twinklers } from './doorsky';
 import type { Scene } from '../engine/scene';
 import { WIDE_W, type Screen } from '../engine/screen';
 import { blit, paint, type Sprite } from '../engine/sprites';
@@ -58,15 +59,21 @@ export class DoorScene implements Scene {
 
   private room?: Sprite; // painted a moment after the first frame (it is only seen once the door lifts), so the first paint stays quick
 
-  constructor(private screen: Screen, private bike: HTMLImageElement, private mountains: HTMLImageElement, private makeRoom: () => Sprite, private onDone: () => void, private weather: Weather = 'clear', private theme: Theme = 'himalaya', private onChange?: (o: { weather?: Weather; theme?: Theme }) => void) {}
+  constructor(private screen: Screen, private bike: HTMLImageElement, private mountains: Record<Time, HTMLImageElement>, private makeRoom: () => Sprite, private onDone: () => void, private weather: Weather = 'clear', private theme: Theme = 'himalaya', private time: Time = 'dusk', private onChange?: (o: { weather?: Weather; theme?: Theme; time?: Time }) => void) {}
+
+  /** Dusk and night have the lamps on. In the day they are off. */
+  private get lit() { return this.time !== 'day'; }
 
   enter() {
     this.t = 0;
+    const q = new URLSearchParams(location.search), at = Number(q.get('at'));      // ?door&at=6 jumps into the arrival, for looking at one moment (a ride's own ?at= is not for the door)
+    if (q.has('door') && at > 0) { this.t = at; this.go = true; }
     this.cues = { ...CUES, thunder: this.weather === 'rain' ? THUNDER_AT : undefined };
-    this.sfx.start(() => this.t, this.cues, this.weather);
+    this.sfx.start(() => this.t, this.cues, this.weather, this.time);
     this.bg = paint(WIDE_W, 270, () => this.facade());
     setTimeout(() => { this.room ??= this.makeRoom(); }, 300);
     this.rig = paint(this.bike.width + PAD.x * 2, this.bike.height + PAD.y, () => { blit(this.bike, PAD.x, PAD.y); riderSide(PAD.x, PAD.y); });
+    if (this.time === 'night') nightTint(this.rig);
     this.doorArt = paint(DOOR.w, DOOR.h, () => {
       paintDoor(DOOR.w, DOOR.h, this.weather);
       // the tag is sprayed on and weathered; the small stencil text and marks wear less so they stay readable
@@ -79,9 +86,11 @@ export class DoorScene implements Scene {
       });
       sprayPaint(tag, DOOR.w, DOOR.h);
       sprayPaint(marks, DOOR.w, DOOR.h, 0.3);
-      if (this.theme === 'himalaya') this.duskLight(0, 0, DOOR.w, DOOR.h); // the door catches the same dusk as the wall
+      if (this.time === 'dusk') this.duskLight(0, 0, DOOR.w, DOOR.h); // the door catches the same dusk as the wall
     });
+    if (this.time === 'night') nightTint(this.doorArt);
     this.frameArt = paint(FRAME.w, FRAME.h, () => paintFrame(DOOR.x - FRAME.x, DOOR.y - FRAME.y, DOOR.w, DOOR.h));
+    if (this.time === 'night') nightTint(this.frameArt);
   }
 
   /** Where the camera should look, in the 640-wide frame. On a phone the stage scrolls sideways and follows the bike. */
@@ -90,16 +99,19 @@ export class DoorScene implements Scene {
     return Math.min(WIDE_W, Math.max(0, OX + (-340 + glide(this.t / T_ARRIVE) * 460) + 110));
   }
 
-  /** Two small buttons, centred at the bottom (on a phone, in the part of the frame you can see): the look and the weather. */
+  /** Three small buttons in a row along the bottom (on a phone, in the part of the frame you can see): the land, the weather and the hour. */
   private buttons() {
-    const cx = this.screen.size.portrait ? this.focus : WIDE_W / 2;
-    return [
-      { label: `THEME: ${this.theme === 'xp' ? 'WINDOWS XP' : 'HIMALAYA'} >`, y: 238, key: 'KeyT', o: { theme: THEMES[(THEMES.indexOf(this.theme) + 1) % THEMES.length] } },
-      { label: `WEATHER: ${this.weather.toUpperCase()} >`, y: 252, key: 'KeyW', o: { weather: WEATHERS[(WEATHERS.indexOf(this.weather) + 1) % WEATHERS.length] } },
-    ].map((b) => { const w = textW(b.label) + 8; return { ...b, w, h: 12, x: Math.round(cx - w / 2) }; });
+    const cx = this.screen.size.portrait ? this.focus : WIDE_W / 2, next = <T,>(all: readonly T[], v: T) => all[(all.indexOf(v) + 1) % all.length];
+    const list = [
+      { label: `LAND: ${this.theme === 'xp' ? 'BLISS' : 'HIMALAYA'} >`, key: 'KeyT', o: { theme: next(THEMES, this.theme) } },
+      { label: `WEATHER: ${this.weather.toUpperCase()} >`, key: 'KeyW', o: { weather: next(WEATHERS, this.weather) } },
+      { label: `TIME: ${this.time.toUpperCase()} >`, key: 'KeyN', o: { time: next(TIMES, this.time) } },
+    ].map((b) => ({ ...b, w: textW(b.label) + 8, h: 12, y: 252 }));
+    let x = Math.round(cx - (list.reduce((a, b) => a + b.w, 0) + (list.length - 1) * 4) / 2);
+    return list.map((b) => { const r = { ...b, x }; x += b.w + 4; return r; });
   }
 
-  /** Taps on a button (or its key: T, W) change the look instead of skipping the arrival. */
+  /** Taps on a button (or its key: T land, W weather, N time) change the look instead of skipping the arrival. */
   private changePressed(tap: boolean) {
     const { x, y } = input.pointer;
     for (const b of this.buttons()) {
@@ -119,7 +131,7 @@ export class DoorScene implements Scene {
       this.idle += dt;
       const pressed = tap || input.anyKey();
       if (this.sfx.running && this.idle > 0.2) this.go = true; // autoplay was allowed
-      else if (this.idle > 0.5 && pressed) { this.sfx.start(() => this.t, this.cues, this.weather); this.go = true; } // a tap unlocks sound and starts
+      else if (this.idle > 0.5 && pressed) { this.sfx.start(() => this.t, this.cues, this.weather, this.time); this.go = true; } // a tap unlocks sound and starts
       input.endFrame();
       return;
     }
@@ -157,6 +169,10 @@ export class DoorScene implements Scene {
     const g = this.screen.ctx;
     bind(g);
     g.drawImage(this.bg, 0, 0);
+    if (this.time === 'night' && (this.weather === 'clear' || this.weather === 'snow')) for (const [i, s] of twinklers.entries()) {      // a few stars flicker
+      const a = 0.5 + 0.5 * Math.sin(this.t * (1.4 + (i % 4) * 0.5) + i * 2.3);
+      g.globalAlpha = a; rect(s.x + OX, s.y, 1, 1, '#f4f2ea'); g.globalAlpha = 1;
+    }
     ground(g, this.weather);
     g.save(); g.translate(OX, 0); // everything below is in garage coordinates
     const up = ease((this.t - T_OPEN) / T_UP) * DOOR.h;
@@ -193,15 +209,16 @@ export class DoorScene implements Scene {
     disc(378, 191, 3, lens); rect(376, 200, 5, 2, seen ? '#3fae62' : '#5a4a4a');
     // the street dog wakes up a little when you pull in
     const wag = this.t > T_ARRIVE ? Math.round(Math.sin(this.t * 14) * 2) : 0;
-    ellipse(346, 244, 12, 4, '#9c6d45'); disc(357, 240, 4, '#9c6d45'); rect(358, 236, 2, 3, '#7a5234');
-    rect(359, 240, 1, 1, this.t > T_ARRIVE ? C.ink : '#7a5234');
-    line(334, 243, 330, 240 + wag, '#9c6d45');
+    const fur = this.time === 'night' ? '#2e2a2c' : '#9c6d45', ear = this.time === 'night' ? '#24202a' : '#7a5234';
+    ellipse(346, 244, 12, 4, fur); disc(357, 240, 4, fur); rect(358, 236, 2, 3, ear);
+    rect(359, 240, 1, 1, this.t > T_ARRIVE ? C.ink : ear);
+    line(334, 243, 330, 240 + wag, fur);
     g.restore();
     grade(g, this.weather, this.t); // the weather dims and cools everything painted so far; lights go on top of it
     g.save(); g.translate(OX, 0);
     this.lights(g, hx, hy, beam, seen, up);
     g.restore();
-    fall(g, this.weather, this.t);
+    fall(g, this.weather, this.t, this.time === 'night' ? 0.6 : 1);
     text('SKIP >', 6, 258, C.hud, 1, C.ink);
     if (this.onChange) for (const b of this.buttons()) { rect(b.x, b.y, b.w, b.h, C.ink); text(b.label, b.x + 4, b.y + 3, C.hud); }
     if (!this.go && this.idle > 0.5) {
@@ -215,8 +232,8 @@ export class DoorScene implements Scene {
 
   /** Light sources, drawn after the weather grade so they stay bright. */
   private lights(g: CanvasRenderingContext2D, hx: number, hy: number, beam: number, seen: boolean, up: number) {
-    const bk = BEAM[this.weather];
-    if (this.weather !== 'clear') { // the grade dimmed these, so put them back
+    const bk = BEAM[this.weather] * { day: 0.4, dusk: 1, night: 1.45 }[this.time];     // a headlight shows most in the dark
+    if (this.weather !== 'clear' && this.lit) { // the grade dimmed these, so put them back
       const fog = this.weather === 'fog' ? 1.7 : 1;
       glow(g, 436, 74, 48 * fog, 52 * fog, '255,214,150', 0.6); glow(g, 436, 67, 12, 12, '255,246,214', 0.9);
       glow(g, 130, 58, 26, 20, '255,238,180', 0.5);
@@ -236,7 +253,7 @@ export class DoorScene implements Scene {
       }
       g.globalAlpha = 1;
       g.restore();
-      glow(g, hx + 90, 254, 110, 9, '255,228,170', 0.45 * beam * bk); glow(g, hx, hy, 20, 20, '255,244,214', 0.8 * beam); glow(g, hx + 14, hy, 34, 3, '255,244,214', 0.5 * beam);
+      glow(g, hx + 90, 254, 110, 9, '255,228,170', 0.45 * beam * bk); glow(g, hx, hy, 20, 20, '255,244,214', Math.min(1, 0.8 * beam * (this.time === 'day' ? 0.6 : 1))); glow(g, hx + 14, hy, 34, 3, '255,244,214', 0.5 * beam);
     }
     if (seen) { glow(g, 378, 191, 26, 26, '110,255,160', 0.7); glow(g, 378, 191, 7, 7, '220,255,230', 0.9); }
     else if (Math.floor(this.t * 2) % 2) glow(g, 378, 191, 12, 12, '255,70,50', 0.45);
@@ -257,84 +274,54 @@ export class DoorScene implements Scene {
     g.putImageData(im, x0 + ox, y0);
   }
 
-  /** The Windows XP wallpaper as a backdrop: a blue sky, white clouds and one big green hill rolling down to the road. */
-  private bliss(X0: number, X1: number) {
-    const sky = ['#2a68cc', '#4a86dc', '#74a8ec', '#9cc6f4', '#b8d8f8'];
-    for (let y = 0; y < 200; y++) for (let x = X0; x < X1; x++) {
-      const t = (y / 200) * (sky.length - 1), i = Math.min(sky.length - 2, Math.floor(t));
-      rect(x, y, 1, 1, t - i > bayer(x, y) ? sky[i + 1] : sky[i]);
-    }
-    for (const [cx, cy, cw] of [[-30, 34, 70], [90, 76, 90], [300, 30, 80], [470, 60, 100], [590, 96, 60], [200, 110, 60]]) { // chunky pixel clouds
-      rect(cx - cw / 2, cy + 4, cw, 6, '#ffffff'); rect(cx - cw / 2 + 4, cy + 10, cw - 8, 3, '#e8f0fb');
-      rect(cx - cw / 2 + 8, cy, cw - 16, 4, '#ffffff'); rect(cx - cw / 2 + 4, cy - 3, cw / 2, 3, '#ffffff');
-    }
-    const grass = ['#b4e05c', '#8cc63f', '#5fa32c', '#3f8a20'];
-    for (let x = X0; x < X1; x++) {
-      const top = 112 + Math.round(((x - X0) / (X1 - X0)) * 34 + Math.sin((x - X0) / 120) * 8);
-      for (let y = top; y < 248; y++) {
-        const t = Math.min(1, (y - top) / (248 - top) * 1.2) * (grass.length - 1), i = Math.min(grass.length - 2, Math.floor(t));
-        rect(x, y, 1, 1, t - i > bayer(x, y) ? grass[i + 1] : grass[i]);
-      }
-    }
+  /** The sky and the land behind the garage, then everything that stands in front of it on a clear sheet, so the night can darken the one without the other. */
+  private facade() {
+    const X0 = -OX, X1 = 480 + OX;
+    const g0 = ctx(); g0.save(); g0.translate(OX, 0); // garage coordinates again; the sides run from -OX to 480 + OX
+    paintBackdrop({ theme: this.theme, time: this.time, weather: this.weather, mountains: this.mountains, X0, X1 });
+    g0.restore();
+    const front = paint(WIDE_W, 270, () => this.foreground(X0, X1));
+    if (this.time === 'night') nightTint(front);
+    blit(front, 0, 0);
+    this.lamps();
   }
 
-  private facade() {
-    const g0 = ctx(); g0.save(); g0.translate(OX, 0); // garage coordinates again; the sides run from -OX to 480 + OX
-    const X0 = -OX, X1 = 480 + OX;
-    if (this.theme === 'xp') this.bliss(X0, X1);
-    else {
-      // whole backdrop first, so nothing ever shows through (the bike would leave trails)
-      // same dusk the ride ends in
-      const sky = ['#58739b', '#7888a8', '#a495ab', '#d6a58c', '#eca676', '#f2985e'];
-      for (let y = 0; y < 200; y++) for (let x = X0; x < X1; x++) {
-        const t = (y / 190) * (sky.length - 1), i = Math.min(sky.length - 2, Math.floor(t));
-        rect(x, y, 1, 1, t - i > bayer(x, y) ? sky[i + 1] : sky[i]);
-      }
-      disc(400, 176, 18, '#f6b27a'); disc(400, 176, 12, '#ffd49a');
-      glow(ctx(), 400, 176, 90, 60, '255,170,110', 0.32);
-      // the Himalaya: a real photo, regraded to this dusk and reduced to a pixel palette (tools/backdrop.py)
-      blit(this.mountains, X0, 0);
-      // haze: the mountains melt into the dusk light where they meet the valley
-      for (let y = 120; y < 200; y++) for (let x = X0; x < X1; x++) if (Math.pow((y - 120) / 80, 2.2) * 0.65 > bayer(x, y)) rect(x, y, 1, 1, '#eca676');
-      // foothills either side of the garage, in the same indigo as the shadowed faces
-      const hill = (x: number, cx: number, w: number, h: number) => Math.max(0, h * (1 - Math.abs(x - cx) / w));
-      for (let x = X0; x < X1; x++) {
-        const h = Math.round(Math.max(hill(x, -30, 100, 20), hill(x, 545, 90, 18), hill(x, 20, 90, 22), hill(x, 130, 70, 12), hill(x, 440, 80, 20), hill(x, 340, 60, 10)));
-        if (h > 0) { rect(x, 200 - h, 1, h + 1, '#4b415f'); if (h > 3) rect(x, 200 - h, 1, 2, '#6a5876'); }
-      }
-      // valley floor: warm dusk ochre, darker toward the road, with scree
-      const soil = ['#a58a6f', '#977c64', '#87705b', '#75604f'];
-      for (let y = 200; y < 248; y++) for (let x = X0; x < X1; x++) {
-        const t = ((y - 200) / 48) * (soil.length - 1), i = Math.min(soil.length - 2, Math.floor(t));
-        rect(x, y, 1, 1, t - i > bayer(x, y) ? soil[i + 1] : soil[i]);
-      }
-      for (let x = X0; x < X1; x += 3) if (bayer(x, 210) > 0.5) rect(x, 202 + (((x % 7) + 7) % 7) * 5, 2, 1, '#6a5747');
-      for (let x = X0 + 1; x < X1; x += 5) if (bayer(x, 77) > 0.6) rect(x, 206 + ((((x * 7) % 34) + 34) % 34), 1, 1, '#b79c80');
-
-    }
+  private foreground(X0: number, X1: number) {
+    const g0 = ctx(); g0.save(); g0.translate(OX, 0);
     // sparse poplar left; pole and wires on the right
-    rect(32, 118, 4, 132, '#5a4530');
-    disc(34, 102, 7, '#9aa858'); disc(34, 92, 5, '#7a8840');
+    const xp = this.theme === 'xp';
+    if (xp) { rect(31, 118, 7, 132, '#5a4030'); disc(34, 102, 17, '#3f7a2a'); disc(24, 108, 11, '#4f9a35'); disc(45, 106, 11, '#4f9a35'); disc(36, 92, 10, '#6aaa44'); disc(42, 90, 4, '#9ad25a'); }   // an oak, in the green land
+    else { rect(32, 118, 4, 132, '#5a4530'); disc(34, 102, 7, '#9aa858'); disc(34, 92, 5, '#7a8840'); }
     line(38, 48, 426, 36, '#3a3632');
     const flagCol = ['#b83a3a', '#d4a820', '#2a5aa8', '#f0ece4', '#2a7a48'];
     line(X0, 56, 38, 48, '#3a3632'); line(426, 36, X1, 44, '#3a3632'); // the string carries on both ways
     for (let i = -3; i < 13; i++) {
       const fx = 48 + i * 36, fy = fx < 38 ? 48 + Math.round((38 - fx) * 8 / 118) : fx > 426 ? 36 + Math.round((fx - 426) * 8 / 134) : 46 - Math.round((fx - 38) * 10 / 388);
       line(fx + 4, fy, fx + 4, fy + 2, '#3a3632');
-      rect(fx, fy + 2, 9, 7, flagCol[((i % 5) + 5) % 5]);
+      if (xp) poly([[fx, fy + 2], [fx + 9, fy + 2], [fx + 4, fy + 10]], ['#e8503a', '#f4c430', '#4aa0d8', '#f4f2ea', '#58b050', '#e878a8'][((i % 6) + 6) % 6]);   // bunting
+      else rect(fx, fy + 2, 9, 7, flagCol[((i % 5) + 5) % 5]);
     }
     rect(448, 20, 5, 230, '#4a4038'); rect(430, 26, 40, 3, '#4a4038');
     line(X0, 34, 430, 28, '#2e2a26'); line(X0, 40, 432, 30, '#2e2a26'); line(470, 29, X1, 36, '#2e2a26'); line(470, 31, X1, 42, '#2e2a26');
-    // streetlight on the pole, already on at dusk, with a dithered glow
-    rect(440, 60, 10, 3, '#4a4038'); rect(430, 60, 12, 5, '#2e2a26'); rect(432, 65, 8, 2, '#fff1c4');
-    glow(ctx(), 436, 74, 48, 52, '255,214,150', 0.5); glow(ctx(), 436, 67, 12, 12, '255,246,214', 0.9);
-    glow(ctx(), 440, 250, 44, 5, '255,214,150', 0.3); // the pool of light under the pole
+    // streetlight on the pole (its lamp comes on in lamps(), after the night has darkened everything else)
+    rect(440, 60, 10, 3, '#4a4038'); rect(430, 60, 12, 5, '#2e2a26'); rect(432, 65, 8, 2, '#8a8478');
     // dry-stone walls and a few shrubs along the sides, so the wide shot has something to look at
     for (const [a, b] of [[X0, 56], [426, X1]]) {
-      rect(a, 230, b - a, 18, '#7d6a58'); rect(a, 230, b - a, 3, '#9a8570'); rect(a, 245, b - a, 3, '#5f5045');
-      for (let y = 234, r = 0; y < 246; y += 4, r++) for (let x = a + (r % 2) * 5; x < b; x += 10) rect(x, y, 1, 4, '#5f5045');
+      if (xp) {                                                                                                   // a hedge with wildflowers and a white picket fence in front
+        rect(a, 226, b - a, 22, '#3f7a2a'); rect(a, 226, b - a, 3, '#6aaa44');
+        for (let x = a; x < b; x += 3) for (let y = 230; y < 246; y += 3) if (bayer(x, y) > 0.55) rect(x, y, 2, 2, bayer(x + 3, y) > 0.8 ? '#2f6a22' : '#4f9a35');
+        for (let x = a + 4; x < b; x += 11) rect(x, 228 + ((x * 7) % 9), 2, 2, ['#ffffff', '#f4c430', '#ff9ac2', '#e8503a'][Math.abs(x) % 4]);
+        for (let x = a; x < b; x += 7) { rect(x, 236, 3, 12, '#f6f1e6'); rect(x, 236, 1, 12, '#d8d2c4'); }
+        rect(a, 240, b - a, 2, '#f6f1e6');
+      } else {
+        rect(a, 230, b - a, 18, '#7d6a58'); rect(a, 230, b - a, 3, '#9a8570'); rect(a, 245, b - a, 3, '#5f5045');
+        for (let y = 234, r = 0; y < 246; y += 4, r++) for (let x = a + (r % 2) * 5; x < b; x += 10) rect(x, y, 1, 4, '#5f5045');
+      }
     }
-    for (const x of [-56, 6, 470, 520]) { disc(x, 226, 7, '#5c6a3a'); disc(x + 6, 229, 5, '#6f7d44'); disc(x - 5, 230, 4, '#4d5a30'); }
+    for (const x of [-56, 6, 470, 520]) {
+      if (xp) { for (let i = 0; i < 9; i++) { const fx = x - 12 + i * 3, c = ['#e8503a', '#f4c430', '#ff9ac2', '#ffffff', '#8ab8ff'][i % 5]; rect(fx, 226 - (i % 3) * 2, 1, 5, '#3f7a2a'); rect(fx - 1, 224 - (i % 3) * 2, 3, 3, c); } }      // flower beds
+      else { disc(x, 226, 7, '#5c6a3a'); disc(x + 6, 229, 5, '#6f7d44'); disc(x - 5, 230, 4, '#4d5a30'); }
+    }
     // building: painted plain, then lit by the dusk (cool on the left, warm from the sun side), so it sits in the scene
     rect(84, 34, 312, 8, '#b9a88c'); rect(90, 42, 300, 206, '#d9cbb2');
     for (let y = 46; y < 246; y += 3) for (let x = 92 + (y % 7); x < 388; x += 11) if (bayer(x, y) > 0.8) rect(x, y, 1, 1, '#cbbc9f');
@@ -342,13 +329,12 @@ export class DoorScene implements Scene {
     rect(90, 42, 300, 3, '#a8917c'); rect(90, 45, 300, 1, '#bba58f'); // shadow under the roof lip
     rect(90, 238, 300, 10, '#a3927f'); rect(90, 238, 300, 1, '#8c7b69'); // plinth
     wallWear(90, 46, 300, 200);
-    if (this.theme === 'himalaya') this.duskLight(90, 42, 300, 206);
-    rect(90, 42, 2, 206, '#5d5470'); rect(388, 42, 2, 206, '#f3c48e'); // dark left edge, sun-catching right edge
+    if (this.time === 'dusk') this.duskLight(90, 42, 300, 206);
+    rect(90, 42, 2, 206, this.time === 'day' ? '#8a8294' : '#5d5470'); rect(388, 42, 2, 206, this.time === 'day' ? '#f4ead2' : '#f3c48e'); // dark left edge, sun-catching right edge
     ellipse(240, 250, 160, 3, '#3a3040'); // the garage's shadow on the driveway
-    // sign and lamp
-    rect(160, 44, 160, 16, C.ink); textC("RAHUL'S GARAGE", 240, 48, C.accent);
-    rect(126, 48, 8, 6, '#2a2a2e'); disc(130, 57, 3, '#fff4c2');
-    glow(ctx(), 130, 58, 26, 20, '255,238,180', 0.5); glow(ctx(), 240, 52, 100, 14, '255,176,60', 0.16); // lamp, and the sign's own glow
+    // sign and lamp (lit again in lamps())
+    rect(160, 44, 160, 16, C.ink); textC("RAHUL'S GARAGE", 240, 48, this.lit ? C.accent : '#9a7f18');
+    rect(126, 48, 8, 6, '#2a2a2e'); disc(130, 57, 3, '#8a8478');
     // no-parking sign on the wall beside the door
     disc(381, 112, 8, C.red); disc(381, 112, 6, '#f4f2ea'); text('P', 379, 109, '#2c5aa0'); line(376, 107, 386, 117, C.red);
     // driveway and the road kerb
@@ -356,4 +342,30 @@ export class DoorScene implements Scene {
     for (let x = X0; x < X1; x += 16) rect(x, 264, 8, 6, C.accent), rect(x + 8, 264, 8, 6, '#222');
     g0.restore();
   }
+
+  /** The lamps that are on at dusk and at night: the streetlight and its pool, the wall lamp, the sign. Painted last, so the dark never dims them. */
+  private lamps() {
+    if (!this.lit) return;
+    const g0 = ctx(), night = this.time === 'night'; g0.save(); g0.translate(OX, 0);
+    rect(160, 44, 160, 16, C.ink); textC("RAHUL'S GARAGE", 240, 48, C.accent);                      // the sign, bright
+    rect(126, 48, 8, 6, '#2a2a2e'); disc(130, 57, 3, '#fff4c2');
+    rect(432, 65, 8, 2, '#fff1c4');
+    glow(g0, 436, 74, 48, 52, '255,214,150', night ? 0.62 : 0.5); glow(g0, 436, 67, 12, 12, '255,246,214', 0.9);
+    glow(g0, 440, 250, night ? 70 : 44, night ? 8 : 5, '255,214,150', night ? 0.5 : 0.3);            // the pool of light under the pole
+    glow(g0, 130, 58, 26, 20, '255,238,180', night ? 0.6 : 0.5); glow(g0, 240, 52, 100, 14, '255,176,60', night ? 0.26 : 0.16);   // the wall lamp, and the sign's own glow
+    g0.restore();
+  }
+}
+
+/** Multiply a painted sheet by the colour of moonlight, with fine dithered steps so it stays pixel art. Clear pixels stay clear. */
+export function nightTint(s: Sprite) {
+  const c = s.getContext('2d')!, im = c.getImageData(0, 0, s.width, s.height), d = im.data, h = s.height;
+  for (let y = 0; y < h; y++)
+    for (let x = 0; x < s.width; x++) {
+      const o = (y * s.width + x) * 4;
+      if (!d[o + 3]) continue;
+      const q = Math.floor((1 - 0.16 * (y / h)) * 12 + bayer(x, y) * 0.9) / 12;
+      d[o] = d[o] * q * 0.3; d[o + 1] = d[o + 1] * q * 0.38; d[o + 2] = Math.min(255, d[o + 2] * q * 0.64);
+    }
+  c.putImageData(im, 0, 0);
 }

@@ -27,16 +27,18 @@ import { site, nav } from '../data/site';
   <button type="button" class="sound" id="sound" aria-pressed="true">SOUND ON</button>
   <div class="rail" id="rail" aria-label="Ride settings">
     <button type="button" data-key="KeyV" data-look="cam">VIEW</button>
-    <button type="button" data-key="KeyN" data-look="night">NIGHT</button>
+    <button type="button" data-key="KeyN" data-look="time">TIME</button>
     <button type="button" data-key="KeyT" data-look="sky">WEATHER</button>
+    <button type="button" data-key="KeyB" data-look="land">LAND</button>
     <button type="button" data-key="KeyL" data-look="lights">LIGHT</button>
     <button type="button" data-key="KeyG" data-look="pixel">LOOK</button>
     <button type="button" data-key="KeyF">PHOTO</button>
     <button type="button" data-key="KeyK">KEYS</button>
   </div>
   <div class="sky" id="sky" hidden>
-    <button type="button" id="sky-weather" aria-label="Change the weather outside the window">SKY: CLEAR</button>
-    <button type="button" id="sky-theme" aria-label="Change the view from the window">VIEW: HIMALAYA</button>
+    <button type="button" id="sky-weather" aria-label="Change the weather outside the window">WEATHER: RAIN</button>
+    <button type="button" id="sky-theme" aria-label="Change the land outside the window">LAND: HIMALAYA</button>
+    <button type="button" id="sky-time" aria-label="Change the hour outside the window">TIME: DUSK</button>
   </div>
   <div class="phone-bar" aria-hidden="true">
     <a href="/list" tabindex="-1">LIST</a>
@@ -76,7 +78,7 @@ import { site, nav } from '../data/site';
     .sky[hidden] { display: none; }
     .sky button { border: 0; cursor: pointer; font: 400 12px/1 'Silkscreen', monospace; background: #1b1712; color: #fff6e0; padding: 9px 11px; box-shadow: 3px 3px 0 #e8b923; }
     .sky button:focus-visible { outline: 3px solid #e8b923; outline-offset: 2px; }
-    @media (max-width: 900px), (pointer: coarse) { .sky { display: none; } } /* on phones the buttons would cover the garage: the window still changes the weather */
+    @media (max-width: 1180px), (pointer: coarse) { .sky { display: none; } } /* narrower than this the three buttons would run into the garage sign (and on phones they would cover the garage): the window still changes the weather */
     .sound[aria-pressed='false'] { color: #a89d8b; box-shadow: 3px 3px 0 #6b5518; }
     .sound:focus-visible { outline: 3px solid #e8b923; outline-offset: 2px; }
     .stage canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; touch-action: none; }

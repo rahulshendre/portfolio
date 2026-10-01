@@ -27,4 +27,4 @@ Turns a mountain photo into the door scene's dusk backdrop (`public/sprites/moun
 python3 tools/backdrop.py tools/reference/ama-dablam.jpg public/sprites/mountains.png --crop 396,107,1920,583 --width 640 --colors 26
 ```
 
-`--crop` is x0,y0,x1,y1 in source pixels (the summit ends up top left, behind the garage's left edge). If the sky removal eats into the snow, lower `--step` or raise `--sat`. Keep the credit in `src/data/site.ts` if you swap the photo, and check its licence first.
+`--ramp dusk|day|night` picks the hour (day and night write `mountains-day.png` and `mountains-night.png`, which the game uses when it is day or night outside). `--crop` is x0,y0,x1,y1 in source pixels (the summit ends up top left, behind the garage's left edge). If the sky removal eats into the snow, lower `--step` or raise `--sat`. Keep the credit in `src/data/site.ts` if you swap the photo, and check its licence first.

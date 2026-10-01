@@ -1,6 +1,6 @@
 // Weather for the door scene: clear dusk, rain with a lightning flash, snow, or fog. Drawn over the finished frame
 // (a colour grade first, then falling things), so the same painted scene serves every weather.
-import type { Theme, Weather } from '../state';
+import type { Theme, Time, Weather } from '../state';
 
 const W = 640, H = 270, OX = 80;
 export const FLASH_AT = 1.6, THUNDER_AT = 2.3; // seconds into the scene
@@ -55,10 +55,10 @@ export function ground(g: CanvasRenderingContext2D, w: Weather) {
   g.restore();
 }
 
-/** Things that fall or drift, drawn on top of everything. */
-export function fall(g: CanvasRenderingContext2D, w: Weather, t: number) {
+/** Things that fall or drift, drawn on top of everything. `dim` fades them (rain and snow read fainter in the dark). */
+export function fall(g: CanvasRenderingContext2D, w: Weather, t: number, dim = 1) {
   if (w === 'clear') return;
-  g.save();
+  g.save(); g.globalAlpha = dim;
   if (w === 'rain') {
     g.fillStyle = 'rgba(190,206,230,0.28)';
     for (let i = 0; i < 90; i++) { // far, short, slow
@@ -100,34 +100,46 @@ const mix = (a: string, b: string, t: number) => {
   return `rgb(${[0, 1, 2].map((i) => Math.round(p(a, i) + (p(b, i) - p(a, i)) * t)).join(',')})`;
 };
 
-/** The still part of the view: the theme's picture, then the weather's tint, and snow lying along the bottom. */
-export function windowSky(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, wt: Weather, theme: Theme = 'himalaya') {
-  if (theme === 'xp') { // the old Windows XP wallpaper: blue sky, white clouds, one green hill
-    const skyH = Math.round(h * 0.75);
-    for (let r = 0; r < skyH; r++) { g.fillStyle = mix('#2a68cc', '#a4cdf4', r / (skyH - 1)); g.fillRect(x, y + r, w, 1); }
-    g.fillStyle = '#ffffff';
+/** The still part of the view: the land's picture for the hour, then the weather's tint, and snow lying along the bottom. At night the garage darkens it itself. */
+export function windowSky(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, wt: Weather, theme: Theme = 'himalaya', time: Time = 'dusk') {
+  const day = time === 'day';
+  if (theme === 'xp') { // the old Windows XP wallpaper: blue sky, white clouds, one green hill (warmer at dusk)
+    const skyH = Math.round(h * 0.75), [top, low] = day ? ['#2a68cc', '#a4cdf4'] : ['#2b3f86', '#f0a878'];
+    for (let r = 0; r < skyH; r++) { g.fillStyle = mix(top, low, r / (skyH - 1)); g.fillRect(x, y + r, w, 1); }
+    g.fillStyle = day ? '#ffffff' : '#ffd9c8';
     for (const [cx, cy, cw] of [[0.28, 0.16, 14], [0.7, 0.3, 18], [0.5, 0.44, 12]]) {
       const px = x + Math.round(w * cx), py = y + Math.round(h * cy);
       g.fillRect(px - cw / 2 + 3, py, cw - 6, 2); g.fillRect(px - cw / 2, py + 2, cw, 3); g.fillRect(px - cw / 2 + 2, py + 5, cw - 4, 1);
     }
+    const [hi, lo] = day ? ['#a6d94a', '#3d8420'] : ['#a8b04a', '#446420'];
     for (let c = 0; c < w; c++) {
       const top = y + Math.round(h * 0.5 + (c / w) * h * 0.12 + Math.sin((c / w) * 3.4) * 3), bottom = y + h;
-      for (let yy = top; yy < bottom; yy++) { g.fillStyle = mix('#a6d94a', '#3d8420', Math.min(1, (yy - top) / (bottom - top) * 1.3)); g.fillRect(x + c, yy, 1, 1); }
+      for (let yy = top; yy < bottom; yy++) { g.fillStyle = mix(hi, lo, Math.min(1, (yy - top) / (bottom - top) * 1.3)); g.fillRect(x + c, yy, 1, 1); }
     }
-  } else { // the Himalaya at dusk, like the arrival: a warm sky, snow peaks and a dark valley
-    const skyH = Math.round(h * 0.8);
-    for (let r = 0; r < skyH; r++) { g.fillStyle = mix('#58739b', '#f2985e', r / (skyH - 1)); g.fillRect(x, y + r, w, 1); }
-    if (wt === 'clear') { // a big low sun with a halo
+    const ground = (f: number) => y + Math.round(h * 0.5 + f * h * 0.12 + Math.sin(f * 3.4) * 3);   // where the hill is, a share f of the way across
+    const wx = x + Math.round(w * 0.66), wy = ground(0.66) + 3, wall = day ? '#f4efe4' : '#c8b8b0';
+    g.fillStyle = wall; g.fillRect(wx - 2, wy - 8, 5, 9); g.fillStyle = '#b99a50'; g.fillRect(wx - 2, wy - 9, 5, 2);       // a windmill on the hill, sails out
+    g.fillStyle = '#8a6a40'; for (let i = 3; i < 8; i++) { g.fillRect(wx + i - 1, wy - 10 - i + 1, 1, 1); g.fillRect(wx - i, wy - 10 + i - 1, 1, 1); g.fillRect(wx + i - 1, wy - 10 + i - 1, 1, 1); g.fillRect(wx - i, wy - 10 - i + 1, 1, 1); }
+    for (const [f, r] of [[0.22, 4], [0.3, 3], [0.86, 4]] as const) { const tx = x + Math.round(w * f), ty = ground(f) + 4; g.fillStyle = '#5a4030'; g.fillRect(tx, ty - 3, 1, 4); g.fillStyle = day ? '#3f7a2a' : '#3a5a2a'; g.fillRect(tx - r + 1, ty - 3 - r, r * 2 - 1, r + 1); g.fillStyle = day ? '#5ea23a' : '#4a7030'; g.fillRect(tx - r + 2, ty - 3 - r, r - 1, 2); }
+  } else { // the Himalaya, like the arrival: a warm dusk sky, or a blue day, snow peaks and a dark valley
+    const skyH = Math.round(h * 0.8), [top, low] = day ? ['#3c78cc', '#cfe3f4'] : ['#58739b', '#f2985e'];
+    for (let r = 0; r < skyH; r++) { g.fillStyle = mix(top, low, r / (skyH - 1)); g.fillRect(x, y + r, w, 1); }
+    if (day) { // a small high sun with a halo
+      const sx = x + w - 16, sy = y + 12;
+      for (const [r, a] of [[11, 0.12], [8, 0.2], [6, 0.3]]) { g.fillStyle = `rgba(255,252,226,${a})`; g.fillRect(sx - r, sy - r, r * 2 + 1, r * 2 + 1); }
+      g.fillStyle = '#fffbe6'; g.fillRect(sx - 3, sy - 3, 7, 7);
+    } else if (wt === 'clear') { // a big low sun with a halo
       const sx = x + w - 14, sy = y + h - 24;
       for (const [r, a] of [[13, 0.1], [10, 0.16], [7, 0.24]]) { g.fillStyle = `rgba(255,230,170,${a})`; g.fillRect(sx - r, sy - r, r * 2 + 1, r * 2 + 1); }
       g.fillStyle = '#fff0c4'; g.fillRect(sx - 4, sy - 4, 9, 9); g.fillStyle = '#ffe08a'; g.fillRect(sx - 3, sy - 3, 7, 7);
     } else { g.fillStyle = '#ffd49a'; g.fillRect(x + w - 11, y + h - 22, 6, 6); }
+    const [rock, snow] = day ? ['#5e6a8c', '#f6f9ff'] : ['#4b415f', '#e8e2ee'];
     for (let c = 0; c < w; c++) {
       const peak = Math.abs(((c + 6) % 22) - 11) / 11, top = y + Math.round(h * 0.42 + peak * h * 0.2 + hash(Math.floor(c / 4), 4) * 3);
-      g.fillStyle = '#4b415f'; g.fillRect(x + c, top, 1, y + h - top);
-      g.fillStyle = '#e8e2ee'; g.fillRect(x + c, top, 1, peak < 0.35 ? 3 : 1);
+      g.fillStyle = rock; g.fillRect(x + c, top, 1, y + h - top);
+      g.fillStyle = snow; g.fillRect(x + c, top, 1, peak < 0.35 ? 3 : 1);
     }
-    g.fillStyle = '#75604f'; g.fillRect(x, y + h - 5, w, 5);
+    g.fillStyle = day ? '#a8906f' : '#75604f'; g.fillRect(x, y + h - 5, w, 5);
   }
   if (TINT[wt]) { g.fillStyle = TINT[wt]; g.fillRect(x, y, w, h); }
   if (wt === 'snow') { g.fillStyle = '#eef2fa'; g.fillRect(x, y + h - 5, w, 5); }

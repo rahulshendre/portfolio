@@ -8,8 +8,8 @@ import { RideScene } from './scenes/ride';
 import { DoorScene } from './scenes/door';
 import { GarageScene } from './scenes/garage';
 import { BAR, CONTROLS, HOTSPOTS, toPct } from './hotspots';
-import { THEMES, WEATHERS, hasVisited, isNightHour, loadMute, saveMute, loadNight, loadRadio, loadTried, markVisited, pickStart, pickTheme, pickWeather, saveNight, saveRadio, saveTried } from './state';
-import { engine, hiss, meow, preloadMeow, radio, setMuted } from './engine/audio';
+import { THEMES, TIMES, WEATHERS, hasVisited, loadMute, saveMute, loadNight, loadRadio, loadTried, markVisited, loadSky, pickStart, readSky, resolveTime, saveNight, saveRadio, saveTried, setSky, sky, type Time } from './state';
+import { crickets, engine, hiss, meow, preloadMeow, radio, setMuted } from './engine/audio';
 import { mountTerminal } from './terminal-ui';
 import { mountRail } from './rail';
 import { isPanelHref, mountPanel, parsePanelHash, titleFor } from './panel';
@@ -23,23 +23,34 @@ input.attach(screen);
 const fx = new Fx(canvas); // glow, vignette and warmth over the pixel scenes
 if (fx.ok) canvas.after(fx.canvas);
 
-const SPRITES = ['mountains', 'bike-side', 'pipecd', 'pipecd-sm', 'planetread', 'icon-github', 'icon-x', 'icon-linkedin', 'icon-youtube'] as const;
-const images = Promise.all(SPRITES.map((n) => loadImage(`/sprites/${n}.png`))).then(([mountains, bike, pipecd, pipecdSm, planetread, github, x, linkedin, youtube]) => ({
-  mountains, bike, pipecd, planetread, icons: { pipecd: pipecdSm, github, x, linkedin, youtube },
+const SPRITES = ['mountains', 'bike-side', 'pipecd', 'pipecd-sm', 'planetread', 'icon-github', 'icon-x', 'icon-linkedin', 'icon-youtube', 'mountains-day', 'mountains-night'] as const;
+const images = Promise.all(SPRITES.map((n) => loadImage(`/sprites/${n}.png`))).then(([dusk, bike, pipecd, pipecdSm, planetread, github, x, linkedin, youtube, day, night]) => ({
+  mountains: { dusk, day, night }, bike, pipecd, planetread, icons: { pipecd: pipecdSm, github, x, linkedin, youtube },
 }));
 
-let theme = pickTheme(location.search); // the arrival's look, and the view from the garage window
-let weather = pickWeather(location.search); // one weather per visit: the door scene and the garage window show the same sky
+// One sky for the whole visit: the ride, the arrival at the door and the garage window all read (and write) the same weather, land and hour.
+loadSky(); setSky(readSky(location.search));   // what this tab already chose, then whatever the address says
+const weather = () => sky.weather ?? 'rain';   // the garage looks best in rain, so that is the default until somebody picks
+const theme = () => sky.theme ?? 'himalaya';
+const hour = (): Time => resolveTime(sky.time, loadNight(), new Date().getHours());
+let dayLight: 'day' | 'dusk' = sky.time === 'day' ? 'day' : 'dusk';   // what the sky was before the lights went on, so the cord can switch back
 const LOGOS: Record<string, string> = { planetread: '/sprites/planetread-px.png', bookbox: '/sprites/bookbox-px.png' };
 let current: GarageScene | undefined;
 const tried = new Set(loadTried());
 const markTried = (f: 'tv' | 'cord' | 'radio') => { if (!tried.has(f)) { tried.add(f); saveTried([...tried]); } };
 
+/** The hour changed in the garage: show it at the window and the lights, remember it for the next scene, and keep the buttons' words right. */
+function setHour(scene: GarageScene, t: Time) {
+  setSky({ time: t }); if (t !== 'night') dayLight = t;
+  scene.setTime(t);
+  saveNight(t === 'night');
+  layer.toggleAttribute('data-night', scene.night);
+  showSky();
+}
+
 function toggleNight() {
   if (!current) return;
-  current.setNight(!current.night);
-  saveNight(current.night);
-  layer.toggleAttribute('data-night', current.night);
+  setHour(current, current.night ? dayLight : 'night');
   markTried('cord');
 }
 
@@ -80,29 +91,33 @@ const setScene = (name: 'door' | 'garage' | 'ride') => { document.body.dataset.s
 
 document.getElementById('phone-term')?.addEventListener('click', () => terminal.open()); // the TV is off-screen on a portrait phone
 
-// Garage-only buttons for the sky outside the window: the weather and the view (the window click still cycles the weather).
-const sky = document.getElementById('sky');
+// Garage-only buttons for the sky outside the window: the weather, the land and the hour (the window click still cycles the weather).
+const skyBar = document.getElementById('sky');
 const skyWeather = document.getElementById('sky-weather');
 const skyTheme = document.getElementById('sky-theme');
-const showSky = () => {
-  if (skyWeather) skyWeather.textContent = `SKY: ${weather.toUpperCase()}`;
-  if (skyTheme) skyTheme.textContent = `VIEW: ${theme === 'xp' ? 'BLISS' : 'HIMALAYA'}`;
-};
-const cycleWeather = (scene: GarageScene) => { weather = WEATHERS[(WEATHERS.indexOf(weather) + 1) % WEATHERS.length]; scene.setWeather(weather); showSky(); };
+const skyTime = document.getElementById('sky-time');
+function showSky() {
+  if (skyWeather) skyWeather.textContent = `WEATHER: ${weather().toUpperCase()}`;
+  if (skyTheme) skyTheme.textContent = `LAND: ${theme() === 'xp' ? 'BLISS' : 'HIMALAYA'}`;
+  if (skyTime) skyTime.textContent = `TIME: ${(current ? (current.night ? 'night' : dayLight) : hour()).toUpperCase()}`;
+}
+const cycleWeather = (scene: GarageScene) => { const w = WEATHERS[(WEATHERS.indexOf(weather()) + 1) % WEATHERS.length]; setSky({ weather: w }); scene.setWeather(w); showSky(); };
 skyWeather?.addEventListener('click', () => { if (current) cycleWeather(current); });
-skyTheme?.addEventListener('click', () => { if (current) { theme = THEMES[(THEMES.indexOf(theme) + 1) % THEMES.length]; current.setTheme(theme); showSky(); } });
+skyTheme?.addEventListener('click', () => { if (current) { const th = THEMES[(THEMES.indexOf(theme()) + 1) % THEMES.length]; setSky({ theme: th }); current.setTheme(th); showSky(); } });
+skyTime?.addEventListener('click', () => { if (current) setHour(current, TIMES[(TIMES.indexOf(current.night ? 'night' : dayLight) + 1) % TIMES.length]); });
 
 async function garage() {
   const img = await images;
-  const scene = new GarageScene(screen, img, weather, theme);
-  const q = new URLSearchParams(location.search); // ?night and ?day force the lights (handy for screenshots)
-  scene.night = q.has('night') ? true : q.has('day') ? false : loadNight() ?? isNightHour(new Date().getHours()); // until they pull the cord, the room follows their clock
+  const t = hour(); // what was picked (in the ride, at the door, ?night, ?day), else the lights they chose, else their clock
+  if (t !== 'night') dayLight = t;
+  const scene = new GarageScene(screen, img, weather(), theme(), dayLight);
+  scene.setTime(t, true);
   scene.tried = tried;
   void preloadMeow();
   if (loadRadio() && !radio.on) radio.autostart(); // the radio plays unless the visitor turned it off last time
   scene.radioOn = radio.on;
   current = scene;
-  if (sky) sky.hidden = false;
+  if (skyBar) skyBar.hidden = false;
   showSky();
   director.go(scene);
   setScene('garage');
@@ -122,9 +137,14 @@ screen.onResize(() => { if (director.current instanceof GarageScene) requestAnim
 async function door() {
   const img = await images;
   current = undefined;
-  if (sky) sky.hidden = true;
+  if (skyBar) skyBar.hidden = true;
   setScene('door');
-  director.go(new DoorScene(screen, img.bike, img.mountains, () => new GarageScene(screen, img, weather, theme).roomSprite(false), garage, weather, theme, (o) => { weather = o.weather ?? weather; theme = o.theme ?? theme; void door(); }));
+  const t = hour();
+  director.go(new DoorScene(screen, img.bike, img.mountains, () => new GarageScene(screen, img, weather(), theme(), t === 'day' ? 'day' : 'dusk').roomSprite(false), garage, weather(), theme(), t, (o) => {
+    setSky({ weather: o.weather ?? weather(), theme: o.theme ?? theme(), time: o.time ?? t });
+    if (o.time && o.time !== 'night') dayLight = o.time; else if (!o.time && t !== 'night') dayLight = t;
+    void door();
+  }));
 }
 
 function mountHotspots(scene: GarageScene) {
@@ -182,7 +202,7 @@ const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 async function ride() {
   await images;
   current = undefined;
-  if (sky) sky.hidden = true;
+  if (skyBar) skyBar.hidden = true;
   const r = new RideScene(screen, door, garage);
   r.onLook = (l) => rail.look(l);
   director.go(r);
@@ -249,7 +269,7 @@ if (meter) Object.assign(meter.style, { position: 'fixed', left: '8px', bottom: 
 let meterT = 0, meterN = 0, meterMax = 0;
 
 // If frames get slow, the garage drops its extras (dust, flicker, lean) and keeps its look.
-let last = performance.now(), slow = 0, frames = 0;
+let last = performance.now(), slow = 0, frames = 0, cricketsT = 0;
 function frame(now: number) {
   const raw = (now - last) / 1000;
   const dt = Math.min(0.05, raw);
@@ -258,7 +278,7 @@ function frame(now: number) {
     meterT += raw; meterN++; meterMax = Math.max(meterMax, raw);
     if (meterT > 0.5) {
       const cur = director.current;
-      meter.textContent = `${(meterN / meterT).toFixed(0)} fps · worst ${(meterMax * 1000).toFixed(0)} ms\n${screen.W}x${screen.H} · ${screen.mode}${cur instanceof RideScene && cur.isLite ? ' · lite' : ''}`;
+      meter.textContent = `${(meterN / meterT).toFixed(0)} fps · worst ${(meterMax * 1000).toFixed(0)} ms\n${screen.W}x${screen.H} · ${screen.mode}${cur instanceof RideScene && cur.isLite ? ' · lite' : ''}${crickets.level > 0.01 ? ` · crickets ${crickets.level.toFixed(2)}` : ''}`;
       meterT = 0; meterN = 0; meterMax = 0;
     }
   }
@@ -270,7 +290,9 @@ function frame(now: number) {
   }
   if (current && !current.lowFx && ++frames > 90) { slow = slow * 0.95 + dt * 0.05; if (slow > 1 / 38) current.lowFx = true; }
   leanStage(dt);
+  cricketsT += raw;
+  if (cricketsT > 0.6) { cricketsT = 0; if (!(s instanceof RideScene)) crickets.set(current && current.night && (weather() === 'clear' || weather() === 'fog') ? 0.3 : 0); }   // outside the window at night; the door brings its own, the ride sets its own
   requestAnimationFrame(frame);
 }
-document.addEventListener('visibilitychange', () => { if (document.hidden) { radio.suspend(); engine.suspend(); } else { radio.resume(); engine.resume(); } });
+document.addEventListener('visibilitychange', () => { if (document.hidden) { radio.suspend(); engine.suspend(); crickets.suspend(); } else { radio.resume(); engine.resume(); crickets.resume(); } });
 requestAnimationFrame(frame);

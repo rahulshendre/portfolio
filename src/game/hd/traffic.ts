@@ -1,6 +1,8 @@
 import { SEG_L } from './track-ladakh';
 import { at, box, circle, g, hgrad, oval, poly, rrect, stroke, vgrad } from './draw';
 import { drawRiderAt } from './rider';
+import { drawBlissCar } from './farm';
+import { isBliss } from './land';
 
 export type Kind = 'army' | 'suv' | 'biker' | 'yak' | 'tanker' | 'tempo' | 'goats' | 'marmot';
 export interface Car { z: number; o: number; v: number; kind: Kind; warned?: boolean; yieldT?: number;
@@ -112,6 +114,7 @@ export function capBehind(cars: Car[], playerZ: number, px: number, speed: numbe
 export function drawCar(kind: Kind, sx: number, sy: number, k: number, t = 0) {
   const s = k;
   if (s < 0.14) return;
+  if (isBliss() && drawBlissCar(kind, sx, sy, s, t)) return;                                          // in the Bliss land the army trucks are tractors and the yaks are cows
   if (kind === 'army') {
     at(sx, sy, s, () => {
       oval(0, 0, 38, 5, '#00000055');

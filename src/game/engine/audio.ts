@@ -19,6 +19,69 @@ export function setMuted(m: boolean) {
   }
 }
 
+/** One cricket's chirp: a short train of pure 4-5 kHz pulses, each a quick swell and fade. */
+function chirpTrain(c: AudioContext, out: AudioNode, t: number, f: number, n: number, vol: number, pan: number) {
+  const o = c.createOscillator(), g = c.createGain(), p = c.createStereoPanner();
+  o.type = 'sine'; o.frequency.value = f; p.pan.value = pan;
+  g.gain.setValueAtTime(0, t);
+  for (let i = 0; i < n; i++) { const s = t + i * 0.034; g.gain.linearRampToValueAtTime(vol, s + 0.004); g.gain.linearRampToValueAtTime(vol * 0.2, s + 0.02); g.gain.linearRampToValueAtTime(0, s + 0.03); }
+  o.connect(g).connect(p).connect(out); o.start(t); o.stop(t + n * 0.034 + 0.03);
+}
+
+/** A few quick notes of a bird. */
+function birdNotes(c: AudioContext, out: AudioNode, t: number, base: number, n: number, vol: number, pan: number) {
+  const p = c.createStereoPanner(); p.pan.value = pan; p.connect(out);
+  for (let i = 0; i < n; i++) {
+    const o = c.createOscillator(), g = c.createGain(), s = t + i * 0.11;
+    o.type = 'sine'; o.frequency.setValueAtTime(base, s); o.frequency.exponentialRampToValueAtTime(base * 1.5, s + 0.06); o.frequency.exponentialRampToValueAtTime(base * 0.9, s + 0.1);
+    g.gain.setValueAtTime(0, s); g.gain.linearRampToValueAtTime(vol, s + 0.01); g.gain.exponentialRampToValueAtTime(0.0005, s + 0.11);
+    o.connect(g).connect(p); o.start(s); o.stop(s + 0.13);
+  }
+}
+
+/**
+ * The crickets of a warm evening: seven of them chirping out of step all around, each a little train of pure notes. `set(level)` (0 to 1) fades the whole field in
+ * or out; at 0 it costs nothing. Evening and night scenes set it (the ride, the door, the garage), so the same crickets follow you in from the road.
+ */
+export class Crickets {
+  private ctx?: AudioContext;
+  private master?: GainNode;
+  private timer = 0;
+  private voices = Array.from({ length: 7 }, (_, i) => ({ f: 4200 + ((i * 331) % 900), pan: ((i * 0.53) % 1.8) - 0.9, next: 0, gap: 0.42 + (i % 4) * 0.13, vol: 0.5 + (i % 3) * 0.25 }));
+  level = 0;
+
+  set(level: number) {
+    this.level = Math.max(0, Math.min(1, level));
+    if (this.level < 0.01 && !this.master) return;
+    if (!this.ctx) {
+      try { this.ctx = newCtx(); } catch { return; }
+      const m = this.ctx.createGain(); m.gain.value = 0; m.connect(dest(this.ctx)); this.master = m;
+    }
+    const c = this.ctx;
+    if (this.level > 0.01) void wake(c);
+    this.master!.gain.setTargetAtTime(this.level * 0.9, c.currentTime, 0.8);
+    if (this.level > 0.01 && !this.timer) { this.timer = window.setInterval(() => this.tick(), 150); this.tick(); }
+    else if (this.level <= 0.01 && this.timer) { window.clearInterval(this.timer); this.timer = 0; }
+  }
+
+  private tick() {
+    const c = this.ctx;
+    if (!c || c.state !== 'running') return;
+    const now = c.currentTime;
+    for (const v of this.voices) {
+      if (v.next < now) v.next = now + Math.random() * 0.3;
+      while (v.next < now + 0.45) {
+        chirpTrain(c, this.master!, v.next, v.f * (0.98 + Math.random() * 0.04), 3 + Math.floor(Math.random() * 2), 0.03 * v.vol, v.pan);
+        v.next += v.gap * (0.8 + Math.random() * 0.5) + 0.12;
+      }
+    }
+  }
+
+  suspend() { if (this.timer) void this.ctx?.suspend(); }
+  resume() { if (this.timer && this.ctx) void wake(this.ctx); }
+}
+export const crickets = new Crickets();
+
 // A tiny synthesised single-cylinder engine. Off by default; browsers only allow audio after a gesture anyway.
 export class EngineSound {
   on = false;
@@ -177,6 +240,69 @@ export class EngineSound {
     [[110, 0.06, 4.5], [164.8, 0.035, 3.5], [277, 0.02, 2.5], [421, 0.012, 1.8]].forEach(([f, v, d]) => {
       const o = c.createOscillator(), g = c.createGain(); o.type = 'sine'; o.frequency.value = f;
       g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(v, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0004, t + d);
+      o.connect(g).connect(dest(c)); o.start(t); o.stop(t + d + 0.1);
+    });
+  }
+
+  /** A cow's moo: a low note that swells, glides up and sags away, shaped by two vowel formants. `pan` puts it to one side. */
+  moo(pan = 0, size = 1) {
+    if (!this.on || !this.ctx) return;
+    const c = this.ctx, t = c.currentTime, p = c.createStereoPanner(); p.pan.value = pan; p.connect(dest(c));
+    const o = c.createOscillator(), lfo = c.createOscillator(), lg = c.createGain(), env = c.createGain(), f0 = 96 * size ** -0.3;
+    o.type = 'sawtooth'; o.frequency.setValueAtTime(f0 * 0.9, t); o.frequency.linearRampToValueAtTime(f0 * 1.25, t + 0.4); o.frequency.linearRampToValueAtTime(f0 * 0.78, t + 1.5);
+    lfo.frequency.value = 5; lg.gain.value = 4; lfo.connect(lg).connect(o.frequency);
+    const f1 = c.createBiquadFilter(), f2 = c.createBiquadFilter(); f1.type = f2.type = 'bandpass'; f1.Q.value = 5; f2.Q.value = 6;
+    f1.frequency.setValueAtTime(360, t); f1.frequency.linearRampToValueAtTime(640, t + 0.5); f1.frequency.linearRampToValueAtTime(400, t + 1.5);   // "oo" opening to "aw" and closing again
+    f2.frequency.setValueAtTime(900, t); f2.frequency.linearRampToValueAtTime(1100, t + 0.5); f2.frequency.linearRampToValueAtTime(800, t + 1.5);
+    env.gain.setValueAtTime(0, t); env.gain.linearRampToValueAtTime(0.1, t + 0.2); env.gain.setValueAtTime(0.1, t + 1.1); env.gain.linearRampToValueAtTime(0, t + 1.6);
+    o.connect(f1).connect(env); o.connect(f2).connect(env); env.connect(p); o.start(t); lfo.start(t); o.stop(t + 1.7); lfo.stop(t + 1.7);
+  }
+
+  /** A sheep's bleat, or two: a nasal note with a fast tremor. */
+  baa(pan = 0) {
+    if (!this.on || !this.ctx) return;
+    const c = this.ctx, p = c.createStereoPanner(); p.pan.value = pan; p.connect(dest(c));
+    for (let k = 0, n = 1 + Math.floor(Math.random() * 2); k < n; k++) {
+      const t = c.currentTime + k * 0.75, o = c.createOscillator(), lfo = c.createOscillator(), lg = c.createGain(), env = c.createGain();
+      o.type = 'sawtooth'; o.frequency.setValueAtTime(340 - k * 25, t); o.frequency.linearRampToValueAtTime(290 - k * 25, t + 0.55);
+      lfo.frequency.value = 30; lg.gain.value = 34; lfo.connect(lg).connect(o.frequency);
+      const f1 = c.createBiquadFilter(), f2 = c.createBiquadFilter(); f1.type = f2.type = 'bandpass'; f1.frequency.value = 820; f1.Q.value = 4; f2.frequency.value = 1500; f2.Q.value = 5;
+      env.gain.setValueAtTime(0, t); env.gain.linearRampToValueAtTime(0.07, t + 0.04); env.gain.setValueAtTime(0.07, t + 0.4); env.gain.linearRampToValueAtTime(0, t + 0.6);
+      o.connect(f1).connect(env); o.connect(f2).connect(env); env.connect(p); o.start(t); lfo.start(t); o.stop(t + 0.65); lfo.stop(t + 0.65);
+    }
+  }
+
+  /** A cuckoo calling from the trees: two falling notes, repeated. */
+  cuckoo(pan = 0) {
+    if (!this.on || !this.ctx) return;
+    const c = this.ctx, p = c.createStereoPanner(); p.pan.value = pan; p.connect(dest(c));
+    for (let k = 0, n = 2 + Math.floor(Math.random() * 2); k < n; k++) for (const [d, f, len] of [[0, 700, 0.17], [0.2, 560, 0.26]] as const) {
+      const t = c.currentTime + k * 0.62 + d, o = c.createOscillator(), g = c.createGain();
+      o.type = 'sine'; o.frequency.setValueAtTime(f, t); o.frequency.linearRampToValueAtTime(f * 0.96, t + len);
+      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.045, t + 0.02); g.gain.setValueAtTime(0.045, t + len - 0.05); g.gain.linearRampToValueAtTime(0, t + len);
+      o.connect(g).connect(p); o.start(t); o.stop(t + len + 0.02);
+    }
+  }
+
+  /** An owl, far off: a soft, falling "hoo-hoo". */
+  owl(pan = 0) {
+    if (!this.on || !this.ctx) return;
+    const c = this.ctx, p = c.createStereoPanner(); p.pan.value = pan; p.connect(dest(c));
+    for (const [d, f] of [[0, 420], [0.5, 380], [1.5, 420], [2.0, 360]] as const) {
+      const t = c.currentTime + d, o = c.createOscillator(), g = c.createGain();
+      o.type = 'sine'; o.frequency.setValueAtTime(f, t); o.frequency.linearRampToValueAtTime(f * 0.88, t + 0.4);
+      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.05, t + 0.12); g.gain.linearRampToValueAtTime(0, t + 0.42);
+      o.connect(g).connect(p); o.start(t); o.stop(t + 0.45);
+    }
+  }
+
+  /** A village church bell: a low strike with its bright overtones, tolled twice. */
+  bell() {
+    if (!this.on || !this.ctx) return;
+    const c = this.ctx;
+    for (const t0 of [0, 1.15]) [[110, 0.05, 3.6], [220, 0.06, 3.2], [264, 0.03, 2.6], [330, 0.03, 2], [440, 0.022, 1.6], [880, 0.008, 0.8]].forEach(([f, v, d]) => {
+      const t = c.currentTime + t0, o = c.createOscillator(), g = c.createGain(); o.type = 'sine'; o.frequency.value = f;
+      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(v, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0004, t + d);
       o.connect(g).connect(dest(c)); o.start(t); o.stop(t + d + 0.1);
     });
   }
@@ -355,10 +481,11 @@ export class DoorSound {
   private dead = false;
   running = false;
   private weather = 'clear';
+  private time = 'dusk';
 
-  start(now: () => number, cues: DoorCues, weather = 'clear') {
+  start(now: () => number, cues: DoorCues, weather = 'clear', time = 'dusk') {
     if (this.running || this.dead) return;
-    this.weather = weather;
+    this.weather = weather; this.time = time;
     try { this.ctx ??= newCtx(); } catch { return; }
     const c = this.ctx;
     void wake(c).then(() => {
@@ -433,6 +560,14 @@ export class DoorSound {
     } else if (this.weather === 'snow' || this.weather === 'fog') { // muffled: a quiet, wide hush
       const r = noise(true), lp2 = filt('lowpass', 900), rg = gain(0.03);
       r.connect(lp2).connect(rg).connect(master); r.start();
+    }
+
+    // the hour outside: birdsong by day, crickets at dusk and in the dark (a muffled hush in snow, none in the rain)
+    const open = this.weather === 'clear' || this.weather === 'fog', span = q.end + 0.6;
+    if (open && this.time === 'day') for (let s = 0.3; s < span; s += 0.7 + Math.random() * 1.4) birdNotes(c, master, at(s), 2600 + Math.random() * 1800, 2 + Math.floor(Math.random() * 3), 0.02, Math.random() * 2 - 1);
+    if (open && this.time !== 'day') {
+      const lvl = this.time === 'night' ? 1 : 0.55;
+      for (let i = 0; i < 7; i++) { const f = 4200 + ((i * 331) % 900), pan = ((i * 0.53) % 1.8) - 0.9; for (let s = Math.random() * 0.4; s < span; s += 0.42 + (i % 4) * 0.13 + 0.12 + Math.random() * 0.2) chirpTrain(c, master, at(s), f * (0.98 + Math.random() * 0.04), 3 + Math.floor(Math.random() * 2), 0.028 * lvl * (0.5 + (i % 3) * 0.25), pan); }
     }
 
     // sensor sees the bike: two beeps, then the relay clicks and the door wakes up

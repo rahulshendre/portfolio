@@ -2,18 +2,19 @@
 import { CAM_DEPTH, project, type Projected } from '../ride/project';
 import { drawBackground, type Env } from './background';
 import { mix, poly as fillPoly, smooth, use } from './draw';
-import { drawProp, setTod } from './props';
+import { drawProp, setLand, setTod } from './props';
+import { xpExtras } from './meadow';
 export { LIGHTS } from './props';
 import { altitude, FINISH, LAKE_FROM, N, shore, ROAD_W, SEG_L, type Prop, type Segment } from './track-ladakh';
 import { drawCar, type Car } from './traffic';
 
 /** Wear on the near ground and road: pebbles and dust on the verge, cracks and patches, tyre tracks in the lane, darker edges. */
-function texture(g: CanvasRenderingContext2D, i: number, p1: Projected, p2: Projected, W: number, alt: number, near: number) {
+function texture(g: CanvasRenderingContext2D, i: number, p1: Projected, p2: Projected, W: number, alt: number, near: number, xp = false) {
   const h = p1.y - p2.y, a = 1 - near / 34, r = (n: number) => Math.abs(Math.sin(i * 12.9898 + n * 78.233) * 43758.5453) % 1;
   g.globalAlpha = 0.5 * a;
   for (let k = 0; k < 7; k++) {                               // pebbles and dust on the verge, either side
     const side = k % 2 ? 1 : -1, x = p1.x + side * (p1.w * (1.45 + r(k) * 4.5)), y = p2.y + r(k + 9) * h, sz = 1 + r(k + 3) * 2.4 * (1 + a);
-    g.fillStyle = r(k + 5) > 0.5 ? '#7a5a3c' : '#e0c8a0'; g.fillRect(x, y, sz * 1.5, sz);
+    g.fillStyle = xp ? (r(k + 5) > 0.5 ? '#3f7a2a' : '#c4e87a') : (r(k + 5) > 0.5 ? '#7a5a3c' : '#e0c8a0'); g.fillRect(x, y, sz * 1.5, sz);
   }
   g.globalAlpha = 0.16 * a;
   for (const off of [-0.3, 0.3]) trap2(g, p1, p2, off, 0.055, '#141210');                  // tyre tracks polished into the road
@@ -40,12 +41,21 @@ export interface View {
 type Seg = Segment & { p1?: Projected; clip?: number; camX1?: number; camX2?: number };   // camX: the sideways offset from the camera at each end of the segment, so things can be placed part-way along it
 
 export const DRAW_DIST = 180;
+
+type AnyProp = { o: number; type: string; label?: string; sub?: string; lines?: readonly string[]; v?: number };
+const MERGED = new Map<number, readonly AnyProp[]>();
+/** A segment's own props plus the Bliss land's trees and flowers, joined once and kept (the props never change, so the frame does no allocating). */
+const withMeadow = (i: number, props: readonly AnyProp[]) => {
+  let m = MERGED.get(i);
+  if (!m) { const e = xpExtras(i); m = e.length ? [...props, ...e] : props; MERGED.set(i, m); }
+  return m;
+};
 /** Props are drawn in a unit space about 55 units to a house, against a road 2200 units across, so they scale up from the road's own scale. */
 const PROP_K = ROAD_W / 55;
 /** Signs and boards were drawn in bigger units than houses, so each gets its own size against the road (a board is about the road's half-width). */
 const PROP_SIZE: Record<string, number> = { board: 0.46, bro: 0.44, sign: 0.52, stone: 0.26, chevron: 0.3, pole: 0.9, gompa: 3, palace: 3, stupahill: 3, ms: 0.75, lamp: 0.9, kiang: 1.5, marmot: 1.6, darchog: 0.9, cone: 0.5, crew: 0.9, summit: 0.6, camp: 1.1, village: 3, buddha: 1.5, monastery: 1.5, monk: 0.55, tourer: 0.8, stall: 0.85, camel: 1.5, limit: 0.5, flagmound: 1.1, dog: 1.2 };
 
-const NEAR_HIDE = new Set(['chevron', 'pole', 'scrub', 'tuft', 'reed', 'cairn', 'lamp', 'cone', 'monk', 'stall', 'tourer']);
+const NEAR_HIDE = new Set(['chevron', 'pole', 'scrub', 'tuft', 'reed', 'cairn', 'lamp', 'cone', 'monk', 'stall', 'tourer', 'flowers']);
 
 function trap(a: { x: number; y: number; w: number }, b: { x: number; y: number; w: number }, fill: string) {
   fillPoly([a.x - a.w, a.y + 1, a.x + a.w, a.y + 1, b.x + b.w, b.y, b.x - b.w, b.y], fill);   // one pixel of overlap toward the camera hides the seam between strips
@@ -53,7 +63,8 @@ function trap(a: { x: number; y: number; w: number }, b: { x: number; y: number;
 
 const scaled = (p: Projected, k: number, dx = 0) => ({ x: p.x + p.w * dx, y: p.y, w: p.w * k });
 
-function groundCols(i: number) {
+function groundCols(i: number, xp = false) {
+  if (xp) return { grass: ['#7cbc3c', '#72b234'] as [string, string], shoulder: ['#b2bf6e', '#a8b564'] as [string, string] };   // Bliss: two greens in bands, and a pale verge
   const a = altitude(i);
   const dust0 = mix('#c49a5e', '#d0c4b2', a * 0.45);
   const dust1 = mix('#b78e54', '#c6bba9', a * 0.45);
@@ -75,7 +86,8 @@ function wires(g: CanvasRenderingContext2D, x1: number, y1: number, s1: number, 
 
 export function renderRoad(g: CanvasRenderingContext2D, segs: Seg[], v: View, cars: Car[]) {
   use(g);
-  setTod(v.env.tod, v.env.night ?? 0);
+  const xp = v.env.theme === 'xp';
+  setTod(v.env.tod, v.env.night ?? 0); setLand(v.env.theme ?? 'himalaya');
   drawBackground(g, v.W, v.H, v.HZ, v.bgOff, v.t, v.env);
   const { W, H, HZ } = v;
   const baseI = Math.floor(v.pos / SEG_L), pct = (v.pos % SEG_L) / SEG_L;
@@ -92,7 +104,7 @@ export function renderRoad(g: CanvasRenderingContext2D, segs: Seg[], v: View, ca
     s.camX1 = v.px * ROAD_W - cx; s.camX2 = s.camX1 - dx;
     cx += dx; dx += s.curve; s.p1 = p1; s.clip = maxy;
     if (p1.cz <= CAM_DEPTH || p2.y >= p1.y || p2.y >= maxy) continue;
-    const alt = Math.floor(i / 3) % 2, c = groundCols(i);
+    const alt = Math.floor(i / 3) % 2, c = groundCols(i, xp);
     const a = altitude(i);
     const road0 = mix('#5a5854', '#6a6864', a * 0.3);
     const road1 = mix('#54524e', '#646260', a * 0.3);
@@ -100,7 +112,7 @@ export function renderRoad(g: CanvasRenderingContext2D, segs: Seg[], v: View, ca
     const fog = Math.min(0.97, Math.pow(Math.min(1, (i - baseI) / DRAW_DIST), 0.75) * 0.72 * (v.fogK ?? 1)), F = (col: string) => mix(col, v.haze, fog);
     g.fillStyle = F(c.grass[alt]);
     g.fillRect(0, p2.y, W, p1.y - p2.y + 1);
-    if (i >= 990 && i < 1200 && i - baseI < 110) {               // pasture and marsh on the left by the lake: patches of green in the dry ground
+    if (!xp && i >= 990 && i < 1200 && i - baseI < 110) {        // pasture and marsh on the left by the lake: patches of green in the dry ground
       const fa = smooth(990, 1030, i), blk = Math.floor(i / 6);
       for (let b = 0; b < 3; b++) {
         const r = Math.abs(Math.sin(blk * 2.3 + b * 9.1) * 43758.5453) % 1;
@@ -119,7 +131,7 @@ export function renderRoad(g: CanvasRenderingContext2D, segs: Seg[], v: View, ca
         trap(scaled(p1, 0.05, side * (o0 - 0.1)), scaled(p2, 0.05, side * (o0 - 0.1)), F(mix(c.grass[alt], '#7a6a56', fa * 0.8)));  // the wall
       }
     }
-    if (i >= 425 && i < 585) {                                   // the dunes of Nubra: pale sand in long ridges on the right
+    if (!xp && i >= 425 && i < 585) {                            // the dunes of Nubra: pale sand in long ridges on the right
       const da = smooth(425, 455, i) * (1 - smooth(545, 585, i)), r = Math.abs(Math.sin(Math.floor(i / 4) * 5.9) * 9301.3) % 1;
       trap(scaled(p1, 22, 4.2 + 22), scaled(p2, 22, 4.2 + 22), F(mix(c.grass[alt], alt ? '#e2cf9c' : '#dcc78e', da)));
       trap(scaled(p1, 1.5 + r * 2.5, 6 + r * 9), scaled(p2, 1.5 + r * 2.5, 6 + r * 9), F(mix(c.grass[alt], '#f0e2b8', da * 0.9)));   // a sunlit ridge
@@ -160,7 +172,7 @@ export function renderRoad(g: CanvasRenderingContext2D, segs: Seg[], v: View, ca
     trap(scaled(p1, 0.012, -0.93), scaled(p2, 0.012, -0.93), F('#e9e3d1'));
     trap(scaled(p1, 0.012, 0.93), scaled(p2, 0.012, 0.93), F('#e9e3d1'));
     if (alt) trap(scaled(p1, 0.02), scaled(p2, 0.02), F('#e9e3d1'));
-    if (!v.lite && i - baseI < 34 && p1.y - p2.y > 1.5) texture(g, i, p1, p2, W, alt, i - baseI);
+    if (!v.lite && i - baseI < 34 && p1.y - p2.y > 1.5) texture(g, i, p1, p2, W, alt, i - baseI, xp);
     maxy = p1.y;
   }
 
@@ -174,12 +186,13 @@ export function renderRoad(g: CanvasRenderingContext2D, segs: Seg[], v: View, ca
     const s = segs[i];
     if (!s.p1 || s.p1.cz <= CAM_DEPTH) continue;
     const k = (s.p1.s * W) / 2, here = bySeg.get(i);
-    if (!s.props.length && !here) continue;                    // nothing to draw here: no clip to set up
+    const list = xp ? withMeadow(i, s.props) : s.props;         // the Bliss land adds trees and flowers of its own
+    if (!list.length && !here) continue;                       // nothing to draw here: no clip to set up
     g.save();
     g.beginPath();
     g.rect(0, 0, W, s.clip!);
     g.clip();
-    for (const p of s.props) {
+    for (const p of list) {
       if (i - baseI < 6 && NEAR_HIDE.has(p.type)) continue;                       // small roadside things vanish just before they'd swallow the screen
       const ks = k * PROP_K * (PROP_SIZE[p.type] ?? 1), px = s.p1.x + k * p.o * ROAD_W;
       drawProp(p.type, px, s.p1.y, ks, p);

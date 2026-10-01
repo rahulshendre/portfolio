@@ -17,8 +17,10 @@ import { agility, lateralStep, step as bikeStep, V_CRUISE, V_TOP } from '../hd/p
 import { drawCluster, drawPedals, pedalAt } from '../hd/cluster';
 import { CAM_DEPTH } from '../ride/project';
 import { input } from '../engine/input';
-import { engine, isMuted, radio } from '../engine/audio';
-import { loadRadio } from '../state';
+import { crickets, engine, isMuted, radio } from '../engine/audio';
+import { xpExtras } from '../hd/meadow';
+import { drawButterflies, drawFireflies } from '../hd/ambient';
+import { loadRadio, RIDE_TIMES, rideTimeFrom, setSky, sky as world, timeFromRide, type RideTime, type Theme } from '../state';
 import type { Scene } from '../engine/scene';
 import type { Screen } from '../engine/screen';
 import { milestones, site } from '../../data/site';
@@ -38,6 +40,12 @@ const EVENTS = [
   { i: LAKE_FROM + 40, top: 'THE LAKE', sub: '4,225 M · NEARLY HOME' },
   ...TOWNS.filter((t) => t.sub).map((t) => ({ i: t.gate + 3, top: t.name, sub: t.sub })),
 ];
+/** The same places, as the Bliss land describes them: the palace is a manor, the monastery a castle, the dunes meadows, the Buddha a windmill. */
+const BLISS_SUB: Record<string, string> = {
+  'SHEY': 'THE OLD MANOR ON THE HILL', 'THIKSEY': 'THE CASTLE ON THE HILL', 'HUNDER': 'MEADOWS AND A FLOCK OF SHEEP',
+  'DISKIT': 'THE GREAT WINDMILL', 'SPANGMIK': 'COTTAGES ON THE LAKE SHORE', 'KHARDUNG LA': 'HIGH PASTURE · 5,359 M', 'THE LAKE': '4,225 M · NEARLY HOME',
+};
+const BLISS_CHAPTER: Record<string, string> = { 'INDUS VALLEY': 'THE GREEN VALLEY', 'KHARDUNG LA': 'HIGH PASTURE', 'LEH TOWN': 'LEH VILLAGE', 'SHEY': 'SHEY MANOR', 'THIKSEY': 'THIKSEY CASTLE', 'DISKIT': 'DISKIT WINDMILL' };
 const CHAPTER = (i: number) => townAt(i) ??
   (i >= FINISH - 90 ? 'ALMOST THERE'
     : i >= LAKE_FROM ? 'THE LAKE'                                        // the water is in sight from here, so the label matches the view
@@ -56,8 +64,9 @@ export class RideScene implements Scene {
   private segs: Segment[] = buildTrack(milestones);
   private cars: Car[] = spawnTraffic();
   private pos = 0; private px = LEFT; private speed = 0; private lean = 0; private braking = false; private lastSpeed = 0; private avgDt = 1 / 60; private lite = false; private honkT = 0; private gearNow = 0; private birdT = 2; private rung = new Set<number>();
-  private photo = false; private photoT = 0; private paused = false; private lights: 'auto' | 'on' | 'off' = 'auto'; private gas = false; private brake = false; private trip = 0; private vx = 0; private bolt: Bolt | null = null; private boltIn = 6; private night = false; private nightK = 0; private gasWas = false; private rough = 0; private bumpT = 0; private rideT = 0; private topKmh = 0; private passed = 0; private honks = 0; private stopT = 0; private sky: Sky = 'clear';
+  private photo = false; private photoT = 0; private paused = false; private lights: 'auto' | 'on' | 'off' = 'auto'; private gas = false; private brake = false; private trip = 0; private vx = 0; private bolt: Bolt | null = null; private boltIn = 6; private rideTime: RideTime = 'auto'; private land: Theme = 'himalaya'; private nightK = 0; private todK = -1; private callT = 4; private called = new Set<number>(); private owlT = 12; private gasWas = false; private rough = 0; private bumpT = 0; private rideT = 0; private topKmh = 0; private passed = 0; private honks = 0; private stopT = 0; private sky: Sky = 'clear';
   private cam: Cam = 'behind';
+  private get night() { return this.rideTime === 'night'; }
   private pitchK = 0;   // the bike's nose: dips under braking, lifts under power, and the headlight follows
   private bikeImg: HTMLImageElement | null = null;   // the garage's own picture of your bike, shown on the arrival card
   private pixel = typeof location !== 'undefined' && new URLSearchParams(location.search).has('pixel'); private low = new LowRes();
@@ -73,9 +82,8 @@ export class RideScene implements Scene {
     addEventListener('blur', this.autoPause);                          // switching away pauses the ride
     input.endFrame();
     const at = Number(new URLSearchParams(location.search).get('at'));
-    const w = new URLSearchParams(location.search).get('weather') as Sky | null;
-    if (w && SKIES.includes(w)) this.sky = w;
-    if (new URLSearchParams(location.search).has('night')) { this.night = true; this.nightK = 1; }
+    this.sky = world.weather ?? 'clear'; this.land = world.theme ?? 'himalaya'; this.rideTime = rideTimeFrom(world.time);   // the sky the visitor already picked (in the address, at the door or in the garage), else a clear afternoon
+    if (this.night) this.nightK = 1;
     if (OG) { this.pos = 400 * SEG_L; return; }
     if (at > 0) {
       this.startSound(); this.phase = 'ride'; this.pos = at * SEG_L; this.speed = V_CRUISE * K;
@@ -90,10 +98,39 @@ export class RideScene implements Scene {
   onLook?: (l: Look) => void;
   private lookKey = '';
   private publishLook() {
-    const l: Look = { cam: CAM_NAMES[this.cam], night: this.night, sky: this.sky, lights: this.lights, pixel: this.pixel };
+    const l: Look = { cam: CAM_NAMES[this.cam], time: this.rideTime, sky: this.sky, land: this.land, lights: this.lights, pixel: this.pixel };
     const k = JSON.stringify(l);
     if (k !== this.lookKey) { this.lookKey = k; this.onLook?.(l); }
   }
+  /** Hand the sky of this ride to the next scene, so the door and the garage window show what you rode in. (A skip from the title card has ridden nothing, so it hands over nothing.) */
+  private commit() {
+    if (this.phase === 'title') return;
+    setSky({ weather: this.sky, theme: this.land, time: timeFromRide(this.rideTime) });
+  }
+  /** The hour as the sliding afternoon sees it: a day ride stays in the bright part of the afternoon, the others follow the road to dusk. */
+  private tod(segI: number) { const t = envAt(segI, FINISH, zoneAt(segI)).tod; return this.rideTime === 'day' ? Math.min(t, 0.22) : t; }
+  /**
+   * The sounds of the evening and the farm. Crickets rise as the light goes (a clear dusk, and all night), fewer high on the pass and in rain; in the Bliss land the
+   * cows and sheep you ride towards call out as you near them, and an owl hoots in the dark.
+   */
+  private ambience(segI: number, sp: number, dt: number) {
+    const dusk = Math.max(0, (this.todK - 0.72) / 0.28), air = this.sky === 'clear' || this.sky === 'fog' ? 1 : this.sky === 'rain' ? 0.2 : 0, high = this.land === 'xp' ? 1 : 1 - altitude(segI) * 0.9;
+    crickets.set(this.paused ? 0 : Math.max(this.nightK, dusk * 0.6) * air * high * (1 - Math.min(0.5, sp * 0.5)) * 0.9);
+    if (this.land !== 'xp') return;
+    this.callT -= dt; this.owlT -= dt;
+    if (this.owlT < 0) { this.owlT = 14 + Math.random() * 18; if (this.nightK > 0.6 && this.sky === 'clear') engine.owl(Math.random() * 2 - 1); }
+    if (this.callT > 0) return;
+    for (let j = segI + 6; j < segI + 16; j++) {                                           // an animal a little way ahead
+      if (this.called.has(j)) continue;
+      const hit = [...(this.segs[j]?.props ?? []), ...xpExtras(j)].find((p) => p.type === 'yak' || p.type === 'cows' || p.type === 'camel' || p.type === 'flock');
+      if (!hit) continue;
+      this.called.add(j); this.callT = 5 + Math.random() * 6;
+      const pan = Math.max(-1, Math.min(1, hit.o / 6));
+      if (hit.type === 'yak' || hit.type === 'cows') engine.moo(pan, 0.9 + Math.random() * 0.3); else engine.baa(pan);
+      return;
+    }
+  }
+
   private autoPause = () => { if (this.phase === 'ride' && !this.paused) { this.paused = true; engine.update(0, 0, { river: 0, lake: 0, alt: 0 }); } };
   exit() { engine.mute(); radio.setLevel(1); removeEventListener('blur', this.autoPause); }
 
@@ -156,10 +193,12 @@ export class RideScene implements Scene {
     }
     if (this.bolt && (this.bolt.age += dt) > 0.9) this.bolt = null;
     this.nightK += ((this.night ? 1 : 0) - this.nightK) * Math.min(1, dt * 1.6);
+    const want = this.tod(Math.floor(this.pos / SEG_L));                                           // the hour eases to a new setting instead of jumping
+    this.todK = this.todK < 0 ? want : this.todK + (want - this.todK) * Math.min(1, dt * 2);
     this.photoT -= dt;
     this.flash -= dt;
     const tap = this.handleTap();
-    if (tap === 'skip' || input.pressed('Escape')) return this.onSkip();
+    if (tap === 'skip' || input.pressed('Escape')) { this.commit(); return this.onSkip(); }
     if (tap === 'cam' || input.pressed('KeyV', 'KeyC')) this.setCam(CAMS[(CAMS.indexOf(this.cam) + 1) % CAMS.length]);
     if (tap === 'sound' || input.pressed('KeyM')) {                                     // the same switch as the page's SOUND button
       const btn = document.getElementById('sound'); btn?.click();
@@ -169,11 +208,12 @@ export class RideScene implements Scene {
     if (this.phase !== 'title') {
       if (input.pressed('KeyP') || (this.paused && tap === 'other')) { this.paused = !this.paused; if (this.paused) engine.update(0, 0, { river: 0, lake: 0, alt: 0 }); }   // a tap carries on too, for phones
       if (input.pressed('KeyL')) { this.lights = this.lights === 'on' ? 'off' : 'on'; this.show(this.lights === 'on' ? 'HEADLIGHT ON' : 'HEADLIGHT OFF', false, 1.2); }
-      if (input.pressed('KeyN')) { this.night = !this.night; this.show(this.night ? 'NIGHT RIDE|LIGHTS ON' : 'DAYLIGHT', false, 1.6); }
+      if (input.pressed('KeyN')) { this.rideTime = RIDE_TIMES[(RIDE_TIMES.indexOf(this.rideTime) + 1) % RIDE_TIMES.length]; this.show({ auto: 'AFTERNOON TO DUSK', night: 'NIGHT RIDE|LIGHTS ON', day: 'DAYLIGHT' }[this.rideTime], false, 1.6); }
+      if (input.pressed('KeyB')) { this.land = this.land === 'xp' ? 'himalaya' : 'xp'; this.show(this.land === 'xp' ? 'BLISS|THE OLD WALLPAPER HILLS' : 'HIMALAYA|LADAKH AGAIN', false, 1.8); }
       if (input.pressed('KeyT')) { this.sky = SKIES[(SKIES.indexOf(this.sky) + 1) % SKIES.length]; engine.setRain(this.sky === 'rain' ? 1 : 0); this.show(`WEATHER|${this.sky.toUpperCase()}`, false, 1.6); }
       if (input.pressed('KeyG')) { this.pixel = !this.pixel; this.show(this.pixel ? 'PIXEL LOOK|G FOR SMOOTH' : 'SMOOTH LOOK|G FOR PIXEL', false, 1.6); }
       if (input.pressed('KeyR')) this.show(radio.toggle() ? 'RADIO ON' : 'RADIO OFF', false, 1.2);
-      if (input.pressed('KeyK')) this.show('W GAS · S BRAKE · A D STEER|H HONK · L LIGHT · P PAUSE|V OR 1-4 CAMERA · F PHOTO · R RADIO|T WEATHER · N NIGHT · G PIXEL · M SOUND · ESC EXIT', false, 4.5);
+      if (input.pressed('KeyK')) this.show('W GAS · S BRAKE · A D STEER|H HONK · L LIGHT · P PAUSE|V OR 1-4 CAMERA · F PHOTO · R RADIO|T WEATHER · N TIME · B LAND · G PIXEL · M SOUND · ESC EXIT', false, 4.5);
     }
     CAMS.forEach((c, i) => { if (input.pressed('Digit' + (i + 1))) this.setCam(c); });
     if (this.phase !== 'title' && input.pressed('KeyF')) { this.photo = !this.photo; this.photoT = 3; }
@@ -205,7 +245,7 @@ export class RideScene implements Scene {
       if (this.speed < 30) {                                                                      // pulled up: the engine settles, a summary of the ride shows, then the door opens
         if (this.stopT === 0) { this.stopT = 0.001; engine.mute(); radio.setLevel(1); }
         this.stopT += dt;
-        if (this.stopT > 3.6) { this.fade += dt; if (this.fade > 0.7) return this.onArrive(); }
+        if (this.stopT > 3.6) { this.fade += dt; if (this.fade > 0.7) { this.commit(); return this.onArrive(); } }
       }
     } else {
       // real forces: thrust against drag, rolling resistance, the slope under the wheels and the brakes. With nothing pressed
@@ -267,10 +307,14 @@ export class RideScene implements Scene {
       river: smooth(270, 300, segI) * (1 - smooth(670, 700, segI)), lake: smooth(LAKE_FROM - 30, LAKE_FROM + 20, segI), alt: altitude(segI),
     }, this.gas ? 1 : this.brake ? 0 : 0.3);
     this.birdT -= dt;
-    if (this.birdT < 0) { this.birdT = 3 + Math.random() * 7; if (altitude(segI) < 0.5 && this.speed < MAX_S * 0.95 && !this.night) engine.chirp(); }   // birds in the valley and by the lake, none up in the snow
-    if (!this.rung.has(segI) && seg.props.some((p) => p.type === 'stupahill' || p.type === 'palace' || p.type === 'gompa')) { this.rung.add(segI); engine.gong(); }
+    if (this.birdT < 0) {
+      this.birdT = (this.land === 'xp' ? 2 + Math.random() * 4 : 3 + Math.random() * 7);
+      if (altitude(segI) < 0.5 && this.speed < MAX_S * 0.95 && this.nightK < 0.5) { if (this.land === 'xp' && Math.random() < 0.3) engine.cuckoo(Math.random() * 2 - 1); else engine.chirp(); }   // birds in the valley and by the lake, none up in the snow or in the dark
+    }
+    this.ambience(segI, sp, dt);   // birds in the valley and by the lake, none up in the snow
+    if (!this.rung.has(segI) && seg.props.some((p) => p.type === 'stupahill' || p.type === 'palace' || p.type === 'gompa')) { this.rung.add(segI); if (this.land === 'xp') engine.bell(); else engine.gong(); }
 
-    for (const e of EVENTS) if (segI >= e.i && !this.shown.has(e.i)) { this.shown.add(e.i); engine.chime(); this.show(`${e.top}|${e.sub}`, true); }
+    for (const e of EVENTS) if (segI >= e.i && !this.shown.has(e.i)) { this.shown.add(e.i); engine.chime(); this.show(`${e.top}|${this.land === 'xp' ? (BLISS_SUB[e.top] ?? e.sub) : e.sub}`, true); }
     MILESTONE_SEGS.forEach((m, k) => {
       if (segI >= m && !this.shown.has(m)) { this.shown.add(m); engine.chime(); this.show(`${milestones[k].top}|${milestones[k].label}`, true); }
     });
@@ -283,7 +327,7 @@ export class RideScene implements Scene {
     const g = small ? this.low.ctx : full, W = small ? small.W : FW, H = small ? small.H : FH;
     use(g);
     const sp = this.speed / MAX_S, segI = Math.floor(this.pos / SEG_L);
-    const env = { ...envAt(segI, FINISH, zoneAt(segI)), lite: this.lite, night: this.nightK };
+    const env = { ...envAt(segI, FINISH, zoneAt(segI)), tod: this.todK < 0 ? this.tod(segI) : this.todK, lite: this.lite, night: this.nightK, theme: this.land };
     if (this.cam === 'top') {
       drawTop(g, this.segs, this.cars, W, H, this.pos, this.px, this.t);
       if (!this.lite) finish(g, W, H, HZ, env.tod, false, !small);
@@ -293,14 +337,18 @@ export class RideScene implements Scene {
       const punch = REDUCED ? 1 : 1 + Math.max(0, sp - 0.8) * 0.2 + (this.gas && sp > 0.9 ? 0.012 : 0);   // at full throttle the view widens a touch
       g.translate(W / 2, H * HZ); g.scale(punch, punch); g.translate(-W / 2, -H * HZ);
       if (!REDUCED) g.translate(0, Math.round(Math.sin(this.t * 47) * sp * sp * 1.6 + Math.sin(this.t * 19) * sp * 0.7)); // the road hums up through the suspension at speed
-      renderRoad(g, this.segs, { W, H, HZ, pos: this.pos, px: this.px, camH: CAM_HEIGHT[this.cam], bgOff: this.bgOff, t: this.t, env, lite: this.lite, haze: this.nightK > 0.01 ? mix(hazeAt(env.tod), '#232b58', this.nightK) : hazeAt(env.tod), fogK: this.sky === 'fog' ? 2.4 : 1 }, this.cars);
+      renderRoad(g, this.segs, { W, H, HZ, pos: this.pos, px: this.px, camH: CAM_HEIGHT[this.cam], bgOff: this.bgOff, t: this.t, env, lite: this.lite, haze: this.nightK > 0.01 ? mix(hazeAt(env.tod, this.land), '#232b58', this.nightK) : hazeAt(env.tod, this.land), fogK: this.sky === 'fog' ? 2.4 : 1 }, this.cars);
       g.restore();
       if (!this.lite) drawSpeedLines(g, W, H, HZ, sp, this.t);
       drawSkyTint(g, W, H, HZ, this.sky);
       drawNight(g, W, H, this.nightK);
       if (this.nightK > 0.3) drawLights(g, LIGHTS);
-      if (!this.lite) drawGround(g, W, H, HZ, this.t, sp, this.nightK > 0.5 ? 0 : env.tod, segI, this.sky === 'rain' ? 1 : 0, this.nightK);
-      if (!this.lite) drawAir(g, W, H, HZ, this.t, sp, segI, env.tod, this.sky);
+      if (!this.lite) drawGround(g, W, H, HZ, this.t, sp, this.nightK > 0.5 ? 0 : env.tod, segI, this.sky === 'rain' ? 1 : 0, this.nightK, this.land);
+      if (!this.lite) drawAir(g, W, H, HZ, this.t, sp, segI, env.tod, this.sky, this.land);
+      if (!this.lite && this.land === 'xp') {                                                    // life over the meadow: butterflies by day, fireflies at dusk and in the dark
+        drawButterflies(g, W, H, HZ, this.t, (this.sky === 'clear' || this.sky === 'fog' ? 1 : 0) * Math.max(0, 1 - this.nightK * 2 - Math.max(0, env.tod - 0.7) * 3) * (1 - Math.min(0.8, sp)));
+        drawFireflies(g, W, H, HZ, this.t, (this.sky === 'clear' || this.sky === 'fog' ? 1 : 0.2) * Math.max(this.nightK, (env.tod - 0.8) * 4));
+      }
       if (!this.lite && this.sky === 'clear' && this.nightK < 0.3) drawFlare(g, W, H, HZ, env.tod);
       if (!this.lite && this.sky === 'rain') drawRain(g, W, H, this.t, sp);
       if (this.bolt) drawLightning(g, W, H, HZ, this.bolt);
@@ -375,7 +423,7 @@ export class RideScene implements Scene {
     {                                                                                       // the dashboard shows in every view and right up to the garage door
       const sp = this.speed / MAX_S, sg = this.segs[Math.min(N - 1, segI)], temp = 16 - (elevation(segI) - 3500) / 1859 * 22 - sg.i / FINISH * 3;
       const gear = sp < 0.02 ? 0 : Math.min(6, 1 + Math.floor(sp * 6.4));
-      const beam = this.lights === 'on' || (this.lights === 'auto' && (envAt(segI, FINISH, zoneAt(segI)).tod > 0.55 || this.nightK > 0.5));
+      const beam = this.lights === 'on' || (this.lights === 'auto' && ((this.todK < 0 ? this.tod(segI) : this.todK) > 0.55 || this.nightK > 0.5));
       drawCluster(g, 12, H - px - 22 - 106 - (coarse ? 132 : 0), narrow ? 0.9 : 1, { kmh: sp * KMH, frac: sp, gear, elev: elevation(segI), temp, trip: this.trip, lights: beam }, narrow);
     }
     if (coarse && this.phase === 'ride') drawPedals(g, W, H, this.gas, this.brake);
@@ -425,7 +473,7 @@ export class RideScene implements Scene {
     box(x0 + w + 5, y + 2, 6, 6, '#e8641f');
     const at = x0 + (Math.min(segI, FINISH) / FINISH) * w;
     box(at - 2, y, 5, 12, '#ffffff');
-    label(CHAPTER(segI), W / 2, y + 28, Math.max(11, px - 2), HUD, { align: 'center', font: FONT_MONO, shadow: INK });
+    label(this.land === 'xp' ? (BLISS_CHAPTER[CHAPTER(segI)] ?? CHAPTER(segI)) : CHAPTER(segI), W / 2, y + 28, Math.max(11, px - 2), HUD, { align: 'center', font: FONT_MONO, shadow: INK });
   }
 
   private title(W: number, H: number) {

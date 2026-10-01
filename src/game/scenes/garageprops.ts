@@ -68,8 +68,8 @@ export function tubeBeams() {
 
 /** Sunlight (or moonlight-grey daylight) through the window: a dithered shaft and a window-shaped patch on the floor. Weather sets how strong it is. */
 export const sunStrength = (w: Weather) => (w === 'clear' ? 1 : w === 'snow' ? 0.55 : w === 'fog' ? 0.4 : 0.22);
-export function sunSprite(weather: Weather): Sprite {
-  const k = sunStrength(weather), col = weather === 'clear' ? '#ffe6a0' : weather === 'snow' ? '#dbe6ff' : '#e2e6ee';
+export function sunSprite(weather: Weather, light: 'day' | 'dusk' = 'dusk'): Sprite {
+  const k = sunStrength(weather) * (light === 'day' ? 1.15 : 1), col = weather === 'clear' ? (light === 'day' ? '#fff4cc' : '#ffdc90') : weather === 'snow' ? '#dbe6ff' : '#e2e6ee';
   return paint(480, 270, () => {
     const g = ctx(), { x0, x1, y0, y1, px, pw, gap } = SUN;
     for (let y = y0; y < y1; y++) { // flat translucent bands, brighter in the middle: reads as light, not as a dot screen

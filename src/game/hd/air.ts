@@ -8,8 +8,8 @@ export type Sky = 'clear' | 'rain' | 'fog' | 'snow';
 export const SKIES: Sky[] = ['clear', 'rain', 'fog', 'snow'];
 
 /** Specks that stream out of the vanishing point toward the camera, faster as you go: snow up high, dust and warm motes lower down. */
-export function drawAir(g: CanvasRenderingContext2D, W: number, H: number, HZ: number, t: number, speed: number, segI: number, tod: number, sky: Sky = 'clear') {
-  const snowy = sky === 'snow' || altitude(segI) > 0.45, dusk = tod > 0.7;
+export function drawAir(g: CanvasRenderingContext2D, W: number, H: number, HZ: number, t: number, speed: number, segI: number, tod: number, sky: Sky = 'clear', land: 'himalaya' | 'xp' = 'himalaya') {
+  const snowy = sky === 'snow' || (land === 'himalaya' && altitude(segI) > 0.45), dusk = tod > 0.7;
   const n = sky === 'snow' ? 130 : snowy ? 70 : 34;
   const vx = W / 2, vy = H * HZ, reach = Math.hypot(W, H) * 0.62;
   g.save();
@@ -21,7 +21,7 @@ export function drawAir(g: CanvasRenderingContext2D, W: number, H: number, HZ: n
     if (x < -10 || x > W + 10 || y < -10 || y > H + 10) continue;
     const sz = 0.7 + e * (snowy ? 4.2 : 2.6);
     g.globalAlpha = Math.min(1, p * 3) * (1 - p * 0.3) * (snowy ? 0.8 : 0.4);
-    g.fillStyle = snowy ? '#ffffff' : dusk ? '#ffd9a0' : '#f2dcae';
+    g.fillStyle = snowy ? '#ffffff' : land === 'xp' ? (dusk ? '#ffe6b0' : '#f4f8c8') : dusk ? '#ffd9a0' : '#f2dcae';   // dust in the dry country, pollen over the green hills
     g.beginPath(); g.arc(x, y, sz, 0, Math.PI * 2); g.fill();
   }
   g.restore();
@@ -158,9 +158,9 @@ export function drawHeadlight(g: CanvasRenderingContext2D, W: number, H: number,
 }
 
 /** Slow cloud shadows crossing the ground, and a warm sheen on the tarmac toward the sun as evening comes. Drawn over the world, under the bike. */
-export function drawGround(g: CanvasRenderingContext2D, W: number, H: number, HZ: number, t: number, speed: number, tod: number, segI: number, wet = 0, dim = 0) {
-  const top = H * HZ, alt = altitude(segI), lit = 1 - 0.8 * dim;                       // pale mist and snow must not glow at night
-  const white = smooth(815, 850, segI) * (1 - smooth(880, 912, segI));                    // a snow squall near the top of the climb, thinning as you crest
+export function drawGround(g: CanvasRenderingContext2D, W: number, H: number, HZ: number, t: number, speed: number, tod: number, segI: number, wet = 0, dim = 0, land: 'himalaya' | 'xp' = 'himalaya') {
+  const top = H * HZ, alt = land === 'xp' ? 0 : altitude(segI), lit = 1 - 0.8 * dim;                       // pale mist and snow must not glow at night
+  const white = land === 'xp' ? 0 : smooth(815, 850, segI) * (1 - smooth(880, 912, segI));                    // a snow squall near the top of the climb, thinning as you crest
   if (white > 0.01) {
     g.globalAlpha = 0.3 * white * lit; g.fillStyle = '#eef1f5'; g.fillRect(0, 0, W, H); g.globalAlpha = 1;
     const gr = g.createLinearGradient(0, top - H * 0.1, 0, top + (H - top) * 0.5); gr.addColorStop(0, 'rgba(240,243,247,0)'); gr.addColorStop(0.5, `rgba(240,243,247,${0.55 * white * lit})`); gr.addColorStop(1, 'rgba(240,243,247,0)');

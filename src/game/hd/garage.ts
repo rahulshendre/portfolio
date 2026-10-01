@@ -3,6 +3,8 @@
 // Drawn in local units through at(); (0, 0) is the middle of the front wall at ground level.
 import { at, box, circle, g, hgrad, label, oval, poly, rnd, rrect, stroke, vgrad } from './draw';
 import { flagString } from './flags';
+import { bunting } from './country';
+import { isBliss } from './land';
 
 /** The garage's own picture of the bike, set by the ride once it has loaded. Until then a simple side-on drawing stands in. */
 let bike: HTMLImageElement | null = null;
@@ -117,6 +119,6 @@ export function drawGarage(sx: number, sy: number, k: number) {
     // the cat, sitting by the bay
     oval(-72, -3, 9, 3, 'rgba(0,0,0,0.25)'); oval(-72, -9, 6, 8, '#d9d2c4'); circle(-72, -19, 5, '#d9d2c4'); poly([-76, -22, -75, -28, -72, -23], '#d9d2c4'); poly([-68, -22, -69, -28, -72, -23], '#d9d2c4');
     stroke([-66, -6, -62, -10, -60, -14], '#d9d2c4', 2.2); circle(-74, -19, 0.9, '#2a6a4a'); circle(-70, -19, 0.9, '#2a6a4a');
-    if (near) flagString(-118, -126, -150, -40, 9, 2, 0.05);                                                                                      // a string of flags from the roof corner down to the tyres
+    if (near) { if (isBliss()) bunting(-118, -126, -150, -40, 9, 2, 0.05); else flagString(-118, -126, -150, -40, 9, 2, 0.05); }                  // a string of flags (pennants, in the Bliss land) from the roof corner down to the tyres
   });
 }
