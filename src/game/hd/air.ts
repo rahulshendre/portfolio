@@ -1,6 +1,6 @@
 // Things in the air between you and the road: snow rushing past on the pass, gold dust in the valley, fireflies of dusk light at the lake, and the bike's own headlight at the end of the day.
 import { glow, smooth } from './draw';
-import { altitude, LAKE_FROM } from './track-ladakh';
+import { altitude, lakeK } from './track-ladakh';
 
 const hash = (n: number) => Math.abs(Math.sin(n * 12.9898) * 43758.5453) % 1;
 
@@ -181,8 +181,8 @@ export function drawGround(g: CanvasRenderingContext2D, W: number, H: number, HZ
     g.globalAlpha = 0.09 * Math.sin(p * Math.PI);
     g.fillStyle = '#1c1420'; g.beginPath(); g.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2); g.fill();
   }
-  if (segI >= LAKE_FROM - 30) {                                                        // mist lying on the water, thickest at the far shore
-    const a = smooth(LAKE_FROM - 30, LAKE_FROM + 20, segI) * (0.16 + tod * 0.12);
+  if (lakeK(segI) > 0) {                                                               // mist lying on the water, thickest at the far shore
+    const a = lakeK(segI) * (0.16 + tod * 0.12);
     const gr = g.createLinearGradient(0, top - H * 0.02, 0, top + (H - top) * 0.22); gr.addColorStop(0, 'rgba(255,236,214,0)'); gr.addColorStop(0.35, `rgba(255,236,214,${a * lit})`); gr.addColorStop(1, 'rgba(255,236,214,0)');
     g.fillStyle = gr; g.fillRect(W * 0.5, top - H * 0.02, W * 0.5, (H - top) * 0.24 + H * 0.02);
   }

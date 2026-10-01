@@ -205,6 +205,18 @@ export class EngineSound {
     this.crackle(t, 0.12, 900, 0.1);
   }
 
+  /** Knuckles on a steel shutter: three knocks. */
+  knock() {
+    if (!this.on || !this.ctx) return;
+    const c = this.ctx, t0 = c.currentTime + 0.05;
+    for (const d of [0, 0.22, 0.44]) {
+      const t = t0 + d, o = c.createOscillator(), g = c.createGain();
+      o.type = 'sine'; o.frequency.setValueAtTime(230, t); o.frequency.exponentialRampToValueAtTime(95, t + 0.1);
+      g.gain.setValueAtTime(0.26, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.16); o.connect(g).connect(dest(c)); o.start(t); o.stop(t + 0.18);
+      this.crackle(t, 0.03, 2600, 0.12);
+    }
+  }
+
   /** Thunder: a crack, then a long low roll, `delay` seconds after the flash. */
   thunder(delay = 0.6, size = 1) {
     if (!this.on || !this.ctx) return;

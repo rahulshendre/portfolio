@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { buildTrack, FINISH, BOARDS, LAKE_FROM, MILESTONE_SEGS, N, PASS_TOP, TOWNS, altitude, calm, elevation, townAt, zoneAt } from './track-ladakh';
-import { capBehind, carAhead, LEFT, RIGHT, type Car } from './traffic';
+import { buildTrack, CHAPTERS, FINISH, GARAGE_BOARDS, BOARDS, kmOf, LAKE_FROM, MILESTONE_SEGS, N, PASS_TOP, SEAM, TOWNS, altitude, calm, elevation, townAt, zoneAt } from './track-ladakh';
+import { capBehind, carAhead, LEFT, RIGHT, trafficAt, type Car } from './traffic';
 import { milestones } from '../../data/site';
 
 describe('ladakh track', () => {
@@ -47,6 +47,48 @@ describe('ladakh track', () => {
     expect(calm(FINISH)).toBe(0);
     expect(segs[FINISH].props.some((p) => p.type === 'garage')).toBe(true);
     expect(segs[FINISH].curve).toBeCloseTo(0);
+  });
+});
+
+describe('the garage on the endless road', () => {
+  const segs = buildTrack(milestones);
+  it('is announced by huge boards that count down, a gantry over the road, then the closed building', () => {
+    const boards = segs.flatMap((q) => q.props.filter((p) => p.type === 'billboard').map((p) => ({ i: q.i, p })));
+    expect(boards.length).toBe(GARAGE_BOARDS.length);
+    expect(boards.map((b) => FINISH - b.i)).toEqual(GARAGE_BOARDS.map((b) => b.back));
+    const kms = boards.map((b) => Number(b.p.sub!.replace(/[^\d.]/g, '')));
+    for (let k = 1; k < kms.length; k++) expect(kms[k]).toBeLessThan(kms[k - 1]);       // each is nearer than the last
+    expect(boards.every((b) => b.p.label === 'SHENDRE' && Math.abs(b.p.o) > 4)).toBe(true);
+    expect(segs[FINISH - 36].props.some((p) => p.type === 'gantry' && p.label === 'SHENDRE')).toBe(true);
+    expect(segs[FINISH].props.some((p) => p.type === 'garage')).toBe(true);
+    expect(kmOf(45)).toBeCloseTo(1, 5);
+  });
+  it('has chapters that tile the road, each flat and straight at both ends', () => {
+    expect(CHAPTERS.map((c) => c.from)).toEqual([0, ...CHAPTERS.slice(0, -1).map((c) => c.to)]);
+    for (const c of CHAPTERS) {
+      expect(segs[c.from].y1).toBeCloseTo(0, 6); expect(segs[c.to - 1].y2).toBeCloseTo(0, 6);
+      expect(Math.abs(segs[c.from].curve)).toBeLessThan(0.05); expect(Math.abs(segs[c.to - 1].curve)).toBeLessThan(0.05);
+      expect(calm(c.from)).toBe(0); expect(calm(c.from + SEAM)).toBeGreaterThan(0.99);
+    }
+  });
+  it('builds just the stretch asked for, and the same stretch every time for the same salt', () => {
+    const a = buildTrack(milestones, { salt: 5, from: 270, to: 620 }), b = buildTrack(milestones, { salt: 5, from: 270, to: 620 }), c = buildTrack(milestones, { salt: 6, from: 270, to: 620 });
+    expect(a[269]).toBeUndefined(); expect(a[620]).toBeUndefined(); expect(a[300]).toBeDefined();
+    expect(JSON.stringify(a)).toBe(JSON.stringify(b));
+    expect(JSON.stringify(a.map((q) => q?.props))).not.toBe(JSON.stringify(c.map((q) => q?.props)));
+  });
+});
+
+describe('endless traffic', () => {
+  it('puts country vehicles and animals on each kind of road', () => {
+    for (const zone of ['leh', 'valley', 'pass', 'lake'] as const) for (let r = 0; r < 1; r += 0.07) {
+      const car = trafficAt(zone, 1000, r, 0.4);
+      expect(car.z).toBe(1000);
+      if (car.kind === 'goats' || car.kind === 'marmot') expect(car.lat).toBeTruthy(); else expect(car.o).toBe(LEFT);
+    }
+    const yaks = Array.from({ length: 50 }, (_, k) => trafficAt('pass', 0, k / 50, 0.5)).filter((c) => c.kind === 'yak');
+    expect(yaks.length).toBeGreaterThan(0);
+    expect(Array.from({ length: 50 }, (_, k) => trafficAt('lake', 0, k / 50, 0.5)).some((c) => c.kind === 'yak')).toBe(false);
   });
 });
 

@@ -75,6 +75,21 @@ function rightFree(cars: Car[], self: Car, playerZ: number, px: number) {
   return !cars.some((o) => o !== self && !isAnimal(o) && Math.abs(o.o - RIGHT) < HALF[o.kind] + HALF[self.kind] + 0.1 && o.z > self.z - 3 * SEG_L && o.z < self.z + 14 * SEG_L);
 }
 
+const SPEED: Partial<Record<Kind, number>> = { army: 0.35, biker: 0.48, tempo: 0.45, tanker: 0.34, suv: 0.43, yak: 0.03 };
+const MIX: Record<'leh' | 'valley' | 'pass' | 'lake', readonly Kind[]> = {
+  leh: ['army', 'biker', 'tempo', 'tanker', 'suv', 'goats'],
+  valley: ['army', 'suv', 'tempo', 'tanker', 'biker', 'marmot'],
+  pass: ['army', 'biker', 'suv', 'yak', 'marmot', 'goats'],
+  lake: ['army', 'suv', 'biker', 'tempo'],
+};
+/** A vehicle or animal for the road at world position `z`, by the kind of country there and two rolls of the dice. The endless road feeds these in ahead of the bike, one every minute's worth of road or so. */
+export function trafficAt(zone: 'leh' | 'valley' | 'pass' | 'lake', z: number, r1: number, r2: number): Car {
+  const mix = MIX[zone], kind = mix[Math.floor(r1 * mix.length) % mix.length];
+  if (kind === 'goats') return { z, o: -2.6, v: 0, kind, lat: 0.3 + r2 * 0.04 };                        // a flock crossing with no hurry at all
+  if (kind === 'marmot') return r2 > 0.5 ? { z, o: -2.6, v: 0, kind, lat: 1.3 } : { z, o: 2.6, v: 0, kind, lat: -1.3 };   // a marmot that bolts across
+  return { z, o: LEFT, v: (SPEED[kind] ?? 0.4) + (r2 - 0.5) * 0.08, kind };
+}
+
 /** Move every vehicle and animal on. Leaders go first; each holds its gap to the one ahead in its lane, or pulls out to overtake it if the right lane is clear. */
 export function stepTraffic(cars: Car[], playerZ: number, px: number, dt: number, maxS: number) {
   const order = [...cars].sort((a, b) => b.z - a.z);
@@ -88,7 +103,12 @@ export function stepTraffic(cars: Car[], playerZ: number, px: number, dt: number
       if (l.z - c.z < FOLLOW_GAP) c.z = l.z - FOLLOW_GAP;                             // and never closer than the gap
     }
     // overtaking: pull out around a slower vehicle in the left lane if the right lane is clear, and stay out until the next one is passed too
-    const slower = isAnimal(c) ? undefined : order.filter((l) => l !== c && !isAnimal(l) && l.z > c.z && l.z - c.z < 3 * SEG_L + Math.max(0, c.v - (l.vNow ?? l.v)) * maxS * 1.6 && (l.vNow ?? l.v) < c.v - 0.02 && Math.abs(l.o - LEFT) < HALF[l.kind] + HALF[c.kind]).sort((a, b) => a.z - b.z)[0];
+    let slower: Car | undefined;                                                          // the nearest slower vehicle ahead in the left lane, found in one pass
+    if (!isAnimal(c)) for (const l of order) {
+      if (l === c || isAnimal(l) || l.z <= c.z) continue;
+      const lv = l.vNow ?? l.v;
+      if (l.z - c.z < 3 * SEG_L + Math.max(0, c.v - lv) * maxS * 1.6 && lv < c.v - 0.02 && Math.abs(l.o - LEFT) < HALF[l.kind] + HALF[c.kind] && (!slower || l.z < slower.z)) slower = l;
+    }
     if (c.pass && c.z > c.pass.z + 4 * SEG_L) c.pass = slower && !c.yieldT && rightFree(cars, c, playerZ, px) ? slower : undefined;
     else if (!c.pass && slower && !c.yieldT && rightFree(cars, c, playerZ, px)) c.pass = slower;
     c.vNow = v;

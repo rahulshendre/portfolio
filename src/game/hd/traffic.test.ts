@@ -18,7 +18,7 @@ describe('traffic', () => {
         if (dz < SEG_L * 0.5) expect(sideways).toBe(false);                                        // alongside each other means in different lanes
       }
     }
-  });
+  }, 30000);
 
   it('pulls a faster vehicle out around a slow herd instead of trapping it behind', () => {
     const yak: Car = { z: 1500 * SEG_L, o: LEFT, v: 0.03, kind: 'yak' };

@@ -1,23 +1,26 @@
 // The drone camera: the road seen from straight above, lit from the sun on the right so everything throws a soft shadow to the left.
-import { circle, mix, oval, poly, rnd, rrect, smooth, stroke, use } from './draw';
-import { altitude, FINISH, LAKE_FROM, N, SEG_L, shore, type Segment } from './track-ladakh';
+import { circle, mix, oval, poly, rnd, rrect, stroke, use } from './draw';
+import { altitude, lakeK, N, riverK, SEG_L, shore } from './track-ladakh';
+import type { VSeg } from './endless';
 import type { Car } from './traffic';
 
 const SHADOW = 'rgba(38,22,12,0.3)';
 const hd = (i: number, n: number) => rnd(i * 7.13 + n * 3.7);
 
-export function drawTop(ctx: CanvasRenderingContext2D, segs: Segment[], cars: Car[], W: number, H: number, pos: number, px: number, t = 0) {
+export function drawTop(ctx: CanvasRenderingContext2D, segs: (VSeg | undefined)[], cars: Car[], W: number, H: number, pos: number, px: number, t = 0) {
   use(ctx);
   const U = 30, half = W > H ? 70 : 58, total = N * SEG_L, bottom = H - 50;
-  const rc = (z: number) => W / 2 + (W > H ? 70 : 40) * Math.sin((z * Math.PI * 2 * 4) / total) * Math.min(1, Math.max(0, (FINISH * SEG_L - z) / 8000));
+  const rc = (z: number) => W / 2 + (W > H ? 70 : 40) * Math.sin((z * Math.PI * 2 * 4) / total);
   const yOf = (z: number) => bottom - (z - pos) / U;
-  const i0 = Math.max(0, Math.floor(pos / SEG_L) - 9), i1 = Math.min(N - 1, Math.floor((pos + (bottom + 40) * U) / SEG_L) + 1);
+  const i0 = Math.max(0, Math.floor(pos / SEG_L) - 9), i1 = Math.floor((pos + (bottom + 40) * U) / SEG_L) + 1;
   const g = ctx;
   g.fillStyle = '#b8a078'; g.fillRect(0, 0, W, H);
 
   // ---- ground, water and the road, a strip per segment
   for (let i = i0; i <= i1; i++) {
-    const z1 = i * SEG_L, z2 = z1 + SEG_L, y1 = yOf(z1) + 1.2, y2 = yOf(z2), x1 = rc(z1), x2 = rc(z2), a = altitude(i), alt = i % 2;
+    const sg = segs[i];
+    if (!sg) continue;
+    const si = sg.src, z1 = i * SEG_L, z2 = z1 + SEG_L, y1 = yOf(z1) + 1.2, y2 = yOf(z2), x1 = rc(z1), x2 = rc(z2), a = altitude(si), alt = i % 2;
     g.fillStyle = mix(alt ? '#c49a5e' : '#b78e54', alt ? '#d0c4b2' : '#c6bba9', a * 0.45);
     g.fillRect(0, y2, W, y1 - y2);
     for (let k = 0; k < 5; k++) {                                                          // dabs of dust and stone
@@ -26,15 +29,15 @@ export function drawTop(ctx: CanvasRenderingContext2D, segs: Segment[], cars: Ca
     }
     g.globalAlpha = 1;
 
-    if (i >= 270 && i < 700) {                                                             // the Indus
-      const f = smooth(270, 300, i) * (1 - smooth(670, 700, i));
-      const q = (j: number, s: number) => rc(j * SEG_L) + (-5.4 + 1.5 * Math.sin(j * 0.045)) * half * s, w = (j: number, k: number) => (2.1 + 0.5 * Math.sin(j * 0.09 + 1)) * half * f * k;
+    if (riverK(si) > 0) {                                                                  // the Indus
+      const f = riverK(si), d = si - i;
+      const q = (j: number, s: number) => rc(j * SEG_L) + (-5.4 + 1.5 * Math.sin((j + d) * 0.045)) * half * s, w = (j: number, k: number) => (2.1 + 0.5 * Math.sin((j + d) * 0.09 + 1)) * half * f * k;
       const band = (k: number, col: string) => poly([q(i, 1) - w(i, k), y1, q(i, 1) + w(i, k), y1, q(i + 1, 1) + w(i + 1, k), y2, q(i + 1, 1) - w(i + 1, k), y2], col);
       band(1.15, '#dfe6cc'); band(1, '#3fb0b6'); band(0.45, '#8fdadd');
       g.fillStyle = '#ffffff'; g.globalAlpha = 0.3 * Math.abs(Math.sin(t * 2 + i)); g.fillRect(q(i, 1) + (hd(i, 2) - 0.5) * w(i, 1), (y1 + y2) / 2, 8, 1.5); g.globalAlpha = 1;
     }
-    if (i >= LAKE_FROM - 30) {                                                             // the lake
-      const wa = smooth(LAKE_FROM - 30, LAKE_FROM + 20, i), s1 = x1 + shore(i) * half, s2 = x2 + shore(i + 1) * half;
+    if (lakeK(si) > 0) {                                                                   // the lake
+      const wa = lakeK(si), s1 = x1 + shore(si) * half, s2 = x2 + shore(si + 1) * half;
       g.globalAlpha = wa;
       poly([s1 - 14, y1, W, y1, W, y2, s2 - 14, y2], '#e6d8b4');
       poly([s1, y1, W, y1, W, y2, s2, y2], alt ? '#2aa9b3' : '#31b3bb');
@@ -57,7 +60,7 @@ export function drawTop(ctx: CanvasRenderingContext2D, segs: Segment[], cars: Ca
   let pole: { x: number; y: number } | null = null;
   for (let i = i1; i >= i0; i--) {
     const z = i * SEG_L, y = yOf(z), r = rc(z);
-    for (const p of segs[i].props) {
+    for (const p of segs[i]?.props ?? []) {
       const x = r + p.o * half;
       if (x < -60 || x > W + 60) continue;
       const sh = (rx: number, ry: number) => oval(x - rx * 0.6, y + ry * 0.5, rx, ry, SHADOW);
@@ -94,6 +97,8 @@ export function drawTop(ctx: CanvasRenderingContext2D, segs: Segment[], cars: Ca
         case 'stone': circle(x, y, 2.2, p.v ? '#1b1712' : '#f2ede0'); break;
         case 'dhaba': g.fillStyle = SHADOW; g.fillRect(x - 28, y - 4, 44, 26); rrect(x - 22, y - 10, 44, 26, 2, '#2c6eb0'); rrect(x - 22, y - 10, 16, 26, 2, '#4a86c4'); circle(x + 14, y + 3, 3, '#b9bec6'); break;
         case 'parked': sh(11, 24); rrect(x - 11, y - 22, 22, 46, 3, '#4a5a38'); rrect(x - 8, y - 26, 16, 9, 2, '#33402a'); break;
+        case 'billboard': sh(30, 6); rrect(x - 44, y - 3, 88, 6, 2, '#2a1a14'); rrect(x - 40, y - 2, 80, 3, 1, '#ffb23a'); break;
+        case 'gantry': rrect(x - half * 1.7 - 6, y - 6, 12, 12, 2, '#5a6068'); rrect(x + half * 1.7 - 6, y - 6, 12, 12, 2, '#5a6068'); rrect(x - half * 1.7, y - 3, half * 3.4, 6, 1, '#0d6a46'); break;
         case 'garage': g.fillStyle = SHADOW; g.fillRect(x - 48, y - 22, 88, 56); rrect(x - 42, y - 28, 88, 56, 3, '#d9cbb2'); rrect(x - 30, y - 6, 60, 30, 2, '#8b8f94'); for (let k = 0; k < 6; k++) stroke([x - 30, y - 4 + k * 5, x + 30, y - 4 + k * 5], '#6d7176', 1); circle(x + 34, y - 20, 4, '#f0a020'); break;
       }
     }

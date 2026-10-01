@@ -8,9 +8,10 @@ import { LowRes } from '../hd/pixel';
 import { setGarageBike } from '../hd/garage';
 import type { Look } from '../rail';
 import { envAt, hazeAt } from '../hd/background';
-import { renderRoad } from '../hd/road';
-import { altitude, buildTrack, TOWNS, townAt, PASS_TOP, elevation, FINISH, LAKE_FROM, MILESTONE_SEGS, N, SEG_L, zoneAt, type Segment } from '../hd/track-ladakh';
-import { BIKE_HALF, capBehind, honkAt, LEFT, overlaps, spawnTraffic, stepTraffic, type Car } from '../hd/traffic';
+import { DRAW_DIST, meadowOf, renderRoad } from '../hd/road';
+import { altitude, kmOf, lakeK, riverK, TOWNS, townAt, PASS_TOP, elevation, FINISH, LAKE_FROM, SEG_L, zoneAt } from '../hd/track-ladakh';
+import { dice, World } from '../hd/endless';
+import { BIKE_HALF, capBehind, honkAt, LEFT, overlaps, stepTraffic, trafficAt, type Car } from '../hd/traffic';
 import { LIGHTS } from '../hd/props';
 import { drawAir, drawLights, drawFlare, drawGround, drawHeadlight, drawLightning, drawNight, drawRain, drawSkyTint, SKIES, type Bolt, type Sky } from '../hd/air';
 import { agility, lateralStep, step as bikeStep, V_CRUISE, V_TOP } from '../hd/physics';
@@ -18,7 +19,6 @@ import { drawCluster, drawPedals, pedalAt } from '../hd/cluster';
 import { CAM_DEPTH } from '../ride/project';
 import { input } from '../engine/input';
 import { crickets, engine, isMuted, radio } from '../engine/audio';
-import { xpExtras } from '../hd/meadow';
 import { calmDown, honkNow } from '../hd/stir';
 import { inPuddle } from '../hd/puddles';
 import { drawButterflies, drawFireflies } from '../hd/ambient';
@@ -40,19 +40,31 @@ const REDUCED = typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduce
 const OG = typeof location !== 'undefined' && new URLSearchParams(location.search).has('og');
 /** Places worth a card of their own, besides the milestones. */
 const EVENTS = [
-  { i: 8, top: 'LEH', sub: '3,500 M · THE START' },
+  { i: 8, top: 'LEH', sub: '3,500 M' },
   { i: PASS_TOP, top: 'KHARDUNG LA', sub: '5,359 M · YOU MADE IT' },
-  { i: LAKE_FROM + 40, top: 'THE LAKE', sub: '4,225 M · NEARLY HOME' },
+  { i: LAKE_FROM + 40, top: 'THE LAKE', sub: '4,225 M · THE GARAGE IS NEAR' },
   ...TOWNS.filter((t) => t.sub).map((t) => ({ i: t.gate + 3, top: t.name, sub: t.sub })),
 ];
 /** The same places, as the Bliss land describes them: the palace is a manor, the monastery a castle, the dunes meadows, the Buddha a windmill. */
 const BLISS_SUB: Record<string, string> = {
   'SHEY': 'THE OLD MANOR ON THE HILL', 'THIKSEY': 'THE CASTLE ON THE HILL', 'HUNDER': 'MEADOWS AND A FLOCK OF SHEEP',
-  'DISKIT': 'THE GREAT WINDMILL', 'SPANGMIK': 'COTTAGES ON THE LAKE SHORE', 'KHARDUNG LA': 'HIGH PASTURE · 5,359 M', 'THE LAKE': '4,225 M · NEARLY HOME',
+  'DISKIT': 'THE GREAT WINDMILL', 'SPANGMIK': 'COTTAGES ON THE LAKE SHORE', 'KHARDUNG LA': 'HIGH PASTURE · 5,359 M', 'THE LAKE': '4,225 M · THE GARAGE IS NEAR',
 };
 const BLISS_CHAPTER: Record<string, string> = { 'INDUS VALLEY': 'THE GREEN VALLEY', 'KHARDUNG LA': 'HIGH PASTURE', 'LEH TOWN': 'LEH VILLAGE', 'SHEY': 'SHEY MANOR', 'THIKSEY': 'THIKSEY CASTLE', 'DISKIT': 'DISKIT WINDMILL' };
+const EVENT_AT = new Map(EVENTS.map((e) => [e.i, e]));
+/** The hour on the endless road: a long afternoon, dusk, night, dawn, and round again. `tod` is how far the light has gone (0 afternoon to 1 dusk), `night` how dark it is. */
+const DAY = 3600;                                                       // segments for a whole day: about three minutes at a steady 55 km/h
+function hourAt(i: number) {
+  const u = (i / DAY) % 1, ease = (a: number, b: number) => smooth(a, b, u);
+  return { tod: 0.05 + 0.2 * ease(0, 0.34) + 0.75 * ease(0.34, 0.58) - 0.3 * ease(0.82, 0.92) - 0.7 * ease(0.92, 1), night: ease(0.58, 0.66) * (1 - ease(0.82, 0.92)) };
+}
+/** One world per ride: replayable with `?seed=`, and dealt in the original order for share cards and `?at=` jumps. */
+function makeWorld() {
+  const q = new URLSearchParams(location.search), at = Number(q.get('at'));
+  return new World(milestones, q.has('seed') ? dice(Number(q.get('seed'))) : OG || at > 0 ? dice(1) : Math.random, OG || at > 0);
+}
 const CHAPTER = (i: number) => townAt(i) ??
-  (i >= FINISH - 90 ? 'ALMOST THERE'
+  (i >= FINISH - 90 && i <= FINISH + 30 ? 'SHENDRE GARAGE'
     : i >= LAKE_FROM ? 'THE LAKE'                                        // the water is in sight from here, so the label matches the view
     : i >= 720 ? 'KHARDUNG LA'                                           // the climb itself, not the valley floor before it
     : ({ leh: 'LEH TOWN', valley: 'INDUS VALLEY', pass: 'INDUS VALLEY', lake: 'THE LAKE' } as const)[zoneAt(i)]);
@@ -65,9 +77,12 @@ const INK = '#1b1712', HUD = '#fff6e0', ACCENT = '#e8b923';
 
 export class RideScene implements Scene {
   mode = 'hd' as const;
-  private phase: 'title' | 'ride' | 'arrive' = 'title';
-  private segs: Segment[] = buildTrack(milestones);
-  private cars: Car[] = spawnTraffic();
+  private phase: 'title' | 'ride' | 'knock' = 'title';
+  private world = makeWorld();
+  /** The road: built a little ahead of the bike and dropped behind it. */
+  private get segs() { return this.world.segs; }
+  private cars: Car[] = []; private nextCarZ = 70 * SEG_L;
+  private lastSeg = -1; private elevK = 3500; private altE = 0; private lakeE = 0; private knockT = 0; private told = new Set<number>();
   private pos = 0; private px = LEFT; private speed = 0; private lean = 0; private braking = false; private lastSpeed = 0; private avgDt = 1 / 60; private lite = false; private honkT = 0; private gearNow = 0; private birdT = 2; private rung = new Set<number>();
   private photo = false; private photoT = 0; private paused = false; private lights: 'auto' | 'on' | 'off' = 'auto'; private gas = false; private brake = false; private trip = 0; private vx = 0; private bolt: Bolt | null = null; private boltIn = 6; private rideTime: RideTime = 'auto'; private land: Theme = 'himalaya'; private nightK = 0; private todK = -1; private callT = 4; private called = new Set<number>(); private owlT = 12; private gasWas = false; private rough = 0; private bumpT = 0; private rideT = 0; private topKmh = 0; private passed = 0; private honks = 0; private stopT = 0; private sky: Sky = 'clear'; private inPud: object | null = null; private spray: Drop[] = [];
   private cam: Cam = 'behind';
@@ -76,7 +91,6 @@ export class RideScene implements Scene {
   private bikeImg: HTMLImageElement | null = null;   // the garage's own picture of your bike, shown on the arrival card
   private pixel = typeof location !== 'undefined' && new URLSearchParams(location.search).has('pixel'); private low = new LowRes();
   private bgOff = 0; private t = 0; private odo = 0; private fade = 0; private flash = 0;
-  private shown = new Set<number>();
   private banner = { lines: [] as string[], t: 0, big: false, total: 2.6 };
 
   constructor(private screen: Screen, private onArrive: () => void, private onSkip: () => void) {}
@@ -90,13 +104,13 @@ export class RideScene implements Scene {
     const at = Number(new URLSearchParams(location.search).get('at'));
     this.sky = world.weather ?? 'clear'; this.land = world.theme ?? 'himalaya'; this.rideTime = rideTimeFrom(world.time);   // the sky the visitor already picked (in the address, at the door or in the garage), else a clear afternoon
     if (this.night) this.nightK = 1;
-    if (OG) { this.pos = 400 * SEG_L; return; }
-    if (at > 0) {
-      this.startSound(); this.phase = 'ride'; this.pos = at * SEG_L; this.speed = V_CRUISE * K;
-      MILESTONE_SEGS.filter((m) => m < at).forEach((m) => this.shown.add(m));
-      EVENTS.filter((e) => e.i < at).forEach((e) => this.shown.add(e.i));
-      for (const c of this.cars) if (c.z < this.pos) c.z += c.v < 0.1 ? 0 : 400 * SEG_L;   // vehicles behind you reappear ahead; the slow herds stay behind
-    }
+    if (OG) this.pos = 400 * SEG_L;
+    else if (at > 0) { this.startSound(); this.phase = 'ride'; this.pos = at * SEG_L; this.speed = V_CRUISE * K; }
+    const i0 = Math.floor(this.pos / SEG_L);
+    this.world.ensure(i0 + DRAW_DIST + 30);
+    this.lastSeg = i0 - 1; this.nextCarZ = this.pos + 70 * SEG_L;
+    const e = envAt(this.segs[i0]!.src, FINISH, zoneAt(this.segs[i0]!.src)); this.altE = e.alt; this.lakeE = e.lake; this.elevK = elevation(this.segs[i0]!.src);
+    this.feedTraffic(this.pos);
   }
   /** True once a slow device has made the ride drop its costly extras. */
   get isLite() { return this.lite; }
@@ -114,13 +128,15 @@ export class RideScene implements Scene {
     setSky({ weather: this.sky, theme: this.land, time: timeFromRide(this.rideTime) });
   }
   /** The hour as the sliding afternoon sees it: a day ride stays in the bright part of the afternoon, the others follow the road to dusk. */
-  private tod(segI: number) { const t = envAt(segI, FINISH, zoneAt(segI)).tod; return this.rideTime === 'day' ? Math.min(t, 0.22) : t; }
+  private tod(i: number) { return this.rideTime === 'day' ? 0.12 : this.rideTime === 'night' ? 0.95 : hourAt(i).tod; }
+  /** How dark the ride wants to be here: full in a night ride, none in a day ride, following the hour otherwise. */
+  private nightWant(i: number) { return this.rideTime === 'night' ? 1 : this.rideTime === 'day' ? 0 : hourAt(i).night; }
   /**
    * The sounds of the evening and the farm. Crickets rise as the light goes (a clear dusk, and all night), fewer high on the pass and in rain; in the Bliss land the
    * cows and sheep you ride towards call out as you near them, and an owl hoots in the dark.
    */
   private ambience(segI: number, sp: number, dt: number) {
-    const dusk = Math.max(0, (this.todK - 0.72) / 0.28), air = this.sky === 'clear' || this.sky === 'fog' ? 1 : this.sky === 'rain' ? 0.2 : 0, high = this.land === 'xp' ? 1 : 1 - altitude(segI) * 0.9;
+    const dusk = Math.max(0, (this.todK - 0.72) / 0.28), air = this.sky === 'clear' || this.sky === 'fog' ? 1 : this.sky === 'rain' ? 0.2 : 0, high = this.land === 'xp' ? 1 : 1 - altitude(this.segs[segI]!.src) * 0.9;
     crickets.set(this.paused ? 0 : Math.max(this.nightK, dusk * 0.6) * air * high * (1 - Math.min(0.5, sp * 0.5)) * 0.9);
     if (this.land !== 'xp') return;
     this.callT -= dt; this.owlT -= dt;
@@ -128,7 +144,7 @@ export class RideScene implements Scene {
     if (this.callT > 0) return;
     for (let j = segI + 6; j < segI + 16; j++) {                                           // an animal a little way ahead
       if (this.called.has(j)) continue;
-      const hit = [...(this.segs[j]?.props ?? []), ...xpExtras(j)].find((p) => p.type === 'yak' || p.type === 'cows' || p.type === 'camel' || p.type === 'flock');
+      const sj = this.segs[j], hit = sj && meadowOf(sj).find((p) => p.type === 'yak' || p.type === 'cows' || p.type === 'camel' || p.type === 'flock');
       if (!hit) continue;
       this.called.add(j); this.callT = 5 + Math.random() * 6;
       const pan = Math.max(-1, Math.min(1, hit.o / 6));
@@ -140,7 +156,7 @@ export class RideScene implements Scene {
   /** The nearest animal in the field ahead answers the horn after a beat: a cow lows, a sheep bleats, hens cluck, ducks quack. */
   private answerHonk(seg: number) {
     for (let j = seg + 4; j <= seg + 22; j++) {
-      const hit = [...(this.segs[j]?.props ?? []), ...xpExtras(j)].find((p) => p.type === 'yak' || p.type === 'cows' || p.type === 'camel' || p.type === 'flock' || p.type === 'hens' || p.type === 'pond' || (p.type === 'dog' && !((p.v ?? 0) % 2)));
+      const sj = this.segs[j], hit = sj && meadowOf(sj).find((p) => p.type === 'yak' || p.type === 'cows' || p.type === 'camel' || p.type === 'flock' || p.type === 'hens' || p.type === 'pond' || (p.type === 'dog' && !((p.v ?? 0) % 2)));
       if (!hit) continue;
       const pan = Math.max(-1, Math.min(1, hit.o / 6));
       setTimeout(() => {
@@ -169,6 +185,25 @@ export class RideScene implements Scene {
       g.beginPath(); g.arc(d.x * W, d.y * H, Math.max(1, d.r * W), 0, Math.PI * 2); g.fill();
     }
     g.globalAlpha = 1;
+  }
+
+  /** What each stretch of road has to say as you ride over it: the places, and the career markers (in story order, whichever chapter they fall in). */
+  private passSeg(k: number) {
+    const s = this.segs[k];
+    if (!s) return;
+    const ev = EVENT_AT.get(s.src), ms = s.props.find((p) => p.type === 'ms');
+    if (ev) { engine.chime(); this.show(`${ev.top}|${this.land === 'xp' ? (BLISS_SUB[ev.top] ?? ev.sub) : ev.sub}`, true); }
+    else if (ms) { engine.chime(); this.show(`${ms.label}|${ms.sub}`, true); }
+  }
+
+  /** Keep the road populated: new vehicles and animals join far ahead, one every minute's worth of road or so, and those left far behind are let go. */
+  private feedTraffic(playerZ: number) {
+    while (this.nextCarZ < playerZ + 520 * SEG_L) {
+      const z = this.nextCarZ, at = this.world.srcAt(Math.floor(z / SEG_L));
+      this.cars.push(trafficAt(zoneAt(at), z, Math.random(), Math.random()));
+      this.nextCarZ += (34 + Math.random() * 40) * SEG_L;
+    }
+    for (let n = this.cars.length - 1; n >= 0; n--) if (this.cars[n].z < playerZ - 60 * SEG_L) this.cars.splice(n, 1);
   }
 
   private autoPause = () => { if (this.phase === 'ride' && !this.paused) { this.paused = true; engine.update(0, 0, { river: 0, lake: 0, alt: 0 }); } };
@@ -214,7 +249,7 @@ export class RideScene implements Scene {
   private handleTap(): 'skip' | 'cam' | 'sound' | 'horn' | 'other' | null {
     if (!input.tap()) return null;
     const d = this.screen.size.dpr, x = input.pointer.x / d, y = input.pointer.y / d, W = this.screen.W / d, H = this.screen.H / d;   // the HUD is laid out in CSS pixels
-    if (y > H - 48 && x < W * 0.18) return 'skip';
+    if (y > H - 48 && x < Math.max(W * 0.18, 104)) return 'skip';
     if (y > H - 48 && x > W - 56) return 'cam';
     if (y > H - 48 && x > W - 112 && x <= W - 56) return 'sound';
     if (y > H - 48 && x > W - 160 && x <= W - 112) return 'horn';
@@ -235,8 +270,9 @@ export class RideScene implements Scene {
       if (this.boltIn <= 0) { this.boltIn = 7 + Math.random() * 14; this.bolt = { age: 0, x: 0.12 + Math.random() * 0.76, seed: Math.random() * 100 }; engine.thunder(0.5 + Math.random() * 1.8, 0.6 + Math.random() * 0.7); }
     }
     if (this.bolt && (this.bolt.age += dt) > 0.9) this.bolt = null;
-    this.nightK += ((this.night ? 1 : 0) - this.nightK) * Math.min(1, dt * 1.6);
-    const want = this.tod(Math.floor(this.pos / SEG_L));                                           // the hour eases to a new setting instead of jumping
+    const vi = Math.floor(this.pos / SEG_L);
+    this.nightK += (this.nightWant(vi) - this.nightK) * Math.min(1, dt * 1.6);
+    const want = this.tod(vi);                                           // the hour eases to a new setting instead of jumping
     this.todK = this.todK < 0 ? want : this.todK + (want - this.todK) * Math.min(1, dt * 2);
     this.photoT -= dt;
     this.flash -= dt;
@@ -251,7 +287,7 @@ export class RideScene implements Scene {
     if (this.phase !== 'title') {
       if (input.pressed('KeyP') || (this.paused && tap === 'other')) { this.paused = !this.paused; if (this.paused) engine.update(0, 0, { river: 0, lake: 0, alt: 0 }); }   // a tap carries on too, for phones
       if (input.pressed('KeyL')) { this.lights = this.lights === 'on' ? 'off' : 'on'; this.show(this.lights === 'on' ? 'HEADLIGHT ON' : 'HEADLIGHT OFF', false, 1.2); }
-      if (input.pressed('KeyN')) { this.rideTime = RIDE_TIMES[(RIDE_TIMES.indexOf(this.rideTime) + 1) % RIDE_TIMES.length]; this.show({ auto: 'AFTERNOON TO DUSK', night: 'NIGHT RIDE|LIGHTS ON', day: 'DAYLIGHT' }[this.rideTime], false, 1.6); }
+      if (input.pressed('KeyN')) { this.rideTime = RIDE_TIMES[(RIDE_TIMES.indexOf(this.rideTime) + 1) % RIDE_TIMES.length]; this.show({ auto: 'DAY INTO NIGHT, ROUND AND ROUND', night: 'NIGHT RIDE|LIGHTS ON', day: 'DAYLIGHT' }[this.rideTime], false, 1.6); }
       if (input.pressed('KeyB')) { this.land = this.land === 'xp' ? 'himalaya' : 'xp'; this.show(this.land === 'xp' ? 'BLISS|THE OLD WALLPAPER HILLS' : 'HIMALAYA|LADAKH AGAIN', false, 1.8); }
       if (input.pressed('KeyT')) { this.sky = SKIES[(SKIES.indexOf(this.sky) + 1) % SKIES.length]; engine.setRain(this.sky === 'rain' ? 1 : 0); this.show(`WEATHER|${this.sky.toUpperCase()}`, false, 1.6); }
       if (input.pressed('KeyG')) { this.pixel = !this.pixel; this.show(this.pixel ? 'PIXEL LOOK|G FOR SMOOTH' : 'SMOOTH LOOK|G FOR PIXEL', false, 1.6); }
@@ -276,20 +312,26 @@ export class RideScene implements Scene {
     const d0 = this.screen.size.dpr, held = input.pointerDown ? pedalAt(this.screen.W / d0, this.screen.H / d0, input.pointer.x / d0, input.pointer.y / d0) : null;
     this.gas = input.down.has('ArrowUp') || input.down.has('KeyW') || input.padGas || held === 'gas';
     this.brake = input.down.has('ArrowDown') || input.down.has('KeyS') || input.padBrake || held === 'brake';
-    const segI = Math.floor(this.pos / SEG_L), seg = this.segs[segI];
+    const segI = Math.floor(this.pos / SEG_L);
+    this.world.ensure(segI + DRAW_DIST + 12);
+    const seg = this.segs[segI]!, src = seg.src;
     const playerZ = this.pos + CAM_HEIGHT[this.cam] * CAM_DEPTH;
     const sp = this.speed / MAX_S;
 
-    if (this.phase === 'ride' && segI >= FINISH - 55) { this.phase = 'arrive'; this.show("RAHUL'S|GARAGE", true, 2.2); }
-    if (this.phase === 'arrive') {
-      const left = (FINISH - 2) * SEG_L - playerZ;
-      // roll to a stop at the garage door: follow a gentle braking curve, but never shed speed faster than a firm brake would
-      this.speed = Math.max(0, Math.min(this.speed, Math.max(Math.sqrt(Math.max(0, left)) * 22, this.speed - MAX_S * dt * 0.22)));
-      if (this.speed < 30) {                                                                      // pulled up: the engine settles, a summary of the ride shows, then the door opens
-        if (this.stopT === 0) { this.stopT = 0.001; engine.mute(); radio.setLevel(1); }
-        this.stopT += dt;
-        if (this.stopT > 3.6) { this.fade += dt; if (this.fade > 0.7) { this.commit(); return this.onArrive(); } }
-      }
+    // the garage stands closed once a round: the huge boards have counted down to it. Stop in front of the shutter and knock, and the door opens.
+    const garage = this.world.nextGarage(segI - 4), toGarage = garage - segI;
+    if (this.phase === 'ride') {
+      if (toGarage <= 80 && toGarage >= -8 && !this.told.has(garage)) { this.told.add(garage); this.show('SHENDRE GARAGE|CLOSED · STOP AND KNOCK', false, 3.4); }
+      if (toGarage <= 28 && toGarage >= -8 && this.speed < 30) {
+        this.knockT += dt;
+        if (this.knockT > 1.6) { this.phase = 'knock'; this.show('KNOCK KNOCK|SOMEONE IS COMING', true, 2.6); engine.knock(); }
+      } else this.knockT = Math.max(0, this.knockT - dt * 2);
+    }
+    if (this.phase === 'knock') {
+      this.speed = 0;                                                                              // pulled up: the engine settles, a summary of the ride shows, then the door opens
+      if (this.stopT === 0) { this.stopT = 0.001; setTimeout(() => { engine.mute(); radio.setLevel(1); }, 700); }
+      this.stopT += dt;
+      if (this.stopT > 3.6) { this.fade += dt; if (this.fade > 0.7) { this.commit(); return this.onArrive(); } }
     } else {
       // real forces: thrust against drag, rolling resistance, the slope under the wheels and the brakes. With nothing pressed
       // the bike settles to a relaxed 55 km/h; gas climbs toward 110, and the climb up to the pass costs it speed.
@@ -340,6 +382,11 @@ export class RideScene implements Scene {
     this.lastSpeed = this.speed;
     this.pitchK += ((this.braking ? 1 : this.gas ? -0.6 : 0) - this.pitchK) * Math.min(1, dt * 4);
     this.pos += this.speed * dt;
+    this.world.ensure(Math.floor(this.pos / SEG_L) + DRAW_DIST + 12);
+    this.world.trim(segI - 40);
+    this.feedTraffic(playerZ);
+    const e = envAt(src, FINISH, zoneAt(src)), ease = Math.min(1, dt * 1.4);           // the far hills and the water change gently where one stretch of road joins the next
+    this.altE += (e.alt - this.altE) * ease; this.lakeE += (e.lake - this.lakeE) * ease; this.elevK += (elevation(src) - this.elevK) * Math.min(1, dt * 0.9);
     this.bgOff += seg.curve * sp * dt * 12;
     this.odo += (this.speed * dt) / 9000;
     this.trip = this.odo;
@@ -352,20 +399,20 @@ export class RideScene implements Scene {
     const gr = sp < 0.02 ? 0 : Math.min(6, 1 + Math.floor(sp * 6.4));
     if (gr !== this.gearNow) { if (this.gearNow && gr) engine.shift(); this.gearNow = gr; }
     engine.update(sp, gr ? Math.min(1, Math.max(0, sp * 6.4 - (gr - 1))) : 0, {
-      river: smooth(270, 300, segI) * (1 - smooth(670, 700, segI)), lake: smooth(LAKE_FROM - 30, LAKE_FROM + 20, segI), alt: altitude(segI),
+      river: riverK(src), lake: lakeK(src), alt: altitude(src),
     }, this.gas ? 1 : this.brake ? 0 : 0.3);
     this.birdT -= dt;
     if (this.birdT < 0) {
       this.birdT = (this.land === 'xp' ? 2 + Math.random() * 4 : 3 + Math.random() * 7);
-      if (altitude(segI) < 0.5 && this.speed < MAX_S * 0.95 && this.nightK < 0.5) { if (this.land === 'xp' && Math.random() < 0.3) engine.cuckoo(Math.random() * 2 - 1); else engine.chirp(); }   // birds in the valley and by the lake, none up in the snow or in the dark
+      if (altitude(src) < 0.5 && this.speed < MAX_S * 0.95 && this.nightK < 0.5) { if (this.land === 'xp' && Math.random() < 0.3) engine.cuckoo(Math.random() * 2 - 1); else engine.chirp(); }   // birds in the valley and by the lake, none up in the snow or in the dark
     }
     this.ambience(segI, sp, dt);   // birds in the valley and by the lake, none up in the snow
     if (!this.rung.has(segI) && seg.props.some((p) => p.type === 'stupahill' || p.type === 'palace' || p.type === 'gompa')) { this.rung.add(segI); if (this.land === 'xp') engine.bell(); else engine.gong(); }
 
-    for (const e of EVENTS) if (segI >= e.i && !this.shown.has(e.i)) { this.shown.add(e.i); engine.chime(); this.show(`${e.top}|${this.land === 'xp' ? (BLISS_SUB[e.top] ?? e.sub) : e.sub}`, true); }
-    MILESTONE_SEGS.forEach((m, k) => {
-      if (segI >= m && !this.shown.has(m)) { this.shown.add(m); engine.chime(); this.show(`${milestones[k].top}|${milestones[k].label}`, true); }
-    });
+    for (let k = Math.max(this.lastSeg + 1, segI - 4); k <= segI; k++) this.passSeg(k);
+    this.lastSeg = segI;
+    if (this.called.size > 160) for (const j of this.called) if (j < segI - 60) this.called.delete(j);
+    if (this.rung.size > 160) for (const j of this.rung) if (j < segI - 60) this.rung.delete(j);
     input.endFrame();
   }
 
@@ -374,8 +421,8 @@ export class RideScene implements Scene {
     const small = this.pixel ? this.low.fit(FW, FH) : null;                          // pixel look: the world goes on a small canvas, the HUD stays sharp on the full one
     const g = small ? this.low.ctx : full, W = small ? small.W : FW, H = small ? small.H : FH;
     use(g);
-    const sp = this.speed / MAX_S, segI = Math.floor(this.pos / SEG_L);
-    const env = { ...envAt(segI, FINISH, zoneAt(segI)), tod: this.todK < 0 ? this.tod(segI) : this.todK, lite: this.lite, night: this.nightK, theme: this.land };
+    const sp = this.speed / MAX_S, segI = Math.floor(this.pos / SEG_L), src = this.segs[segI]!.src;
+    const env = { tod: this.todK < 0 ? this.tod(segI) : this.todK, alt: this.altE, lake: this.lakeE, lite: this.lite, night: this.nightK, theme: this.land };
     if (this.cam === 'top') {
       drawTop(g, this.segs, this.cars, W, H, this.pos, this.px, this.t);
       if (!this.lite) finish(g, W, H, HZ, env.tod, false, !small);
@@ -391,8 +438,8 @@ export class RideScene implements Scene {
       drawSkyTint(g, W, H, HZ, this.sky);
       drawNight(g, W, H, this.nightK);
       if (this.nightK > 0.3) drawLights(g, LIGHTS);
-      if (!this.lite) drawGround(g, W, H, HZ, this.t, sp, this.nightK > 0.5 ? 0 : env.tod, segI, this.sky === 'rain' ? 1 : 0, this.nightK, this.land);
-      if (!this.lite) drawAir(g, W, H, HZ, this.t, sp, segI, env.tod, this.sky, this.land);
+      if (!this.lite) drawGround(g, W, H, HZ, this.t, sp, this.nightK > 0.5 ? 0 : env.tod, src, this.sky === 'rain' ? 1 : 0, this.nightK, this.land);
+      if (!this.lite) drawAir(g, W, H, HZ, this.t, sp, src, env.tod, this.sky, this.land);
       if (!this.lite && this.land === 'xp') {                                                    // life over the meadow: butterflies by day, fireflies at dusk and in the dark
         drawButterflies(g, W, H, HZ, this.t, (this.sky === 'clear' || this.sky === 'fog' ? 1 : 0) * Math.max(0, 1 - this.nightK * 2 - Math.max(0, env.tod - 0.7) * 3) * (1 - Math.min(0.8, sp)));
         drawFireflies(g, W, H, HZ, this.t, (this.sky === 'clear' || this.sky === 'fog' ? 1 : 0.2) * Math.max(this.nightK, (env.tod - 0.8) * 4));
@@ -412,7 +459,7 @@ export class RideScene implements Scene {
     use(full);
     const d = this.screen.size.dpr;
     full.save(); full.scale(d, d);                                                 // HUD in CSS pixels, so it stays a readable size on a phone
-    if (!this.photo) this.hud(FW / d, FH / d, segI);
+    if (!this.photo) this.hud(FW / d, FH / d, segI, src);
     else if (this.photoT > 0) { const cw = FW / d; this.pill('PHOTO MODE  ·  ENTER SAVES  ·  F EXITS', cw / 2 - 150, (FH / d) - 46, 13); }
     full.restore();
     if (this.flash > 0) { full.globalAlpha = 0.35; box(0, 0, FW, FH, '#000'); full.globalAlpha = 1; }
@@ -449,7 +496,7 @@ export class RideScene implements Scene {
     g.restore();
   }
 
-  private hud(W: number, H: number, segI: number) {
+  private hud(W: number, H: number, segI: number, src: number) {
     if (this.phase === 'title') return this.title(W, H);
     const narrow = W < 700, coarse = matchMedia('(pointer: coarse)').matches;
     const px = coarse ? 14 : Math.max(12, Math.round(W / 70));
@@ -458,8 +505,8 @@ export class RideScene implements Scene {
     const g = this.screen.ctx;
     g.font = `400 ${px}px ${FONT_MONO}`;
     this.pill(odo, W - g.measureText(odo).width - 28, 12, px);
-    this.progress(W, segI, narrow, px);
-    this.pill('SKIP >', 12, H - px - 22, px);
+    this.progress(W, segI, src, narrow, px);
+    this.pill('GARAGE >', 12, H - px - 22, px);
     // cam + sound buttons
     rrect(W - 52, H - px - 22, 40, px + 10, 6, INK);
     circle(W - 38, H - px - 22 + (px + 10) / 2, 6, HUD);
@@ -470,10 +517,10 @@ export class RideScene implements Scene {
     label('H', W - 127, H - px - 22 + px + 2, px, this.honkT > 0 ? INK : ACCENT, { font: FONT_MONO, align: 'center' });
     if (this.honkT > 0) this.peep(W, H);
     {                                                                                       // the dashboard shows in every view and right up to the garage door
-      const sp = this.speed / MAX_S, sg = this.segs[Math.min(N - 1, segI)], temp = 16 - (elevation(segI) - 3500) / 1859 * 22 - sg.i / FINISH * 3;
+      const sp = this.speed / MAX_S, temp = 16 - (this.elevK - 3500) / 1859 * 22 - Math.max(this.todK, 0) * 3;
       const gear = sp < 0.02 ? 0 : Math.min(6, 1 + Math.floor(sp * 6.4));
       const beam = this.lights === 'on' || (this.lights === 'auto' && ((this.todK < 0 ? this.tod(segI) : this.todK) > 0.55 || this.nightK > 0.5));
-      drawCluster(g, 12, H - px - 22 - 106 - (coarse ? 132 : 0), narrow ? 0.9 : 1, { kmh: sp * KMH, frac: sp, gear, elev: elevation(segI), temp, trip: this.trip, lights: beam }, narrow);
+      drawCluster(g, 12, H - px - 22 - 106 - (coarse ? 132 : 0), narrow ? 0.9 : 1, { kmh: sp * KMH, frac: sp, gear, elev: Math.round(this.elevK), temp, trip: this.trip, lights: beam }, narrow);
     }
     if (coarse && this.phase === 'ride') drawPedals(g, W, H, this.gas, this.brake);
     if (this.stopT > 0.4) this.summary(W, H);
@@ -508,21 +555,20 @@ export class RideScene implements Scene {
     g.restore();
   }
 
-  private progress(W: number, segI: number, narrow: boolean, px: number) {
+  /** The bar counts down to the next garage: it starts at the last one (or the start of the ride) and the little garage waits at the end. */
+  private progress(W: number, segI: number, src: number, narrow: boolean, px: number) {
     const w = narrow ? Math.min(160, W * 0.35) : Math.min(280, W * 0.4);
     const x0 = W / 2 - w / 2, y = narrow ? 44 : 18;
+    const garage = this.world.nextGarage(segI - 8), from = this.world.prevGarage(garage) ?? 0, f = Math.max(0, Math.min(1, (segI - from) / Math.max(1, garage - from)));
     rrect(x0 - 8, y - 6, w + 28, 18, 6, INK);
     box(x0, y + 4, w, 2, '#6b645a');
-    box(x0, y + 4, (Math.min(segI, FINISH) / FINISH) * w, 2, ACCENT);
-    for (const m of MILESTONE_SEGS) {
-      const x = x0 + (m / FINISH) * w;
-      box(x - 2, y + 1, 4, 8, segI >= m ? ACCENT : '#a89d8b');
-    }
+    box(x0, y + 4, f * w, 2, ACCENT);
     box(x0 + w + 4, y, 8, 10, HUD);
     box(x0 + w + 5, y + 2, 6, 6, '#e8641f');
-    const at = x0 + (Math.min(segI, FINISH) / FINISH) * w;
-    box(at - 2, y, 5, 12, '#ffffff');
-    label(this.land === 'xp' ? (BLISS_CHAPTER[CHAPTER(segI)] ?? CHAPTER(segI)) : CHAPTER(segI), W / 2, y + 28, Math.max(11, px - 2), HUD, { align: 'center', font: FONT_MONO, shadow: INK });
+    box(x0 + f * w - 2, y, 5, 12, '#ffffff');
+    const place = this.land === 'xp' ? (BLISS_CHAPTER[CHAPTER(src)] ?? CHAPTER(src)) : CHAPTER(src), left = garage - segI;
+    label(place, W / 2, y + 28, Math.max(11, px - 2), HUD, { align: 'center', font: FONT_MONO, shadow: INK });
+    if (left > -10 && left < 480) label(left > 28 ? `SHENDRE GARAGE  ${kmOf(left).toFixed(1)} KM` : 'SHENDRE GARAGE  CLOSED · STOP TO KNOCK', W / 2, y + 28 + Math.max(11, px - 2) + 6, Math.max(10, px - 3), ACCENT, { align: 'center', font: FONT_MONO, shadow: INK });
   }
 
   private title(W: number, H: number) {
@@ -545,6 +591,6 @@ export class RideScene implements Scene {
         align: 'center', font: FONT_MONO, shadow: INK,
       });
     }
-    this.pill('SKIP >', 12, H - 40, Math.max(12, Math.round(W / 70)));
+    this.pill('GARAGE >', 12, H - 40, Math.max(12, Math.round(W / 70)));
   }
 }

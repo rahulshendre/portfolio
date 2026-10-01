@@ -1,4 +1,5 @@
-// The road: a finite list of segments in four chapters across Ladakh, ending at the garage.
+// The road, built from three chapters across Ladakh that the ride shuffles into a road that never ends. Every chapter starts and ends flat and straight with its rivers, fields and
+// lake faded out, so any one can follow any other. The garage stands once in the last chapter, closed, with huge boards counting down to it.
 //   leh     whitewashed houses, chortens, golden poplars, mani walls, prayer flags
 //   valley  the Indus valley: open desert road, ochre mountains, army convoys
 //   pass    the Khardung La climb: hairpins, snow, a canopy of prayer flags at the top
@@ -62,8 +63,15 @@ export const LAKE_FROM = 990;
 export const shore = (i: number) => 3.7 + 1.0 * Math.sin(i * 0.03) + 0.4 * Math.sin(i * 0.11);
 
 export type Zone = 'leh' | 'valley' | 'pass' | 'lake';
+export type ChapterId = 'leh' | 'valley' | 'high';
+/** The three stretches of road the endless ride is shuffled from: the town and its fields, the river valley with its villages and dunes, and the climb over the pass down to the lake and the garage. */
+export const CHAPTERS: readonly { id: ChapterId; from: number; to: number }[] = [
+  { id: 'leh', from: 0, to: 270 }, { id: 'valley', from: 270, to: 620 }, { id: 'high', from: 620, to: 1260 },
+];
+/** How many segments the road takes to straighten out at each end of a chapter. */
+export const SEAM = 40;
 export type PropType =
-  | 'house' | 'chorten' | 'poplar' | 'flags' | 'canopy' | 'mani' | 'boulder' | 'bro' | 'ms' | 'board' | 'stone' | 'snow' | 'yak' | 'garage' | 'sign' | 'pole' | 'scrub' | 'tuft' | 'cairn' | 'chevron' | 'gompa' | 'palace' | 'stupahill' | 'reed' | 'duck' | 'dhaba' | 'parked' | 'kiang' | 'marmot' | 'lamp' | 'dog' | 'darchog' | 'flagmound' | 'village' | 'camel' | 'limit' | 'cone' | 'crew' | 'summit' | 'camp' | 'shop' | 'gate' | 'stall' | 'monk' | 'buddha' | 'monastery' | 'tourer' | 'gurdwara' | 'checkpost';
+  | 'billboard' | 'gantry' | 'house' | 'chorten' | 'poplar' | 'flags' | 'canopy' | 'mani' | 'boulder' | 'bro' | 'ms' | 'board' | 'stone' | 'snow' | 'yak' | 'garage' | 'sign' | 'pole' | 'scrub' | 'tuft' | 'cairn' | 'chevron' | 'gompa' | 'palace' | 'stupahill' | 'reed' | 'duck' | 'dhaba' | 'parked' | 'kiang' | 'marmot' | 'lamp' | 'dog' | 'darchog' | 'flagmound' | 'village' | 'camel' | 'limit' | 'cone' | 'crew' | 'summit' | 'camp' | 'shop' | 'gate' | 'stall' | 'monk' | 'buddha' | 'monastery' | 'tourer' | 'gurdwara' | 'checkpost';
 export interface Prop { o: number; type: PropType; label?: string; sub?: string; lines?: readonly string[]; v?: number }
 export interface Segment { i: number; y1: number; y2: number; curve: number; props: Prop[]; zone: Zone }
 
@@ -75,17 +83,38 @@ export const zoneAt = (i: number): Zone => (i < 270 ? 'leh' : i < 640 ? 'valley'
 export const altitude = (i: number) => smooth(620, PASS_TOP, i) * (1 - smooth(PASS_TOP + 40, 1080, i));
 /** Metres above sea level: Leh at 3500, the valley climbing, Khardung La at its real 5359 at the top, down to the lake at 4,225 m, where the garage is. */
 export const elevation = (i: number) => Math.round(3500 + 200 * smooth(0, 620, i) + 1659 * altitude(i) + 525 * smooth(990, 1050, i));
-/** 1 on the open road, easing to 0 so the last stretch before the garage is flat and straight. */
-export const calm = (i: number) => (1 - smooth(1040, 1140, i)) * smooth(0, 60, i);
+/** 1 inside a chapter, easing to 0 at both its ends, so the seam between any two chapters is flat and straight and the heights meet exactly. */
+const seam = (i: number) => { const c = CHAPTERS.find((q) => i >= q.from && i < q.to); return c ? smooth(c.from, c.from + SEAM, i) * (1 - smooth(c.to - SEAM, c.to, i)) : 0; };
+/** 1 on the open road, easing to 0 at the chapter seams and on the last stretch before the garage, which is flat and straight. */
+export const calm = (i: number) => (1 - smooth(1040, 1140, i)) * seam(i);
+
+// How far each landscape feature has grown at a stretch of road, 0 (none) to 1 (full). Each lives inside one chapter and fades in and out within it.
+export const terraceK = (i: number) => smooth(6, 30, i) * (1 - smooth(240, 270, i));
+export const riverK = (i: number) => smooth(270, 300, i) * (1 - smooth(590, 620, i));
+export const duneK = (i: number) => smooth(425, 455, i) * (1 - smooth(545, 585, i));
+export const lakeK = (i: number) => smooth(LAKE_FROM - 30, LAKE_FROM + 20, i) * (1 - smooth(1215, 1255, i));
+/** Huge boards on the way to the garage, counting it down. `back` is how many segments before the garage each stands. */
+export const GARAGE_BOARDS = [{ back: 380, o: 7.4 }, { back: 260, o: -7.6 }, { back: 160, o: 7.4 }, { back: 90, o: -7.6 }] as const;
+/** The distance the odometer would read to cover `segs` segments, in km. */
+export const kmOf = (segs: number) => (segs * SEG_L) / 9000;
 
 const hill = (i: number) => (1200 * Math.sin((i * TAU * 3) / N) + 520 * Math.sin((i * TAU * 7) / N)) * calm(i) * (0.55 + 1.1 * altitude(i)) + 3400 * altitude(i) * calm(i); // the climb up to the pass is real
 const bend = (i: number) =>
   ((2.8 * Math.sin((i * TAU * 4) / N) + 1.3 * Math.sin((i * TAU * 9) / N)) * (0.7 + 0.6 * altitude(i)) + 3.2 * altitude(i) * Math.sin((i * TAU * 21) / N)) * calm(i);
-const rnd = (i: number) => Math.abs(Math.sin(i * 12.9898) * 43758.5453) % 1;
+let SALT = 0;
+/** The same dice every time for a given salt; a new salt rolls the trees, rocks, houses and animals of a stretch afresh. */
+const rnd = (i: number) => Math.abs(Math.sin((i + SALT) * 12.9898) * 43758.5453) % 1;
 
-export function buildTrack(milestones: readonly { top: string; label: string }[]): Segment[] {
-  const segs: Segment[] = [];
-  for (let i = 0; i < N; i++) segs.push({ i, y1: hill(i), y2: hill(i + 1), curve: bend(i), props: [], zone: zoneAt(i) });
+/** The whole road, or with `from` and `to` just that stretch of it (the rest left empty), its scenery rolled afresh by `salt`. */
+export function buildTrack(milestones: readonly { top: string; label: string }[], opts: { salt?: number; from?: number; to?: number } = {}): Segment[] {
+  const prev = SALT;
+  SALT = opts.salt ?? 0;
+  try { return build(milestones, opts.from ?? 0, Math.min(N, opts.to ?? N)); } finally { SALT = prev; }
+}
+
+function build(milestones: readonly { top: string; label: string }[], lo: number, hi: number): Segment[] {
+  const segs: Segment[] = new Array(N);
+  for (let i = lo; i < hi; i++) segs[i] = { i, y1: hill(i), y2: hill(i + 1), curve: bend(i), props: [], zone: zoneAt(i) };
   const add = (i: number, p: Prop) => segs[i]?.props.push(p);
   const clear = (i: number) => BOARDS.some((b) => i > b.i - 12 && i <= b.i + 2) || BRO.some((b) => i > b.i - 8 && i <= b.i + 1);
 
@@ -93,7 +122,7 @@ export function buildTrack(milestones: readonly { top: string; label: string }[]
   for (const b of BOARDS) add(b.i, { o: b.o, type: 'board', label: b.id });
   for (const b of BRO) add(b.i, { o: b.i % 2 ? 1.55 : -1.55, type: 'bro', lines: b.lines });
 
-  for (let i = 4; i < FINISH + 80; i++) {
+  for (let i = Math.max(4, lo); i < Math.min(FINISH + 80, hi); i++) {
     const z = zoneAt(i), r = rnd(i), r2 = rnd(i + 17);
     // BRO-painted edge stones, black and yellow on the drop side of the pass
     if (i % 4 === 0) { add(i, { o: -1.13, type: 'stone', v: 0 }); add(i, { o: 1.13, type: 'stone', v: z === 'pass' ? 1 : 0 }); }
@@ -122,7 +151,7 @@ export function buildTrack(milestones: readonly { top: string; label: string }[]
     }
   }
   // the country around the road: poles marching along one side, scrub and grass, cairns at the pass, chevrons on the bends
-  for (let i = 6; i < FINISH + 40; i++) {
+  for (let i = Math.max(6, lo); i < Math.min(FINISH + 40, hi); i++) {
     if (clear(i)) continue;
     const z = zoneAt(i), r = rnd(i * 1.7 + 3), r2 = rnd(i * 3.1 + 9);
     if (i % 9 === 3 && (z !== 'pass' || i < 780) && i < FINISH - 20) add(i, { o: 1.72, type: 'pole' });
@@ -138,7 +167,7 @@ export function buildTrack(milestones: readonly { top: string; label: string }[]
   add(300, { o: -26, type: 'gompa' });
   add(640, { o: 26, type: 'gompa' });
   // keep the left of the valley clear for the river
-  for (let i = 270; i < 700; i++) segs[i].props = segs[i].props.filter((p) => !(p.o < -3 && p.o > -8.5 && (p.type === 'boulder' || p.type === 'scrub')));
+  for (let i = Math.max(270, lo); i < Math.min(620, hi); i++) segs[i].props = segs[i].props.filter((p) => !(p.o < -3 && p.o > -8.5 && (p.type === 'boulder' || p.type === 'scrub')));
   // kiang out on the plains, well off the road
   for (const [i, o] of [[330, -12], [560, 8], [1020, -9], [1130, -13]] as const) add(i, { o, type: 'kiang', v: i });
   for (let i = 700; i < 1000; i += 37) add(i, { o: (i % 2 ? 1 : -1) * (2.1 + rnd(i) * 0.9), type: 'marmot', v: i });   // marmots on the rocks up at the pass
@@ -159,7 +188,7 @@ export function buildTrack(milestones: readonly { top: string; label: string }[]
   add(415, { o: 3.6, type: 'dhaba' }); add(420, { o: 1.95, type: 'parked' });
   add(752, { o: -3.6, type: 'dhaba' });
   // the lake: nothing but reeds and ducks in the water, and keep rocks and scrub out of it
-  for (let i = LAKE_FROM - 10; i < N; i++) {
+  for (let i = Math.max(LAKE_FROM - 10, lo); i < Math.min(1215, hi); i++) {
     const sh = shore(i);
     segs[i].props = segs[i].props.filter((p) => !(p.o > sh - 0.6 && p.type !== 'flags'));
     if (i > LAKE_FROM && i % 3 === 0 && rnd(i * 5.3) > 0.25) add(i, { o: sh + 0.1 + rnd(i * 2.1) * 0.6, type: 'reed', v: Math.floor(rnd(i) * 3) });
@@ -170,7 +199,7 @@ export function buildTrack(milestones: readonly { top: string; label: string }[]
     const step = town.sparse ? 10 : 6, homey = [1, 6, 5, 3];
     add(town.gate, { o: 0, type: 'gate', label: town.name });
     add(town.gate - 3, { o: 1.95, type: 'limit', v: 30 });
-    for (let i = town.gate; i <= town.to; i++) segs[i].props = segs[i].props.filter((p) => p.type === 'stone' || p.type === 'pole' || p.type === 'gate' || p.type === 'limit' || p.type === 'ms' || p.type === 'board' || p.type === 'bro' || p.type === 'sign' || Math.abs(p.o) > 3.4);
+    for (let i = Math.max(town.gate, lo); i <= Math.min(town.to, hi - 1); i++) segs[i].props = segs[i].props.filter((p) => p.type === 'stone' || p.type === 'pole' || p.type === 'gate' || p.type === 'limit' || p.type === 'ms' || p.type === 'board' || p.type === 'bro' || p.type === 'sign' || Math.abs(p.o) > 3.4);
     for (let i = town.gate + 6, n = 0; i <= town.to; i += step, n++) {
       const pick = (s: number) => (town.sparse ? homey[Math.floor(rnd(s) * homey.length)] : Math.floor(rnd(s) * 8));
       if (!clear(i)) add(i, { o: -(1.95 + rnd(i) * 0.15), type: 'shop', v: pick(i * 1.3) });
@@ -191,8 +220,9 @@ export function buildTrack(milestones: readonly { top: string; label: string }[]
   for (const [i, o] of [[446, 5.8], [468, -5.4]] as const) add(i, { o, type: 'camp' });    // Hunder's dune camps
   add(198, { o: 3.1, type: 'gurdwara' }); add(206, { o: 1.85, type: 'sign', label: 'MAGNETIC HILL', sub: 'ZONE' });   // the Leh-Kargil highway's landmarks
   add(664, { o: 2.3, type: 'checkpost' });                                                                              // the army check post at the foot of the pass
-  add(40, { o: 1.8, type: 'sign', label: 'GARAGE', sub: '140 KM' });
-  add(FINISH - 90, { o: 1.8, type: 'sign', label: 'GARAGE', sub: 'NEXT LEFT' });
+  // the garage: huge boards counting down to it, a gantry over the road just before, then the building itself, shut
+  for (const b of GARAGE_BOARDS) add(FINISH - b.back, { o: b.o, type: 'billboard', label: 'SHENDRE', sub: `GARAGE · ${Math.round(kmOf(b.back) * 2) / 2} KM` });
+  add(FINISH - 36, { o: 0, type: 'gantry', label: 'SHENDRE', sub: 'GARAGE' });
   add(FINISH, { o: -4.1, type: 'garage' });
   for (let i = FINISH - 44; i < FINISH; i += 8) add(i, { o: -1.75, type: 'lamp' });   // the lit approach
   return segs;

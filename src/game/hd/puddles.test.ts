@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { BLOCK, inPuddle, puddleAt, puddleHalf, puddleIn } from './puddles';
-import { FINISH, N } from './track-ladakh';
+import { N } from './track-ladakh';
 
 const all = () => { const out = []; for (let b = 0; b * BLOCK < N; b++) { const p = puddleIn(b); if (p) out.push(p); } return out; };
 
@@ -9,15 +9,14 @@ describe('rain puddles', () => {
     expect(all()).toEqual(all());
   });
   it('are scattered along the ride, not bunched or missing', () => {
-    const n = all().filter((p) => p.from < FINISH).length;
-    expect(n).toBeGreaterThan(FINISH / BLOCK / 8);
-    expect(n).toBeLessThan(FINISH / BLOCK / 2.5);
+    const n = all().length;
+    expect(n).toBeGreaterThan(N / BLOCK / 8);
+    expect(n).toBeLessThan(N / BLOCK / 2.5);
   });
-  it('keep to the road and its verge, and clear of the start and the garage forecourt', () => {
+  it('keep to the road and its verge, and clear of the start', () => {
     for (const p of all()) {
       expect(Math.abs(p.o) + p.w).toBeLessThan(2.1);
       expect(p.from).toBeGreaterThan(14);
-      expect(p.from + p.len).toBeLessThan(FINISH - 20);
     }
   });
   it('stay inside their own block, so a segment belongs to at most one', () => {

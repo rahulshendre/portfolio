@@ -1,6 +1,5 @@
 // Rain puddles on the Bliss land's road and verge. Where they lie depends only on the segment, so the road can paint them and the bike can find out it rode through one.
 import { rnd } from './draw';
-import { FINISH } from './track-ladakh';
 
 /** Puddles sit one to a block of this many segments, in about one block in four. */
 export const BLOCK = 6;
@@ -18,11 +17,12 @@ export function puddleIn(b: number): Puddle | null {
   if (cache.has(b)) return cache.get(b)!;
   const r = rnd(b * 3.7 + 11), start = b * BLOCK, len = 3 + Math.floor(rnd(b * 5.3 + 2) * 3);                 // three to five segments long
   let p: Puddle | null = null;
-  if (r < 0.25 && start > 14 && start < FINISH - 24) {
+  if (r < 0.25 && start > 14) {
     const side = rnd(b * 7.9 + 5), w = 0.15 + rnd(b * 2.9 + 8) * 0.2;
     const o = side < 0.8 ? (rnd(b * 4.1 + 3) - 0.5) * 1.7 : (rnd(b * 6.1 + 9) > 0.5 ? 1 : -1) * (1.3 + rnd(b * 1.7) * 0.5);   // mostly on the tarmac, now and then on the verge
     p = { from: start + 1, len, o, w };
   }
+  if (cache.size > 2400) cache.clear();                                                                  // the road never ends: keep only the blocks near the bike
   cache.set(b, p);
   return p;
 }

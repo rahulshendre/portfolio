@@ -4,6 +4,7 @@ import { drawCar } from './traffic';
 import { drawCanopy, drawDarchog, drawFlagMound, drawFlags } from './flags';
 import { drawGate, drawMonk, drawParkedBike, drawShop, drawStall } from './town';
 import { drawGarage } from './garage';
+import { drawBillboard, drawGantry } from './garagesign';
 import { drawBoard, drawBro, drawChevron, drawLimit, drawSign, setSignLight, SIGN_EMIT, SIGN_GLOW } from './signs';
 import { drawBuddha, drawCheckPost, drawGurdwara, drawMonastery } from './landmarks';
 import { drawCamel, drawCamp, drawCone, drawCrew, drawSummit, drawVillage } from './scenery';
@@ -386,12 +387,12 @@ export { setLand };
 export interface Light { x: number; y: number; r: number; a: number; color: string }
 export const LIGHTS: Light[] = [];
 const EMIT: Record<string, [number, number, number, number, string]> = {   // [dx, dy, radius, alpha, colour], in prop units
-  shop: [-10, -22, 60, 0.4, '#ffb860'], gate: [0, -134, 120, 0.3, '#ffe0a0'], garage: [0, -50, 170, 0.4, '#ffb862'], lamp: [26, -98, 56, 0.3, '#ffe0a0'], dhaba: [-4, -34, 64, 0.45, '#ffb860'],
+  shop: [-10, -22, 60, 0.4, '#ffb860'], gate: [0, -134, 120, 0.3, '#ffe0a0'], garage: [0, -50, 170, 0.4, '#ffb862'], billboard: [0, -182, 190, 0.45, '#ffc878'], gantry: [0, -158, 200, 0.4, '#d8f4e4'], lamp: [26, -98, 56, 0.3, '#ffe0a0'], dhaba: [-4, -34, 64, 0.45, '#ffb860'],
   ...SIGN_EMIT, ms: [0, -40, 70, 0.3, '#fff0d0'],
 };
 const GLOW: Record<string, [number, number]> = { ...SIGN_GLOW, ms: [-40, 80] };
 
-export function drawProp(type: string, sx: number, sy: number, k: number, p: { label?: string; sub?: string; lines?: readonly string[]; v?: number }) {
+export function drawProp(type: string, sx: number, sy: number, k: number, p: { label?: string; sub?: string; lines?: readonly string[]; v?: number; o?: number }) {
   const em = EMIT[type];
   if (em && NIGHT > 0.3 && k > 0.12) LIGHTS.push({ x: sx + em[0] * k, y: sy + em[1] * k, r: em[2] * k, a: em[3] * Math.min(1, (NIGHT - 0.3) * 2), color: em[4] });
   const gl = GLOW[type];
@@ -413,6 +414,8 @@ export function drawProp(type: string, sx: number, sy: number, k: number, p: { l
     case 'board': return drawBoard(sx, sy, k, p.label);
     case 'sign': return drawSign(sx, sy, k, p.label, p.sub);
     case 'garage': return drawGarage(sx, sy, k);
+    case 'billboard': return drawBillboard(sx, sy, k, p.label, p.sub);
+    case 'gantry': return drawGantry(sx, sy, k, p.label, p.sub);
     case 'pole': return drawPole(sx, sy, k);
     case 'scrub': return drawScrub(sx, sy, k, p.v ?? 0);
     case 'tuft': return drawTuft(sx, sy, k, p.v ?? 0);

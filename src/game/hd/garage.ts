@@ -1,27 +1,17 @@
-// Rahul's garage, seen from the road at the end of the ride: a brick workshop with a wood-clad wing, a steel-framed bay with the shutter rolled up,
-// your own bike standing inside under two dome lamps, a neon sign, and the forecourt clutter (tyres, drums, a chai sign and an old pump).
+// Shendre's garage, seen from the road: a brick workshop with a wood-clad wing, a steel-framed bay with the roller shutter pulled down and padlocked, SHENDRE painted across it,
+// two dome lamps, a neon sign, and the forecourt clutter (tyres, drums, a chai sign and an old pump). It is closed: visitors knock, or take the door.
 // Drawn in local units through at(); (0, 0) is the middle of the front wall at ground level.
 import { at, box, circle, g, hgrad, label, oval, poly, rnd, rrect, stroke, vgrad } from './draw';
 import { flagString } from './flags';
 import { bunting } from './country';
 import { isBliss } from './land';
 
-/** The garage's own picture of the bike, set by the ride once it has loaded. Until then a simple side-on drawing stands in. */
+/** The bike's picture, set by the ride once it has loaded (the arrival card and the door scene use it; the shut garage no longer shows a bike inside). */
 let bike: HTMLImageElement | null = null;
 export const setGarageBike = (img: HTMLImageElement | null) => { bike = img; };
 
-const BIKE_W = 92;
-
 function cast(h: number, w: number, a = 0.17) {
   poly([-w / 2, 0, w / 2, 0, -h * 0.85 + w / 2, h * 0.3, -h * 0.85 - w / 2, h * 0.3], `rgba(34,20,12,${a})`);
-}
-
-/** The bike side-on, for the moment before the sprite has loaded: two wheels, the frame, a white tank and the gold forks. */
-function bikeStandIn(cx: number) {
-  for (const x of [cx - 30, cx + 28]) { circle(x, -15, 14, '#111113'); circle(x, -15, 9, '#8c9098'); circle(x, -15, 6.4, '#17171a'); circle(x, -15, 2, '#c8ccd2'); }
-  poly([cx - 30, -15, cx - 8, -34, cx + 10, -36, cx + 28, -15, cx + 6, -22, cx - 10, -18], '#26272b');
-  poly([cx - 12, -36, cx + 10, -42, cx + 14, -34, cx - 8, -31], '#f4f2ea'); box(cx - 2, -42, 5, 9, '#17181c');
-  stroke([cx + 24, -17, cx + 29, -44], '#d9a233', 3); stroke([cx + 22, -45, cx + 34, -45], '#17171a', 2.4);
 }
 
 export function drawGarage(sx: number, sy: number, k: number) {
@@ -56,37 +46,28 @@ export function drawGarage(sx: number, sy: number, k: number) {
     box(112, -112, 4, 112, '#2a2a2e'); box(112, -112, 1.4, 112, '#4a4a50'); for (const y of [-96, -60, -24]) box(110, y, 8, 3, '#1c1c20');
     rrect(96, -58, 11, 14, 1.5, '#8a8f94'); circle(101.5, -51, 2.2, '#3a3a3e'); stroke([101, -44, 101, -36, 108, -30], '#111', 1.2);
 
-    // ---- the bay: a black steel frame with rivets, the shutter rolled up in its box, and the room inside
+    // ---- the bay: a black steel frame with rivets, and the roller shutter pulled down and padlocked, SHENDRE painted across it
     box(-62, -96, 124, 96, '#14110e'); box(-62, -96, 124, 4, '#26221d');
     for (let x = -58; x <= 58; x += 10) { circle(x, -93, 0.9, '#4a443c'); }
     for (const x of [-59, 59]) for (let y = -84; y < -4; y += 14) circle(x, y, 0.9, '#4a443c');
-    box(-56, -90, 112, 90, vgrad(-90, 0, [[0, '#ffd88a'], [0.55, '#f2a458'], [1, '#b8683a']]));
-    box(-56, -90, 112, 26, 'rgba(40,24,14,0.5)');
-    for (let y = -90; y < -66; y += 6) box(-56, y, 112, 4, vgrad(y, y + 4, [[0, '#9a9ea3'], [1, '#6f7378']]));   // the rolled-up shutter slats
-    box(-56, -66, 112, 2.5, '#4c5056');
-    box(-50, -62, 100, 38, 'rgba(60,34,20,0.5)');                                                                // the pegboard
-    for (const [x, w, hh] of [[-44, 14, 16], [-26, 8, 12], [-14, 18, 20], [10, 10, 14], [24, 16, 18], [40, 6, 12]] as const) { box(x, -58, w, 3, 'rgba(20,10,6,0.6)'); box(x + w / 2 - 1, -58, 2, hh, 'rgba(20,10,6,0.6)'); circle(x + w / 2, -58 + hh, 2.2, 'rgba(20,10,6,0.6)'); }   // hanging tools
-    box(-54, -34, 26, 2.4, '#3a2a20'); box(-52, -32, 2.4, 32, '#3a2a20'); box(-30, -32, 2.4, 32, '#3a2a20'); box(-54, -38, 14, 4, '#c8392b'); rrect(-50, -47, 8, 9, 1, '#d8342b');   // a workbench with a red toolbox
-    for (const [x, y] of [[44, -8], [44, -19], [52, -8]] as const) { oval(x, y, 9, 4.6, '#141416'); oval(x, y, 4.6, 2.2, '#2a2a2e'); }                                            // a stack of tyres
-    box(-56, -10, 112, 10, '#1d1a17'); box(-56, -10, 112, 1.6, 'rgba(255,255,255,0.08)');                      // the dark display mat
+    box(-56, -90, 112, 90, vgrad(-90, 0, [[0, '#6c7177'], [0.45, '#8a9096'], [1, '#585d63']]));                            // the shutter: ribbed steel, lit from the lamps above
+    if (near) for (let y = -90; y < -8; y += 5) { box(-56, y, 112, 1, 'rgba(20,22,26,0.5)'); box(-56, y + 1, 112, 0.8, 'rgba(255,255,255,0.1)'); }
+    box(-56, -90, 112, 18, 'rgba(255,238,190,0.1)');
+    box(-58, -90, 3, 90, '#26221d'); box(55, -90, 3, 90, '#26221d');                                                         // the guide rails
+    box(-56, -9, 112, 7, '#3a3e44'); box(-56, -9, 112, 1.2, 'rgba(255,255,255,0.18)'); rrect(-9, -7, 18, 3, 1, '#17130f');   // the bottom bar and its pull
+    rrect(31, -8, 9, 7, 1.4, '#d9a233'); stroke([33, -8, 33, -12, 38, -12, 38, -8], '#8a8f94', 1.3);                         // a padlock
+    g.save(); g.globalAlpha = 0.95; label('SHENDRE', 0.6, -41.6, 22, 'rgba(10,10,12,0.55)', { align: 'center', font: '"Silkscreen", ui-monospace, monospace' }); label('SHENDRE', 0, -42.5, 22, '#f4f0e4', { align: 'center', font: '"Silkscreen", ui-monospace, monospace' }); g.restore();   // painted in stencil caps
+    rrect(-52, -84, 30, 12, 2, '#a82c22'); label('CLOSED', -37, -75.4, 6.4, '#fff6e0', { align: 'center', weight: 700 });     // a tag hung on the shutter
     for (const x of [-30, 30]) {                                                                                 // two dome lamps with their pools of light
-      stroke([x, -90, x, -78], '#17130f', 1.6); poly([x - 10, -78, x + 10, -78, x + 7, -68, x - 7, -68], '#17130f'); poly([x - 7, -68, x + 7, -68, x + 24, -38, x - 24, -38], 'rgba(255,232,170,0.16)');
+      stroke([x, -90, x, -78], '#17130f', 1.6); poly([x - 10, -78, x + 10, -78, x + 7, -68, x - 7, -68], '#17130f'); poly([x - 7, -68, x + 7, -68, x + 24, -38, x - 24, -38], 'rgba(255,232,170,0.14)');
       circle(x, -67, 3.2, '#fff2c0'); circle(x, -67, 9, 'rgba(255,240,190,0.25)');
     }
-    // ---- your bike, side-on on the mat, with a contact shadow and a faint reflection in the polished floor
-    oval(4, -2, 50, 4, 'rgba(0,0,0,0.45)');
-    if (bike) {
-      const w = BIKE_W, hh = (w * bike.naturalHeight) / bike.naturalWidth, x0 = 4 - w / 2, y0 = -2 - hh;
-      g.save(); g.beginPath(); g.rect(-56, -10, 112, 10); g.clip();
-      g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high'; g.globalAlpha = 0.12; g.translate(0, -2); g.scale(1, -0.3); g.drawImage(bike, x0, -hh, w, hh); g.restore();   // a faint reflection in the polished floor
-      g.save(); g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high'; g.drawImage(bike, x0, y0, w, hh); g.restore();
-    } else bikeStandIn(4);
 
     // ---- the neon sign on the roof, on two steel posts, with a tube-glow outline
     rrect(-84, -172, 168, 44, 5, '#1b1712'); rrect(-80, -168, 160, 36, 3, '#2a1a1a');
     g.save(); g.shadowColor = '#ff6a5a'; g.shadowBlur = 16;
-    label("RAHUL'S", 0, -150, 17, '#ff8c78', { align: 'center', weight: 700 });
-    label('GARAGE', 0, -135, 13, '#ffd0a0', { align: 'center', weight: 700 });
+    label('SHENDRE', 0, -148, 20, '#ff8c78', { align: 'center', font: '"Silkscreen", ui-monospace, monospace' });
+    label('GARAGE', 0, -135, 11, '#ffd0a0', { align: 'center', weight: 700 });
     g.restore();
     stroke([-66, -128, -66, -118], '#17130f', 3); stroke([66, -128, 66, -118], '#17130f', 3); box(-70, -130, 8, 3, '#2a2622'); box(62, -130, 8, 3, '#2a2622');
     // ---- on the roof: a water tank on legs (every Ladakhi roof has one) and a small dish
@@ -114,7 +95,7 @@ export function drawGarage(sx: number, sy: number, k: number) {
     poly([100, 0, 106, -34, 130, -34, 136, 0], vgrad(-34, 0, [[0, '#d8483a'], [1, '#a82c22']])); rrect(104, -50, 28, 18, 4, '#f4f2ea'); rrect(107, -47, 22, 10, 2, '#e8b923'); box(102, -34, 32, 3, '#17130f');
     circle(118, -40, 3, '#17130f'); circle(118, -40, 1.6, '#e8b923');                                                                              // the pump's dial
     stroke([134, -26, 146, -16, 146, -4], '#17130f', 2);                                                                                          // its hose
-    poly([146, 0, 150, -26, 166, -26, 170, 0], '#7a5a3c'); box(150, -24, 16, 20, '#1b2a26'); label('OPEN', 158, -14, 6, '#fff6e0', { align: 'center', weight: 700 }); label('CHAI', 158, -7, 5.5, '#e8b923', { align: 'center', weight: 700 });
+    poly([146, 0, 150, -26, 166, -26, 170, 0], '#7a5a3c'); box(150, -24, 16, 20, '#1b2a26'); label('CLOSED', 158, -14, 5, '#fff6e0', { align: 'center', weight: 700 }); label('BACK SOON', 158, -7, 3.8, '#e8b923', { align: 'center', weight: 700 });
     poly([-170, 0, -166, -12, -152, -12, -148, 0], '#2a2622'); for (const [x, y, r] of [[-159, -20, 8], [-153, -26, 6], [-165, -26, 6]] as const) circle(x, y, r, '#4a7a4a');
     // the cat, sitting by the bay
     oval(-72, -3, 9, 3, 'rgba(0,0,0,0.25)'); oval(-72, -9, 6, 8, '#d9d2c4'); circle(-72, -19, 5, '#d9d2c4'); poly([-76, -22, -75, -28, -72, -23], '#d9d2c4'); poly([-68, -22, -69, -28, -72, -23], '#d9d2c4');

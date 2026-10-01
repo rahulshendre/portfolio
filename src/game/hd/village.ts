@@ -86,7 +86,7 @@ const KITS = [
   { leg: 19, torso: 15, head: 4.8, w: 7, shirt: '#f4c430', thigh: '#3c7ab8', shin: '', shoe: '#e8e4d8', hair: '#8a4a2a' },
 ];
 /** How fast a villager strolls (units a second), how far each leg swings from the hip (radians), and how far each one wanders either side of where it stands. */
-const PACE = 18, SWING = 0.4, ROAM = 34;
+const PACE = 18, SWING = 0.4, ROAM = 24;
 
 /** A leg or an arm hung from (hx, hy) in two parts. `a` swings it from the hip or shoulder (0 straight down, forward positive); `flex` folds the lower part back at the knee (negative: forward, at an elbow). */
 function limb(hx: number, hy: number, l1: number, l2: number, a: number, flex: number) {
@@ -114,10 +114,10 @@ function face(hx: number, hy: number, r: number, skin: string, hair: string, t: 
  * A villager strolling to and fro along the verge: a farmer in a straw hat with a pitchfork, a woman with a basket, a child with a kite. Each walks a proper step: the legs swing
  * from the hip and fold at the knee, the arms swing against them, the body dips and rises and the lowest foot always rests on the grass. A honk gets a wave and a wider smile.
  */
-export function drawVillager(sx: number, sy: number, k: number, v = 0) {
+export function drawVillager(sx: number, sy: number, k: number, v = 0, o = 0) {
   if (k < 0.16) return;
   const t = clock(), kind = v % 3, kit = KITS[kind], fine = k > 0.42, wv = startled(v * 0.41), skin = SKINS[Math.floor(v / 3) % 3];
-  const walked = PACE * t + v * 53, lap = walked % (4 * ROAM), x = lap < 2 * ROAM ? lap - ROAM : 3 * ROAM - lap, dir = lap < 2 * ROAM ? 1 : -1;
+  const walked = PACE * t + v * 53, lap = walked % (4 * ROAM), x = (lap < 2 * ROAM ? lap - ROAM : 3 * ROAM - lap) + Math.sign(o) * ROAM, dir = lap < 2 * ROAM ? 1 : -1;   // always on the grass side of where they stand: never onto the kerb or the road
   const phi = (walked / (4 * kit.leg * Math.sin(SWING))) * Math.PI * 2, L = kit.leg / 2;   // one leg cycle is two steps, so the planted foot does not slide
   at(sx, sy, k * 1.1 * (kind === 2 ? 0.8 : 1), () => {
     oval(x, 0, 11, 2.4, SH);
