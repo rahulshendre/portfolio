@@ -19,11 +19,16 @@ import { CAM_DEPTH } from '../ride/project';
 import { input } from '../engine/input';
 import { crickets, engine, isMuted, radio } from '../engine/audio';
 import { xpExtras } from '../hd/meadow';
+import { calmDown, honkNow } from '../hd/stir';
+import { inPuddle } from '../hd/puddles';
 import { drawButterflies, drawFireflies } from '../hd/ambient';
 import { loadRadio, RIDE_TIMES, rideTimeFrom, setSky, sky as world, timeFromRide, type RideTime, type Theme } from '../state';
 import type { Scene } from '../engine/scene';
 import type { Screen } from '../engine/screen';
 import { milestones, site } from '../../data/site';
+
+/** A drop of spray thrown up when the bike goes through a puddle: a place on the screen (0 to 1 each way), a velocity in screens a second, and how long it has left. */
+interface Drop { x: number; y: number; vx: number; vy: number; life: number; r: number }
 
 const MAX_S = SEG_L * 37;
 /** The speedometer's top: the bike never shows more than this. */
@@ -64,7 +69,7 @@ export class RideScene implements Scene {
   private segs: Segment[] = buildTrack(milestones);
   private cars: Car[] = spawnTraffic();
   private pos = 0; private px = LEFT; private speed = 0; private lean = 0; private braking = false; private lastSpeed = 0; private avgDt = 1 / 60; private lite = false; private honkT = 0; private gearNow = 0; private birdT = 2; private rung = new Set<number>();
-  private photo = false; private photoT = 0; private paused = false; private lights: 'auto' | 'on' | 'off' = 'auto'; private gas = false; private brake = false; private trip = 0; private vx = 0; private bolt: Bolt | null = null; private boltIn = 6; private rideTime: RideTime = 'auto'; private land: Theme = 'himalaya'; private nightK = 0; private todK = -1; private callT = 4; private called = new Set<number>(); private owlT = 12; private gasWas = false; private rough = 0; private bumpT = 0; private rideT = 0; private topKmh = 0; private passed = 0; private honks = 0; private stopT = 0; private sky: Sky = 'clear';
+  private photo = false; private photoT = 0; private paused = false; private lights: 'auto' | 'on' | 'off' = 'auto'; private gas = false; private brake = false; private trip = 0; private vx = 0; private bolt: Bolt | null = null; private boltIn = 6; private rideTime: RideTime = 'auto'; private land: Theme = 'himalaya'; private nightK = 0; private todK = -1; private callT = 4; private called = new Set<number>(); private owlT = 12; private gasWas = false; private rough = 0; private bumpT = 0; private rideT = 0; private topKmh = 0; private passed = 0; private honks = 0; private stopT = 0; private sky: Sky = 'clear'; private inPud: object | null = null; private spray: Drop[] = [];
   private cam: Cam = 'behind';
   private get night() { return this.rideTime === 'night'; }
   private pitchK = 0;   // the bike's nose: dips under braking, lifts under power, and the headlight follows
@@ -80,6 +85,7 @@ export class RideScene implements Scene {
     void document.fonts?.load(`400 32px ${FONT_NAME}`);                       // the canvas needs the pixel font loaded before the opening card can use it
     const im = new Image(); im.onload = () => { this.bikeImg = im; setGarageBike(im); }; im.src = '/sprites/bike-side-lg.png';   // the garage's bike, for the arrival card and for the bay of the garage on the road
     addEventListener('blur', this.autoPause);                          // switching away pauses the ride
+    calmDown();                                                         // no honk lingers from an earlier ride
     input.endFrame();
     const at = Number(new URLSearchParams(location.search).get('at'));
     this.sky = world.weather ?? 'clear'; this.land = world.theme ?? 'himalaya'; this.rideTime = rideTimeFrom(world.time);   // the sky the visitor already picked (in the address, at the door or in the garage), else a clear afternoon
@@ -131,6 +137,40 @@ export class RideScene implements Scene {
     }
   }
 
+  /** The nearest animal in the field ahead answers the horn after a beat: a cow lows, a sheep bleats, hens cluck, ducks quack. */
+  private answerHonk(seg: number) {
+    for (let j = seg + 4; j <= seg + 22; j++) {
+      const hit = [...(this.segs[j]?.props ?? []), ...xpExtras(j)].find((p) => p.type === 'yak' || p.type === 'cows' || p.type === 'camel' || p.type === 'flock' || p.type === 'hens' || p.type === 'pond' || (p.type === 'dog' && !((p.v ?? 0) % 2)));
+      if (!hit) continue;
+      const pan = Math.max(-1, Math.min(1, hit.o / 6));
+      setTimeout(() => {
+        if (hit.type === 'yak' || hit.type === 'cows') engine.moo(pan, 0.9 + Math.random() * 0.3);
+        else if (hit.type === 'camel' || hit.type === 'flock') engine.baa(pan);
+        else if (hit.type === 'pond') engine.quack(pan);
+        else engine.cluck(pan);
+      }, 520);
+      return;
+    }
+  }
+
+  /** Through a puddle in the rain: a slap, a spray of drops and a little speed lost, once per puddle. */
+  private splash(sp: number) {
+    this.speed *= 0.97; engine.splash(0.5 + sp * 0.7);
+    if (this.lite) return;
+    for (let i = 0, n = 16 + Math.floor(sp * 22); i < n; i++) {
+      const a = Math.random() * Math.PI;
+      this.spray.push({ x: 0.5 + (Math.random() - 0.5) * 0.12, y: 0.84, vx: Math.cos(a) * (0.18 + Math.random() * 0.34), vy: -(0.35 + Math.random() * 0.55) * (0.6 + sp * 0.7), life: 0.5 + Math.random() * 0.4, r: 0.0022 + Math.random() * 0.0034 });
+    }
+  }
+
+  private drawSpray(g: CanvasRenderingContext2D, W: number, H: number) {
+    for (const d of this.spray) {
+      g.globalAlpha = Math.min(1, d.life * 2.4) * 0.8; g.fillStyle = '#dcecf8';
+      g.beginPath(); g.arc(d.x * W, d.y * H, Math.max(1, d.r * W), 0, Math.PI * 2); g.fill();
+    }
+    g.globalAlpha = 1;
+  }
+
   private autoPause = () => { if (this.phase === 'ride' && !this.paused) { this.paused = true; engine.update(0, 0, { river: 0, lake: 0, alt: 0 }); } };
   exit() { engine.mute(); radio.setLevel(1); removeEventListener('blur', this.autoPause); }
 
@@ -145,6 +185,9 @@ export class RideScene implements Scene {
   private honk() {
     this.honkT = 0.9; this.honks++;
     engine.horn();
+    const seg = Math.floor((this.pos + CAM_HEIGHT[this.cam] * CAM_DEPTH) / SEG_L);
+    honkNow(seg);                                                                                    // the roadside looks up: cows, sheep, hens, ducks and villagers in the Bliss land
+    if (this.land === 'xp') this.answerHonk(seg);
     if (!honkAt(this.cars, this.pos + CAM_HEIGHT[this.cam] * CAM_DEPTH, this.px)) return;
     this.show('PEEP PEEP|THEY MOVE OVER', false, 1.6);
     setTimeout(() => engine.truckHorn(), 380);
@@ -282,6 +325,11 @@ export class RideScene implements Scene {
       }
     }
     this.bumpT -= dt;
+    const pud = this.land === 'xp' && this.sky === 'rain' && this.phase === 'ride' ? inPuddle(playerZ / SEG_L, this.px, BIKE_HALF) : null;
+    if (pud && pud !== this.inPud && sp > 0.12) this.splash(sp);
+    this.inPud = pud;
+    for (const d of this.spray) { d.x += d.vx * dt; d.y += d.vy * dt; d.vy += 1.7 * dt; d.life -= dt; }
+    if (this.spray.length) this.spray = this.spray.filter((d) => d.life > 0);
     // the tarmac ends near |1.1|: past it the ground is gravel, dust and stones
     this.rough = Math.min(1, Math.max(0, (Math.abs(this.px) - 1.08) / 0.12));
     if (this.px > 1.3 || this.px < -1.3) { this.px = Math.max(-1.3, Math.min(1.3, this.px)); this.vx *= -0.2; }
@@ -337,7 +385,7 @@ export class RideScene implements Scene {
       const punch = REDUCED ? 1 : 1 + Math.max(0, sp - 0.8) * 0.2 + (this.gas && sp > 0.9 ? 0.012 : 0);   // at full throttle the view widens a touch
       g.translate(W / 2, H * HZ); g.scale(punch, punch); g.translate(-W / 2, -H * HZ);
       if (!REDUCED) g.translate(0, Math.round(Math.sin(this.t * 47) * sp * sp * 1.6 + Math.sin(this.t * 19) * sp * 0.7)); // the road hums up through the suspension at speed
-      renderRoad(g, this.segs, { W, H, HZ, pos: this.pos, px: this.px, camH: CAM_HEIGHT[this.cam], bgOff: this.bgOff, t: this.t, env, lite: this.lite, haze: this.nightK > 0.01 ? mix(hazeAt(env.tod, this.land), '#232b58', this.nightK) : hazeAt(env.tod, this.land), fogK: this.sky === 'fog' ? 2.4 : 1 }, this.cars);
+      renderRoad(g, this.segs, { W, H, HZ, pos: this.pos, px: this.px, camH: CAM_HEIGHT[this.cam], bgOff: this.bgOff, t: this.t, env, lite: this.lite, haze: this.nightK > 0.01 ? mix(hazeAt(env.tod, this.land), '#232b58', this.nightK) : hazeAt(env.tod, this.land), fogK: this.sky === 'fog' ? 2.4 : 1, wet: this.land === 'xp' && this.sky === 'rain' }, this.cars);
       g.restore();
       if (!this.lite) drawSpeedLines(g, W, H, HZ, sp, this.t);
       drawSkyTint(g, W, H, HZ, this.sky);
@@ -351,6 +399,7 @@ export class RideScene implements Scene {
       }
       if (!this.lite && this.sky === 'clear' && this.nightK < 0.3) drawFlare(g, W, H, HZ, env.tod);
       if (!this.lite && this.sky === 'rain') drawRain(g, W, H, this.t, sp);
+      if (this.spray.length) this.drawSpray(g, W, H);
       if (this.bolt) drawLightning(g, W, H, HZ, this.bolt);
       if (!this.lite) finish(g, W, H, HZ, env.tod, this.nightK > 0.5, !small);   // grade, vignette and grain over the world, under the rider and the HUD
       const beam = this.lights === 'off' ? 0 : Math.max(this.lights === 'on' ? 0.5 : 0, env.tod > 0.55 ? (env.tod - 0.55) / 0.45 : 0, this.nightK * 1.4);

@@ -1,6 +1,7 @@
 // The animals and farm vehicles of the Bliss land: cows, sheep, horses, deer, rabbits, hens, a sheepdog; and on the road a tractor with a hay trailer, a hay truck,
 // a camper van and a little red Mini. Each stands where a Himalayan yak, kiang, marmot, camel or army truck stood. Animals move a little: tails swish, heads dip to graze.
 import { at, box, circle, g, hgrad, oval, poly, rrect, stroke, vgrad } from './draw';
+import { startled } from './stir';
 
 const SH = 'rgba(24,52,12,0.22)';
 const clock = () => performance.now() / 1000;
@@ -10,7 +11,7 @@ const hash = (n: number) => Math.abs(Math.sin(n * 12.9898) * 43758.5453) % 1;
 
 /** A Holstein or a Jersey cow, grazing now and then, tail swishing. */
 function cow(x: number, y: number, sc: number, f: number, ph: number, coat = 0) {
-  const t = clock(), dip = Math.max(0, Math.sin(t * 0.45 + ph * 2)) ** 1.5, sw = Math.sin(t * 2.2 + ph) * 3;
+  const t = clock(), s = startled(ph), dip = Math.max(0, Math.sin(t * 0.45 + ph * 2)) ** 1.5 * (1 - s), sw = Math.sin(t * (2.2 + s * 9) + ph) * (3 + s * 2);   // a honk lifts the head and sets the tail going
   g.save(); g.translate(x, y); g.scale(sc * f, sc);
   oval(0, 0, 28, 3.6, SH);
   const base = coat === 1 ? '#c48a52' : '#f2eee4', shade = coat === 1 ? '#a06a3a' : '#cfc8b8', patch = coat === 1 ? '#8a5428' : '#23211f';
@@ -20,7 +21,7 @@ function cow(x: number, y: number, sc: number, f: number, ph: number, coat = 0) 
   if (coat !== 1) { oval(-13, -29, 8, 7, patch); oval(3, -20, 9, 6, patch); oval(15, -31, 6, 5, patch); oval(-22, -22, 5, 8, patch); }
   oval(8, -34, 15, 4, 'rgba(255,255,255,0.22)'); g.restore();
   oval(-6, -11.5, 5, 3.4, '#f0b8b0');                                                          // the udder
-  const hx = 25 + dip * 3, hy = -31 + dip * 22;
+  const hx = 25 + dip * 3 + s * 2, hy = -31 + dip * 22 - s * 5;
   poly([14, -36, 20, -37, hx + 1, hy - 4, hx - 6, hy + 4], base);                                // the neck
   oval(hx + 2, hy, 8.5, 6, coat === 1 ? '#b87a46' : (ph > 1.5 ? patch : base)); oval(hx + 8, hy + 2, 4.6, 3.6, '#f0c0b8'); circle(hx + 9, hy + 2.6, 0.8, '#5a3030');
   circle(hx + 1, hy - 2, 1, '#1a1410'); poly([hx - 4, hy - 3, hx - 9, hy - 7, hx - 2, hy - 5], patch); poly([hx - 1, hy - 5, hx - 2, hy - 9, hx + 1, hy - 6], '#e8dcc0');   // an ear and a short horn
@@ -30,13 +31,13 @@ function cow(x: number, y: number, sc: number, f: number, ph: number, coat = 0) 
 
 /** A sheep: a cloud of wool on thin dark legs with a dark face. */
 function sheep(x: number, y: number, sc: number, f: number, ph: number, lamb = false) {
-  const t = clock(), dip = Math.max(0, Math.sin(t * 0.7 + ph * 3)) ** 2;
-  g.save(); g.translate(x, y); g.scale(sc * f * (lamb ? 0.62 : 1), sc * (lamb ? 0.62 : 1));
-  oval(0, 0, 15, 2.6, SH);
+  const t = clock(), s = startled(ph), dip = Math.max(0, Math.sin(t * 0.7 + ph * 3)) ** 2 * (1 - s), hop = Math.abs(Math.sin(t * 9 + ph * 2)) * s * (lamb ? 8 : 5);   // a honk makes them hop
+  g.save(); g.translate(x, y - hop * sc); g.scale(sc * f * (lamb ? 0.62 : 1), sc * (lamb ? 0.62 : 1));
+  oval(0, hop * (lamb ? 1.2 : 1), 15 - hop * 0.6, 2.6, SH);
   for (const lx of [-7, -3.5, 4, 7.5]) { stroke([lx, -9, lx, -0.5], '#3a342e', 1.7); box(lx - 1.1, -1.4, 2.2, 1.4, '#2a2420'); }
   for (const [cx, cy, r, c] of [[-9, -15, 6.4, '#e8e0d0'], [-2, -12, 7.2, '#e0d8c6'], [7, -13, 6.6, '#e8e0d0'], [-6, -19, 6.4, '#f2ecde'], [3, -20, 6.8, '#f8f4ea'], [10, -18, 5, '#f2ecde'], [-12, -19, 4.4, '#ece6d8'], [0, -16, 7, '#f6f1e6']] as const) circle(cx, cy, r, c);
   oval(2, -22, 5, 2.4, 'rgba(255,255,255,0.45)');
-  const hx = 16 + dip * 1.5, hy = -17 + dip * 8;
+  const hx = 16 + dip * 1.5, hy = -17 + dip * 8 - s * 3;
   oval(hx, hy, 4.8, 3.8, '#3e3832'); oval(hx + 3.6, hy + 1.4, 2.6, 2.2, '#524a42'); circle(hx + 0.4, hy - 1.2, 0.8, '#f4f2ea');
   poly([hx - 3, hy - 2, hx - 7, hy - 1, hx - 3, hy], '#3e3832'); circle(-17, -16, 2.6, '#f2ecde');
   g.restore();
@@ -44,13 +45,13 @@ function sheep(x: number, y: number, sc: number, f: number, ph: number, lamb = f
 
 /** A horse: bay, grey or chestnut, tail swishing, head dipping to the grass. */
 function horse(x: number, y: number, sc: number, f: number, ph: number, coat = 0) {
-  const t = clock(), dip = Math.max(0, Math.sin(t * 0.4 + ph * 2)) ** 1.5, sw = Math.sin(t * 1.9 + ph) * 3;
+  const t = clock(), s = startled(ph), dip = Math.max(0, Math.sin(t * 0.4 + ph * 2)) ** 1.5 * (1 - s), sw = Math.sin(t * (1.9 + s * 7) + ph) * (3 + s * 3);   // a honk throws the head up and the tail out
   const [body, shade, mane] = [['#8a4a2a', '#6a3418', '#1e1410'], ['#d8d8d2', '#b4b4ae', '#9a9a96'], ['#b86a30', '#8e4c20', '#e8c880']][coat % 3];
   g.save(); g.translate(x, y); g.scale(sc * f, sc);
   oval(0, 0, 30, 3.8, SH);
   for (const [lx, back] of [[-16, 1], [-11, 0], [11, 0], [16, 1]] as const) { poly([lx - 2.4, -22, lx + 2.4, -22, lx + 1.6, -2, lx - 1.6, -2], back ? shade : body); box(lx - 2, -3, 4, 3, coat === 1 ? '#6a6a64' : '#2a2420'); }
   oval(0, -30, 27, 12.5, body); oval(2, -23, 23, 6, shade);
-  const hx = 29 + dip * 8, hy = -52 + dip * 34;
+  const hx = 29 + dip * 8 + s * 2, hy = -52 + dip * 34 - s * 5 + Math.sin(t * 8 + ph) * s * 1.2;
   poly([14, -42, 24, -46, hx + 1, hy - 3, hx - 7, hy + 6, 12, -30], body);                      // a long neck
   poly([hx - 5, hy - 4, hx - 3, hy + 6, hx + 8, hy + 9, hx + 12, hy + 2, hx + 4, hy - 5], body); oval(hx + 11, hy + 6, 4, 3.4, '#4a3a30'); circle(hx + 1, hy, 1.1, '#140e0a');
   poly([hx - 3, hy - 4, hx - 2, hy - 10, hx + 1, hy - 4], shade);                                  // ear
@@ -61,7 +62,7 @@ function horse(x: number, y: number, sc: number, f: number, ph: number, coat = 0
 
 /** A deer: a doe, a spotted fawn and a stag with antlers, watching the road. */
 function deer(x: number, y: number, sc: number, f: number, ph: number, kind: 'doe' | 'fawn' | 'stag') {
-  const t = clock(), ear = Math.sin(t * 3 + ph * 4) > 0.9 ? 3 : 0, graze = kind !== 'stag' && Math.sin(t * 0.35 + ph * 2) > 0.5;
+  const t = clock(), s = startled(ph), ear = s > 0.1 ? 3 + Math.sin(t * 14 + ph) * 1.5 : Math.sin(t * 3 + ph * 4) > 0.9 ? 3 : 0, graze = kind !== 'stag' && s < 0.1 && Math.sin(t * 0.35 + ph * 2) > 0.5;   // a honk: head up, ears flicking, the scut raised
   g.save(); g.translate(x, y); g.scale(sc * f * (kind === 'fawn' ? 0.58 : 1), sc * (kind === 'fawn' ? 0.58 : 1));
   oval(0, 0, 22, 3, SH);
   for (const lx of [-12, -8, 8, 12]) { stroke([lx, -18, lx + (lx > 0 ? 1 : -1) * 0.6, -1], '#7a5230', 2.2); box(lx - 1.2, -2, 2.4, 2, '#2a2420'); }
@@ -72,18 +73,18 @@ function deer(x: number, y: number, sc: number, f: number, ph: number, kind: 'do
   oval(hx + 2, hy, 5.8, 4.2, '#b4824e'); oval(hx + 7, hy + 1.4, 3, 2.4, '#4a3a2c'); circle(hx + 2.4, hy - 1.2, 0.9, '#1a1410');
   poly([hx - 2, hy - 3, hx - 7 - ear * 0.4, hy - 8 + ear * 0.4, hx, hy - 5], '#8a5a34');
   if (kind === 'stag') { stroke([hx - 1, hy - 3, hx - 6, hy - 16], '#e8dcc0', 1.6); stroke([hx - 4, hy - 10, hx - 10, hy - 12], '#e8dcc0', 1.4); stroke([hx - 3, hy - 13, hx + 1, hy - 20], '#e8dcc0', 1.4); stroke([hx + 1, hy - 3, hx + 2, hy - 16], '#e8dcc0', 1.6); stroke([hx + 2, hy - 11, hx + 8, hy - 14], '#e8dcc0', 1.4); }
-  poly([-19, -30, -23, -33, -21, -26], '#f2ecde');                                                // the white scut
+  poly([-19, -30, -23, -33 - s * 6, -21, -26], '#f2ecde');                                                // the white scut
   g.restore();
 }
 
 /** A rabbit sitting up, ears high, nose twitching, beside a log. */
 function rabbit(x: number, y: number, sc: number, f: number, ph: number, tilt = 0) {
-  const t = clock(), tw = Math.sin(t * 18 + ph) * 0.5;
+  const t = clock(), s = startled(ph), tw = Math.sin(t * 18 + ph) * 0.5 * (1 - s), up = s * 3, tilt2 = tilt * (1 - s);   // a honk: freeze, ears straight up
   g.save(); g.translate(x, y); g.scale(sc * f, sc);
   oval(0, 0, 11, 2, SH);
   oval(-1, -7, 8.5, 6.5, '#a89078'); oval(1, -5, 5.5, 4.2, '#ddd0b8'); circle(-8, -7, 2.6, '#f4f0e8');          // body, pale belly, white tail
   oval(5, -15, 4.4, 4.8, '#a89078');                                                                          // head
-  oval(3.4 + tilt, -26, 1.9, 6.4, '#a89078'); oval(7 + tilt * 0.6, -25.5, 1.9, 6, '#98806a'); oval(3.4 + tilt, -26, 0.9, 4.6, '#e8b4a8');   // ears
+  oval(3.4 + tilt2, -26 - up, 1.9, 6.4 + s, '#a89078'); oval(7 + tilt2 * 0.6, -25.5 - up, 1.9, 6 + s, '#98806a'); oval(3.4 + tilt2, -26 - up, 0.9, 4.6, '#e8b4a8');   // ears
   circle(7.6, -16, 0.9, '#1a1410'); circle(9.6 + tw * 0.3, -13.4, 0.8, '#d8808a');
   oval(5, -2, 3.2, 1.6, '#98806a'); oval(-4, -1.6, 4, 1.8, '#98806a');                                       // paws
   g.restore();
@@ -91,28 +92,28 @@ function rabbit(x: number, y: number, sc: number, f: number, ph: number, tilt = 
 
 /** A hen with her chicks, pecking. */
 function hen(x: number, y: number, sc: number, f: number, ph: number, rooster = false) {
-  const peck = Math.max(0, Math.sin(clock() * 5 + ph * 3)) ** 3;
-  g.save(); g.translate(x, y); g.scale(sc * f, sc);
-  oval(0, 0, 12, 2, SH);
+  const s = startled(ph), peck = Math.max(0, Math.sin(clock() * 5 + ph * 3)) ** 3 * (1 - s), flap = Math.abs(Math.sin(clock() * 15 + ph * 4)) * s;   // a honk: up they jump, wings flapping
+  g.save(); g.translate(x, y - flap * 7); g.scale(sc * f, sc);
+  oval(0, flap * 7, 12 - flap * 3, 2, SH);
   stroke([-1, -6, -1, -0.5], '#e8a830', 1.4); stroke([3, -6, 3, -0.5], '#e8a830', 1.4);
   const body = rooster ? '#a8481c' : '#c8803a';
-  oval(0, -11, 9.5, 7, body); oval(-3, -12, 6, 4, rooster ? '#7a2e12' : '#a8642a');
+  oval(0, -11, 9.5, 7, body); oval(-3, -12 - flap * 3, 6, 4 + flap * 2, rooster ? '#7a2e12' : '#a8642a');   // the wing lifts
   poly([-8, -12, -15, rooster ? -26 : -20, -11, -9], rooster ? '#2a5a3a' : '#a8642a'); if (rooster) poly([-9, -13, -17, -22, -12, -9], '#d8a830');
-  const hx = 8 + peck * 3, hy = -19 + peck * 9;
+  const hx = 8 + peck * 3, hy = -19 + peck * 9 - s * 3;
   poly([5, -14, 7, -17, hx, hy, hx - 3, hy + 2], body); circle(hx + 1, hy - 1, 3.2, '#f4ecd8'); poly([hx + 3, hy - 1, hx + 7, hy, hx + 3, hy + 1.2], '#e8a020');
   poly([hx - 1, hy - 3.5, hx + 1, hy - 6.5, hx + 2.6, hy - 3.5], '#d8301c'); circle(hx + 1.6, hy - 1.4, 0.7, '#1a1410');
   g.restore();
 }
 function chick(x: number, y: number, ph: number) {
-  const hop = Math.abs(Math.sin(clock() * 6 + ph)) * 2;
+  const hop = Math.abs(Math.sin(clock() * (6 + startled(ph) * 8) + ph)) * (2 + startled(ph) * 4);
   oval(x, y, 5, 1, SH); circle(x, y - 3.4 - hop, 3.4, '#f6d850'); circle(x + 2.8, y - 5.4 - hop, 2.2, '#f6d850'); poly([x + 4.6, y - 5.4 - hop, x + 7, y - 5 - hop, x + 4.6, y - 4.4 - hop], '#e8a020'); circle(x + 3.4, y - 5.8 - hop, 0.5, '#1a1410');
 }
 
 /** A black-and-white sheepdog, sitting, tongue out, tail sweeping. */
 function sheepdog(x: number, y: number, sc: number, f: number, ph: number) {
-  const wag = Math.sin(clock() * 7 + ph) * 5;
-  g.save(); g.translate(x, y); g.scale(sc * f, sc);
-  oval(0, 0, 16, 2.6, SH);
+  const s = startled(ph), wag = Math.sin(clock() * (7 + s * 11) + ph) * (5 + s * 2), hop = Math.abs(Math.sin(clock() * 11 + ph)) * s * 3;   // a honk: it perks up and wags harder
+  g.save(); g.translate(x, y - hop); g.scale(sc * f, sc);
+  oval(0, hop, 16, 2.6, SH);
   stroke([-9, -5, -16 + wag * 0.3, -2 + wag * 0.5], '#2a2622', 3.4); circle(-16 + wag * 0.3, -2 + wag * 0.5, 2.4, '#f4f0e8');
   poly([-9, -3, -8, -18, 1, -26, 5, -3], '#2a2622'); oval(-1, -11, 8, 8, '#2a2622'); oval(2, -9, 5, 7, '#f4f0e8');
   oval(3, -24, 4, 8, '#2a2622'); circle(5, -32, 5.6, '#2a2622'); oval(9.4, -30.6, 3.6, 2.6, '#f4f0e8'); poly([5, -32, 6, -38, 9, -33], '#f4f0e8');

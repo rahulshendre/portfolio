@@ -1,6 +1,7 @@
 // The streets of a Bliss village, in place of the Ladakhi bazaar: brick-and-timber shopfronts with striped awnings, a welcome arch of stone and wood, a farm-produce stand,
 // villagers in straw hats, parked bicycles, Victorian lamp posts and a tollhouse. Same unit space as town.ts.
-import { at, box, circle, fit, g, oval, poly, rrect, stroke, vgrad } from './draw';
+import { at, box, circle, fit, g, mix, oval, poly, rrect, stroke, vgrad } from './draw';
+import { startled } from './stir';
 import { bunting, SH } from './country';
 
 const clock = () => performance.now() / 1000;
@@ -77,33 +78,104 @@ export function drawProduceStand(sx: number, sy: number, k: number, v = 0) {
   });
 }
 
-/** A villager walking along the lane: a farmer in a straw hat with a pitchfork, a woman with a basket, a child with a kite. */
+const SKINS = ['#e8b890', '#d8a078', '#c48a62'];
+/** Per villager kind: a farmer, a woman and a child. Leg and torso lengths are in the same units as the old standing figures. */
+const KITS = [
+  { leg: 23, torso: 19, head: 5.3, w: 9, shirt: '#4a82b4', thigh: '#5a4a3a', shin: '#5a4a3a', shoe: '#3a2a20', hair: '#9a9894' },
+  { leg: 20, torso: 16, head: 5, w: 7.4, shirt: '#f6f1e6', thigh: '#d8503c', shin: '', shoe: '#6a3a20', hair: '#3a2418' },
+  { leg: 19, torso: 15, head: 4.8, w: 7, shirt: '#f4c430', thigh: '#3c7ab8', shin: '', shoe: '#e8e4d8', hair: '#8a4a2a' },
+];
+/** How fast a villager strolls (units a second), how far each leg swings from the hip (radians), and how far each one wanders either side of where it stands. */
+const PACE = 18, SWING = 0.4, ROAM = 34;
+
+/** A leg or an arm hung from (hx, hy) in two parts. `a` swings it from the hip or shoulder (0 straight down, forward positive); `flex` folds the lower part back at the knee (negative: forward, at an elbow). */
+function limb(hx: number, hy: number, l1: number, l2: number, a: number, flex: number) {
+  const kx = hx + Math.sin(a) * l1, ky = hy + Math.cos(a) * l1, b = a - flex;
+  return { kx, ky, ex: kx + Math.sin(b) * l2, ey: ky + Math.cos(b) * l2 };
+}
+
+/** A head in profile, facing right: hair behind and above, a nose, an ear, an eye that blinks, a brow, a smile, rosy cheeks. `warm` (0 to 1) is how pleased they look. */
+function face(hx: number, hy: number, r: number, skin: string, hair: string, t: number, v: number, warm: number, fine: boolean) {
+  circle(hx - r * 0.3, hy - r * 0.25, r * 0.98, hair);
+  circle(hx + r * 0.1, hy + r * 0.04, r * 0.9, skin);
+  if (!fine) return;
+  const shade = mix(skin, '#6a2a10', 0.22), blink = (t + v * 1.7) % 4.3 > 4.18;
+  poly([hx + r * 0.88, hy - r * 0.08, hx + r * 1.32, hy + r * 0.32, hx + r * 0.84, hy + r * 0.42], skin);
+  stroke([hx + r * 0.88, hy + r * 0.38, hx + r * 1.2, hy + r * 0.34], shade, Math.max(0.4, r * 0.08));                      // under the nose
+  circle(hx - r * 0.05, hy + r * 0.12, r * 0.2, shade);                                                                       // the ear
+  if (blink) stroke([hx + r * 0.32, hy - r * 0.08, hx + r * 0.7, hy - r * 0.08], '#2a2420', Math.max(0.4, r * 0.1));
+  else { circle(hx + r * 0.52, hy - r * 0.1, r * 0.22, '#fbf9f2'); circle(hx + r * 0.58, hy - r * 0.1, r * 0.13, '#2a2420'); }
+  stroke([hx + r * 0.3, hy - r * (0.42 + warm * 0.1), hx + r * 0.78, hy - r * (0.36 + warm * 0.1)], mix(hair, '#1a1410', 0.5), Math.max(0.4, r * 0.1));   // a brow, lifted when they wave
+  stroke([hx + r * 0.38, hy + r * 0.56, hx + r * 0.62, hy + r * (0.66 + warm * 0.12), hx + r * 0.9, hy + r * (0.5 - warm * 0.04)], '#9a4a3a', Math.max(0.4, r * 0.1));   // a smile that widens
+  circle(hx + r * 0.3, hy + r * 0.38, r * 0.22, 'rgba(232,100,90,0.32)');
+}
+
+/**
+ * A villager strolling to and fro along the verge: a farmer in a straw hat with a pitchfork, a woman with a basket, a child with a kite. Each walks a proper step: the legs swing
+ * from the hip and fold at the knee, the arms swing against them, the body dips and rises and the lowest foot always rests on the grass. A honk gets a wave and a wider smile.
+ */
 export function drawVillager(sx: number, sy: number, k: number, v = 0) {
   if (k < 0.16) return;
-  const t = clock(), step = Math.sin(t * 3.4 + v * 2) * 2.4, kind = v % 3;
-  at(sx, sy, k * 1.1, () => {
-    oval(0, 0, 11, 2.4, SH);
-    const skin = '#e8b890';
-    if (kind === 0) {                                                                                          // a farmer
-      stroke([-3, -10, -3 + step, 0], '#3a3028', 3); stroke([3, -10, 3 - step, 0], '#3a3028', 3);
-      poly([-7, -14, 7, -14, 8, -36, -8, -36], '#3c6e9a'); poly([-7, -14, 0, -14, 0, -36, -8, -36], '#4a82b4'); poly([-6, -36, 6, -36, 5, -42, -5, -42], '#f2ece0');
-      stroke([-8, -34, -11, -22], '#f2ece0', 3.2); stroke([8, -34, 12, -26], '#f2ece0', 3.2);
-      circle(0, -48, 5.4, skin); circle(-1.8, -48.4, 0.7, '#2a2420'); circle(1.8, -48.4, 0.7, '#2a2420'); stroke([-1.6, -45.6, 1.6, -45.6], '#9a5a3a', 0.8); poly([-9, -50, 9, -50, 5, -52, 4, -58, -4, -58, -5, -52], '#d8bc60'); box(-9, -51, 18, 2, '#b8963e');
-      stroke([13, -26, 13, -60], '#6a4a30', 1.4); for (const x of [11, 13, 15]) stroke([x, -60, x, -66], '#9aa0a8', 1);
-    } else if (kind === 1) {                                                                                   // a woman with a basket
-      stroke([-2, -10, -2 + step, 0], '#3a3028', 2.6); stroke([2, -10, 2 - step, 0], '#3a3028', 2.6);
-      poly([-9, -12, 9, -12, 5, -36, -5, -36], '#d8503c'); poly([-9, -12, 0, -12, 0, -36, -5, -36], '#e8685a'); box(-5, -26, 10, 12, '#f6f1e6');
-      stroke([-5, -34, -8, -22], skin, 2.6); stroke([5, -34, 10, -22], skin, 2.6);
-      circle(0, -42, 5, skin); circle(-1.8, -42.4, 0.7, '#2a2420'); circle(1.8, -42.4, 0.7, '#2a2420'); stroke([-1.6, -39.8, 1.6, -39.8], '#b04a3a', 0.8); oval(0, -45, 9, 2.4, '#e8d8a0'); poly([-5, -46, 5, -46, 3, -51, -3, -51], '#e8d8a0'); stroke([-4, -41, -6, -34], '#6a3a20', 3);
-      rrect(8, -26, 13, 9, 2, '#a8743c'); stroke([9, -26, 14, -33, 20, -26], '#7a5a38', 1.2); for (let i = 0; i < 3; i++) circle(10 + i * 4, -27, 2.2, ['#e8503a', '#f4c430', '#ff9ac2'][i]);
-    } else {                                                                                                   // a child with a kite
-      stroke([-2, -8, -2 + step, 0], '#3a3028', 2.4); stroke([2, -8, 2 - step, 0], '#3a3028', 2.4);
-      poly([-6, -10, 6, -10, 5, -28, -5, -28], '#f4c430'); poly([-6, -10, 0, -10, 0, -28, -5, -28], '#f8d85a');
-      stroke([-5, -26, -9, -18], skin, 2.2); stroke([5, -26, 9, -40], skin, 2.2);
-      circle(0, -34, 4.8, skin); circle(-1.6, -34.4, 0.7, '#2a2420'); circle(1.6, -34.4, 0.7, '#2a2420'); stroke([-1.4, -31.8, 1.4, -31.8], '#b04a3a', 0.8); poly([-5, -35, 5, -35, 4, -41, -4, -41], '#8a4a2a');
-      stroke([9, -40, 24, -66], '#e8e2d4', 0.8); const w = Math.sin(t * 2) * 2; poly([24 + w, -86, 33 + w, -72, 24 + w, -60, 15 + w, -72], '#e8503a'); poly([24 + w, -86, 33 + w, -72, 24 + w, -72], '#f4c430');
-      stroke([24 + w, -60, 20 + w, -52], '#4aa0d8', 1); stroke([20 + w, -52, 24 + w, -46], '#f4c430', 1);
+  const t = clock(), kind = v % 3, kit = KITS[kind], fine = k > 0.42, wv = startled(v * 0.41), skin = SKINS[Math.floor(v / 3) % 3];
+  const walked = PACE * t + v * 53, lap = walked % (4 * ROAM), x = lap < 2 * ROAM ? lap - ROAM : 3 * ROAM - lap, dir = lap < 2 * ROAM ? 1 : -1;
+  const phi = (walked / (4 * kit.leg * Math.sin(SWING))) * Math.PI * 2, L = kit.leg / 2;   // one leg cycle is two steps, so the planted foot does not slide
+  at(sx, sy, k * 1.1 * (kind === 2 ? 0.8 : 1), () => {
+    oval(x, 0, 11, 2.4, SH);
+    g.save(); g.translate(x, 0); g.scale(dir, 1);
+    const leg = (th: number) => limb(0, 0, L, L, Math.sin(th) * SWING, 0.12 + 0.95 * Math.max(0, Math.cos(th)) ** 2);
+    const far = leg(phi + Math.PI), near = leg(phi), hy = -Math.max(far.ey, near.ey) - 1.2;                                  // the lower foot rests on the ground
+    const lean = 0.08 + Math.sin(phi * 2) * 0.02, shx = Math.sin(lean) * kit.torso, shy = hy - Math.cos(lean) * kit.torso, lw = kind === 0 ? 3.2 : 2.5;
+    const shinCol = kit.shin || skin;
+    const drawLeg = (l: ReturnType<typeof limb>, shade: number) => {
+      stroke([0, hy, l.kx, hy + l.ky], mix(kit.thigh, '#000000', shade), lw); stroke([l.kx, hy + l.ky, l.ex, hy + l.ey], mix(shinCol, '#000000', shade), lw * 0.9);
+      oval(l.ex + 2.3, hy + l.ey + 0.2, 3.6, 1.5, mix(kit.shoe, '#000000', shade));
+    };
+    const arm = (a: number, flex: number, shade: number) => {
+      const m = limb(shx, shy, kit.torso * 0.42, kit.torso * 0.4, a, flex);
+      stroke([shx, shy, m.kx, m.ky], mix(kit.shirt, '#000000', shade), 2.6); stroke([m.kx, m.ky, m.ex, m.ey], mix(skin, '#000000', shade), 2.1); circle(m.ex, m.ey, 1.5, mix(skin, '#000000', shade));
+      return m;
+    };
+    drawLeg(far, 0.22);
+    // the far arm holds the basket or the kite string (so it swings less); the farmer's is free, and his near arm carries the fork
+    const free = (sw: number) => sw + (2.55 - sw) * wv, wave = -0.35 - wv * Math.sin(t * 9) * 0.6;                                 // an arm that swings, or waves at a honk
+    const holdA = kind === 2 ? 2.0 + Math.sin(t * 1.5) * 0.08 : Math.sin(phi) * 0.18 + 0.08;
+    const fa = kind === 0 ? arm(free(Math.sin(phi) * 0.5), wave, 0.22) : arm(holdA, kind === 2 ? -0.25 : -0.3, 0.22);
+    stroke([0, hy, shx, shy], kit.shirt, kit.w);                                                                              // the body, shoulder to hip
+    if (kind === 0) { stroke([-kit.w * 0.45, hy - 1, kit.w * 0.45, hy - 1], '#3a2a20', 1.6); stroke([0.5, hy - 8, shx + 0.5, shy + 2], '#f2ece0', 2.4); }   // a belt, and a white shirt under the waistcoat
+    if (kind === 1) {                                                                                                         // a bell skirt that sways, and an apron
+      const sw = Math.sin(phi) * 2.2, hem = hy + L * 1.05;
+      poly([-3.4, hy - 4, 3.6, hy - 4, 8.4 + sw, hem, -8.4 + sw, hem], '#d8503c'); poly([-3.4, hy - 4, 0.2, hy - 4, -0.2 + sw, hem, -8.4 + sw, hem], '#e8685a'); poly([-1.4, hy - 3, 2.4, hy - 3, 3.6 + sw, hem - 1, -2 + sw, hem - 1], '#f6f1e6');
     }
+    const hx = shx + Math.sin(lean) * 4, hh = shy - Math.cos(lean) * (kit.head + 1.5), r = kit.head;
+    face(hx, hh, r, skin, kit.hair, t, v, wv, fine);
+    if (fine && kind === 0) oval(hx + r * 0.78, hh + r * 0.4, r * 0.42, r * 0.14, '#7a6a5a');                                  // a moustache
+    if (kind === 0) {                                                                                                         // a straw hat
+      oval(hx, hh - r * 0.6, r * 1.9, r * 0.36, '#d8bc60'); poly([hx - r, hh - r * 0.6, hx + r, hh - r * 0.6, hx + r * 0.7, hh - r * 1.5, hx - r * 0.7, hh - r * 1.5], '#e8cf72'); stroke([hx - r, hh - r * 0.8, hx + r, hh - r * 0.8], '#8a4a2a', r * 0.26);
+    } else if (kind === 1) {                                                                                                  // a sun hat with a ribbon, and a bun
+      circle(hx - r * 1.0, hh - r * 0.3, r * 0.48, kit.hair); oval(hx, hh - r * 0.62, r * 1.7, r * 0.32, '#e8d8a0'); poly([hx - r * 0.9, hh - r * 0.6, hx + r * 0.9, hh - r * 0.6, hx + r * 0.6, hh - r * 1.3, hx - r * 0.6, hh - r * 1.3], '#f0e2b0'); stroke([hx - r * 0.9, hh - r * 0.76, hx + r * 0.9, hh - r * 0.76], '#ff9ac2', r * 0.22);
+    } else if (fine) {
+      for (const [fx, fy] of [[0.5, 0.18], [0.7, 0.3], [0.38, 0.28]]) circle(hx + r * fx, hh + r * fy, r * 0.06, '#b0724a');   // freckles
+    }
+    drawLeg(near, 0);
+    // the near arm swings against the near leg, or waves
+    if (kind === 0) {                                                                                                         // the pitchfork, tines up, in his near hand
+      const na = arm(0.5 + Math.sin(phi) * 0.06, -0.8, 0);
+      stroke([na.ex, na.ey + 6, na.ex + 1.5, na.ey - 38], '#6a4a30', 1.5);
+      for (const o of [-2.6, 0, 2.6]) stroke([na.ex + 1.5 + o, na.ey - 38, na.ex + 1.5 + o, na.ey - 45], '#9aa0a8', 1.1);
+      stroke([na.ex - 1.1, na.ey - 38, na.ex + 4.1, na.ey - 38], '#9aa0a8', 1.1);
+      circle(na.ex, na.ey, 1.7, skin);
+    } else arm(free(-Math.sin(phi) * 0.5), wave, 0);
+    if (kind === 1) {                                                                                                         // the basket hangs from the far hand
+      const bx = fa.ex, by = fa.ey;
+      rrect(bx - 5, by, 11, 8, 2, '#a8743c'); stroke([bx - 5, by, bx, by - 6, bx + 6, by], '#7a5a38', 1.1); for (let i = 0; i < 3; i++) circle(bx - 3 + i * 3.4, by, 1.8, ['#e8503a', '#f4c430', '#ff9ac2'][i]);
+    }
+    if (kind === 2) {                                                                                                         // the kite, on its string from the raised hand
+      const hx2 = fa.ex, hy2 = fa.ey, w = Math.sin(t * 2) * 2 + Math.sin(t * 14) * wv * 2, kx = hx2 + 20 + w, ky = hy2 - 46 + Math.sin(t * 1.3) * 2;
+      stroke([hx2, hy2, hx2 + 8, hy2 - 20, kx, ky + 12], '#e8e2d4', 0.7);
+      poly([kx, ky - 14, kx + 9, ky, kx, ky + 12, kx - 9, ky], '#e8503a'); poly([kx, ky - 14, kx + 9, ky, kx, ky], '#f4c430');
+      stroke([kx, ky + 12, kx - 3 + w * 0.3, ky + 20, kx + 1, ky + 27], '#4aa0d8', 1);
+    }
+    g.restore();
   });
 }
 

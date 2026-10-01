@@ -4,6 +4,7 @@ import { at, box, circle, oval, rnd, stroke } from './draw';
 import { BOARDS, BRO, FINISH, LAKE_FROM, shore, TOWNS } from './track-ladakh';
 import { drawArch, drawBarn, drawBlossom as drawBlossomC, drawCastle, drawChurch, drawCottage, drawFolly, drawHamlet, drawHaystack, drawManor, drawPicnic, drawScarecrow, drawSignpost, drawStoneWall, drawTeaRoom, drawWell, drawWindmill } from './country';
 import { drawBicycle, drawLampPost, drawProduceStand, drawShopfront, drawTollhouse, drawVillager, drawWelcomeArch } from './village';
+import { drawPond } from './pond';
 import { drawCollie, drawCows, drawDeer, drawFlock, drawHens, drawHorses, drawPaddock, drawRabbits } from './farm';
 
 const SH = 'rgba(20,48,10,0.22)';
@@ -117,12 +118,18 @@ export const XP_DRAW: Record<string, XpDraw | null> = {
   flock: (x, y, k, p) => drawFlock(x, y, k, p.v ?? 0),
   horses: (x, y, k, p) => drawHorses(x, y, k, p.v ?? 0),
   paddock: (x, y, k, p) => drawPaddock(x, y, k, p.v ?? 0),
+  pond: (x, y, k, p) => drawPond(x, y, k * 1.1, p.v ?? 0),
   deer: (x, y, k, p) => drawDeer(x, y, k, p.v ?? 0),
   hens: (x, y, k, p) => drawHens(x, y, k, p.v ?? 0),
   windmill: (x, y, k) => drawWindmill(x, y, k * 0.8),
   farm: (x, y, k, p) => ((p.v ?? 0) % 2 ? drawBarn(x, y, k * 1.1) : drawCottage(x, y, k * 1.1, (p.v ?? 0) % 4)),
   wall: (x, y, k) => drawStoneWall(x, y, k),
 };
+
+/** The few roadside ponds, on the open stretches between the towns: the segment, and the side (-1 left, 1 right). */
+export const PONDS = [{ i: 100, side: -1 }, { i: 378, side: 1 }, { i: 722, side: -1 }, { i: 850, side: 1 }] as const;
+/** How far from the centre line a pond's middle lies (road half-widths): close enough to see from the saddle, clear of the verge. */
+export const POND_O = 4.3;
 
 export interface Extra { o: number; type: string; v: number }
 const SIDE = (i: number, salt: number) => (Math.sin(i * 7.7 + salt) > 0 ? 1 : -1);
@@ -149,6 +156,11 @@ export function xpExtras(i: number): Extra[] {
   if (i % 71 === 11) out.push({ o: SIDE(i, 8) * (20 + r2 * 14), type: 'windmill', v: 0 });
   if (i % 83 === 61) out.push({ o: SIDE(i, 9) * (11 + r3 * 9), type: 'farm', v: i % 6 });
   if (Math.floor(i / 60) % 3 === 1 && i % 9 === 0) out.push({ o: (Math.floor(i / 60) % 2 ? 1 : -1) * 1.95, type: 'wall', v: 0 });
+  const pond = PONDS.find((q) => q.i === i);
+  if (pond) {                                                                                  // a pond keeps its own patch of grass: nothing else grows in it
+    for (let n = out.length - 1; n >= 0; n--) if (Math.sign(out[n].o) === pond.side && Math.abs(out[n].o - pond.side * POND_O) < 2.8) out.splice(n, 1);
+    out.push({ o: pond.side * POND_O, type: 'pond', v: (i >> 3) % 6 });
+  }
   const signed = BOARDS.some((b) => i > b.i - 12 && i <= b.i + 2) || BRO.some((b) => i > b.i - 8 && i <= b.i + 1);   // keep clear of the roadside boards
   const inTown = TOWNS.some((t) => i >= t.gate - 8 && i <= t.to + 4), river = i >= 270 && i < 700, lake = i >= LAKE_FROM - 10, home = i >= FINISH - 56 && i <= FINISH + 8;
   const kept = out.filter((e) => !(signed && Math.abs(e.o) < 3.4) && !(inTown && Math.abs(e.o) < 5) && !(river && e.o < -2.4 && e.o > -9.5) && !(lake && e.o > shore(i) - 1.2 && e.o > 0) && !(home && Math.abs(e.o) < 8));

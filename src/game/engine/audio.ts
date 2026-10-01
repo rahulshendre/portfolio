@@ -272,6 +272,41 @@ export class EngineSound {
     }
   }
 
+  /** The bike through a puddle: a wet slap and a hiss of spray. */
+  splash(size = 1) {
+    if (!this.on || !this.ctx) return;
+    const c = this.ctx, t = c.currentTime, len = Math.floor(c.sampleRate * 0.5), b = c.createBuffer(1, len, c.sampleRate), d = b.getChannelData(0);
+    for (let i = 0; i < len; i++) { const x = i / len; d[i] = (Math.random() * 2 - 1) * Math.exp(-x * 7) * (0.6 + 0.4 * Math.random()); }
+    const s = c.createBufferSource(); s.buffer = b; const bp = c.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.setValueAtTime(2600, t); bp.frequency.exponentialRampToValueAtTime(900, t + 0.4); bp.Q.value = 0.9;
+    const g = c.createGain(); g.gain.value = 0.16 * size; s.connect(bp).connect(g).connect(dest(c)); s.start(t);
+    const o = c.createOscillator(), og = c.createGain(); o.type = 'sine'; o.frequency.setValueAtTime(220, t); o.frequency.exponentialRampToValueAtTime(70, t + 0.12);
+    og.gain.setValueAtTime(0.1 * size, t); og.gain.exponentialRampToValueAtTime(0.001, t + 0.16); o.connect(og).connect(dest(c)); o.start(t); o.stop(t + 0.2);
+  }
+
+  /** A duck's quack, twice: a short nasal note that slides down. */
+  quack(pan = 0) {
+    if (!this.on || !this.ctx) return;
+    const c = this.ctx, p = c.createStereoPanner(); p.pan.value = pan; p.connect(dest(c));
+    for (let k = 0; k < 2; k++) {
+      const t = c.currentTime + k * 0.22, o = c.createOscillator(), env = c.createGain(), f = c.createBiquadFilter();
+      o.type = 'sawtooth'; o.frequency.setValueAtTime(560 - k * 40, t); o.frequency.exponentialRampToValueAtTime(380 - k * 40, t + 0.15); f.type = 'bandpass'; f.frequency.value = 1150; f.Q.value = 3;
+      env.gain.setValueAtTime(0, t); env.gain.linearRampToValueAtTime(0.055, t + 0.02); env.gain.linearRampToValueAtTime(0, t + 0.17);
+      o.connect(f).connect(env).connect(p); o.start(t); o.stop(t + 0.2);
+    }
+  }
+
+  /** A hen's cluck, three quick ones. */
+  cluck(pan = 0) {
+    if (!this.on || !this.ctx) return;
+    const c = this.ctx, p = c.createStereoPanner(); p.pan.value = pan; p.connect(dest(c));
+    for (let k = 0; k < 3; k++) {
+      const t = c.currentTime + k * 0.12, o = c.createOscillator(), env = c.createGain(), f = c.createBiquadFilter();
+      o.type = 'sawtooth'; o.frequency.setValueAtTime(760 - k * 30, t); o.frequency.exponentialRampToValueAtTime(470, t + 0.07); f.type = 'bandpass'; f.frequency.value = 1500; f.Q.value = 4;
+      env.gain.setValueAtTime(0, t); env.gain.linearRampToValueAtTime(0.045, t + 0.012); env.gain.linearRampToValueAtTime(0, t + 0.08);
+      o.connect(f).connect(env).connect(p); o.start(t); o.stop(t + 0.1);
+    }
+  }
+
   /** A cuckoo calling from the trees: two falling notes, repeated. */
   cuckoo(pan = 0) {
     if (!this.on || !this.ctx) return;

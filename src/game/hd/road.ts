@@ -4,6 +4,8 @@ import { drawBackground, type Env } from './background';
 import { mix, poly as fillPoly, smooth, use } from './draw';
 import { drawProp, setLand, setTod } from './props';
 import { xpExtras } from './meadow';
+import { puddleAt, puddleHalf } from './puddles';
+import { setStirSeg } from './stir';
 export { LIGHTS } from './props';
 import { altitude, FINISH, LAKE_FROM, N, shore, ROAD_W, SEG_L, type Prop, type Segment } from './track-ladakh';
 import { drawCar, type Car } from './traffic';
@@ -34,6 +36,8 @@ export interface View {
   bgOff: number; t: number; env: Env; lite?: boolean;
   /** Multiplies the distance haze: about 2.4 in fog. */
   fogK?: number;
+  /** Rain on the Bliss land: puddles lie on the road and the verge. */
+  wet?: boolean;
   /** the colour distant land fades to (matches the sky at the horizon) */
   haze: string;
 }
@@ -172,6 +176,24 @@ export function renderRoad(g: CanvasRenderingContext2D, segs: Seg[], v: View, ca
     trap(scaled(p1, 0.012, -0.93), scaled(p2, 0.012, -0.93), F('#e9e3d1'));
     trap(scaled(p1, 0.012, 0.93), scaled(p2, 0.012, 0.93), F('#e9e3d1'));
     if (alt) trap(scaled(p1, 0.02), scaled(p2, 0.02), F('#e9e3d1'));
+    if (v.wet && xp) {                                           // rain puddles: a patch of sky on the road or the verge, round in perspective, with rings where the drops land
+      const pd = puddleAt(i);
+      if (pd) {
+        const fa = (i - pd.from) / pd.len, fb = (i + 1 - pd.from) / pd.len, wa = puddleHalf(pd, fa), wb = puddleHalf(pd, fb), h = p1.y - p2.y;
+        g.globalAlpha = 0.3; trap(scaled(p1, wa * 1.16, pd.o), scaled(p2, wb * 1.16, pd.o), F('#38444e'));
+        g.globalAlpha = 0.92; trap(scaled(p1, wa, pd.o), scaled(p2, wb, pd.o), F(mix(v.haze, '#6d94b4', 0.4)));
+        g.globalAlpha = 0.24; trap(scaled(p1, wa * 0.5, pd.o - wa * 0.22), scaled(p2, wb * 0.5, pd.o - wa * 0.22), '#ffffff');   // the glint of the sky
+        g.globalAlpha = 1;
+        if (!v.lite && i - baseI < 60 && i === pd.from + (pd.len >> 1)) {
+          g.strokeStyle = '#ffffff'; g.lineWidth = Math.max(0.6, p1.w * 0.004);
+          [[-0.4, 0.2, 0], [0.35, -0.25, 0.37], [0.05, 0.05, 0.71]].forEach(([ox, oy, ph], n) => {
+            const a = (v.t * 0.8 + ph + n * 0.13) % 1, cxp = p1.x + p1.w * (pd.o + ox * pd.w), cyp = p1.y - h * (0.5 + oy * pd.len * 0.3);
+            g.globalAlpha = (1 - a) * 0.6; g.beginPath(); g.ellipse(cxp, cyp, Math.max(0.5, p1.w * pd.w * 0.3 * a), Math.max(0.3, h * pd.len * 0.12 * a), 0, 0, Math.PI * 2); g.stroke();
+          });
+          g.globalAlpha = 1;
+        }
+      }
+    }
     if (!v.lite && i - baseI < 34 && p1.y - p2.y > 1.5) texture(g, i, p1, p2, W, alt, i - baseI, xp);
     maxy = p1.y;
   }
@@ -192,6 +214,7 @@ export function renderRoad(g: CanvasRenderingContext2D, segs: Seg[], v: View, ca
     g.beginPath();
     g.rect(0, 0, W, s.clip!);
     g.clip();
+    setStirSeg(i);                                              // who stands here is asked how startled they are by the horn
     for (const p of list) {
       if (i - baseI < 6 && NEAR_HIDE.has(p.type)) continue;                       // small roadside things vanish just before they'd swallow the screen
       const ks = k * PROP_K * (PROP_SIZE[p.type] ?? 1), px = s.p1.x + k * p.o * ROAD_W;

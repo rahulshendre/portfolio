@@ -46,3 +46,15 @@ describe('the Bliss land draws', () => {
     }
   });
 });
+
+describe('the Bliss ponds', () => {
+  it('lie on open ground: none is lost to the town, river, lake or boards filters', async () => {
+    const { PONDS, xpExtras } = await import('./meadow');
+    expect(PONDS.length).toBeGreaterThanOrEqual(3);
+    for (const p of PONDS) expect(xpExtras(p.i).some((e) => e.type === 'pond' && Math.sign(e.o) === p.side), `pond at ${p.i}`).toBe(true);
+  });
+  it('keep the grass round them free of trees, bushes and animals', async () => {
+    const { PONDS, POND_O, xpExtras } = await import('./meadow');
+    for (const p of PONDS) for (const e of xpExtras(p.i)) if (e.type !== 'pond') expect(Math.sign(e.o) === p.side && Math.abs(e.o - p.side * POND_O) < 2.8, `${e.type} at ${p.i}`).toBe(false);
+  });
+});
