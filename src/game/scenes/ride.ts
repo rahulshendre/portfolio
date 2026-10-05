@@ -11,7 +11,7 @@ import { envAt, hazeAt } from '../hd/background';
 import { DRAW_DIST, meadowOf, renderRoad } from '../hd/road';
 import { altitude, kmOf, lakeK, riverK, TOWNS, townAt, PASS_TOP, elevation, FINISH, LAKE_FROM, SEG_L, zoneAt } from '../hd/track-ladakh';
 import { dice, World } from '../hd/endless';
-import { BIKE_HALF, capBehind, honkAt, LEFT, overlaps, stepTraffic, trafficAt, type Car } from '../hd/traffic';
+import { BIKE_HALF, capBehind, HALF, honkAt, LEFT, overlaps, stepTraffic, trafficAt, type Car } from '../hd/traffic';
 import { LIGHTS } from '../hd/props';
 import { drawAir, drawLights, drawFlare, drawGround, drawHeadlight, drawLightning, drawNight, drawRain, drawSkyTint, SKIES, type Bolt, type Sky } from '../hd/air';
 import { agility, lateralStep, step as bikeStep, V_CRUISE, V_TOP } from '../hd/physics';
@@ -84,7 +84,7 @@ export class RideScene implements Scene {
   private cars: Car[] = []; private nextCarZ = 70 * SEG_L;
   private lastSeg = -1; private elevK = 3500; private altE = 0; private lakeE = 0; private knockT = 0; private told = new Set<number>();
   private pos = 0; private px = LEFT; private speed = 0; private lean = 0; private braking = false; private lastSpeed = 0; private avgDt = 1 / 60; private lite = false; private honkT = 0; private gearNow = 0; private birdT = 2; private rung = new Set<number>();
-  private photo = false; private photoT = 0; private paused = false; private lights: 'auto' | 'on' | 'off' = 'auto'; private gas = false; private brake = false; private trip = 0; private vx = 0; private bolt: Bolt | null = null; private boltIn = 6; private rideTime: RideTime = 'auto'; private land: Theme = 'himalaya'; private nightK = 0; private todK = -1; private callT = 4; private called = new Set<number>(); private owlT = 12; private gasWas = false; private rough = 0; private bumpT = 0; private rideT = 0; private topKmh = 0; private passed = 0; private honks = 0; private stopT = 0; private sky: Sky = 'clear'; private inPud: object | null = null; private spray: Drop[] = [];
+  private photo = false; private photoT = 0; private paused = false; private lights: 'auto' | 'on' | 'off' = 'auto'; private gas = false; private brake = false; private trip = 0; private vx = 0; private bolt: Bolt | null = null; private boltIn = 6; private rideTime: RideTime = 'auto'; private land: Theme = 'himalaya'; private nightK = 0; private todK = -1; private callT = 4; private called = new Set<number>(); private owlT = 12; private gasWas = false; private rough = 0; private bumpT = 0; private nearT = 0; private rideT = 0; private topKmh = 0; private passed = 0; private honks = 0; private stopT = 0; private sky: Sky = 'clear'; private inPud: object | null = null; private spray: Drop[] = [];
   private cam: Cam = 'behind';
   private get night() { return this.rideTime === 'night'; }
   private pitchK = 0;   // the bike's nose: dips under braking, lifts under power, and the headlight follows
@@ -342,7 +342,13 @@ export class RideScene implements Scene {
     const gaps = this.cars.map((c) => c.z - playerZ);
     stepTraffic(this.cars, playerZ, this.px, dt, MAX_S);
     this.cars.forEach((c, n) => {
-      if (gaps[n] > 0 && c.z - playerZ <= 0 && Math.abs(c.o - this.px) < 0.9 && this.speed > MAX_S * 0.25) { engine.whoosh(); if (c.kind !== 'goats' && c.kind !== 'marmot') this.passed++; }   // just went by
+      if (gaps[n] > 0 && c.z - playerZ <= 0 && Math.abs(c.o - this.px) < 0.9 && this.speed > MAX_S * 0.25) {                       // just went by
+        engine.whoosh();
+        if (c.kind === 'goats' || c.kind === 'marmot') return;
+        this.passed++;
+        const clear = Math.abs(c.o - this.px) - HALF[c.kind] - BIKE_HALF;                                                            // the daylight between the two, in road half-widths
+        if (clear > 0 && clear < 0.09 && this.speed > MAX_S * 0.55 && this.nearT <= 0) { this.nearT = 2.5; this.show('CLOSE CALL|MIND THE PAINT', false, 1.1); }
+      }
     });
     const capped = capBehind(this.cars, playerZ, this.px, this.speed, MAX_S);
     this.speed = capped.speed;
@@ -366,7 +372,7 @@ export class RideScene implements Scene {
         if (this.bumpT <= 0) { this.bumpT = 1.2; engine.thud(); this.show(c.kind === 'goats' || c.kind === 'yak' ? 'CAREFUL|MIND THE ANIMALS' : 'CAREFUL|WATCH THE TRAFFIC', false, 1.2); }
       }
     }
-    this.bumpT -= dt;
+    this.bumpT -= dt; this.nearT -= dt;
     const pud = this.land === 'xp' && this.sky === 'rain' && this.phase === 'ride' ? inPuddle(playerZ / SEG_L, this.px, BIKE_HALF) : null;
     if (pud && pud !== this.inPud && sp > 0.12) this.splash(sp);
     this.inPud = pud;

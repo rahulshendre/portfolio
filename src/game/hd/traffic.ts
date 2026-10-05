@@ -1,5 +1,5 @@
 import { SEG_L } from './track-ladakh';
-import { at, box, circle, g, hgrad, oval, poly, rrect, stroke, vgrad } from './draw';
+import { at, box, circle, g, hgrad, label, oval, poly, rrect, stroke, vgrad } from './draw';
 import { drawRiderAt } from './rider';
 import { drawBlissCar } from './farm';
 import { isBliss } from './land';
@@ -131,6 +131,20 @@ export function capBehind(cars: Car[], playerZ: number, px: number, speed: numbe
 
 /** Draw traffic from behind (facing away), size = screen scale k. */
 /** Other traffic, seen from behind and drawn to the same scale as the road: `k` is pixels per unit. */
+/** Dust kicked up off the tyres: soft puffs that rise and fade. `w` is the vehicle's half-width, `a` how thick. */
+function dust(t: number, w: number, a = 0.22) {
+  for (let i = 0; i < 3; i++) { const p = (t * 0.7 + i / 3) % 1; g.globalAlpha = (1 - p) * a; oval(Math.sin(i * 4 + t) * w * 0.2, -6 - p * 26, w * 0.3 + p * 20, 5 + p * 8, '#d8c4a0'); }
+  g.globalAlpha = 1;
+}
+
+/** The tail of a painted Indian truck: flaps with a pattern behind each wheel, a banner along the chassis, black tassels, a motto. */
+function truckArt(t: number) {
+  for (const x of [-22, 13]) { box(x, -8, 8, 8, '#c4372b'); box(x + 1, -6.5, 6, 1.3, '#f0d040'); box(x + 1, -3.5, 6, 1.3, '#f0d040'); circle(x + 4, -1.5, 1, '#2a8a4a'); }   // mudflaps
+  rrect(-28, -27, 56, 11, 2, '#d99a22'); box(-28, -27, 56, 1.4, '#c4372b'); box(-28, -17.4, 56, 1.4, '#2a8a4a');                                                    // the banner
+  label('HORN OK PLEASE', 0, -19.4, 7.4, '#1a1410', { align: 'center', weight: 800 });
+  for (let i = 0; i < 7; i++) { const sw = Math.sin(t * 5 + i) * 0.6; stroke([-24 + i * 8, -16, -24 + i * 8 + sw, -10.5], '#15110d', 1.5); circle(-24 + i * 8 + sw, -9.8, 1, '#c4372b'); }   // black tassels swinging
+}
+
 export function drawCar(kind: Kind, sx: number, sy: number, k: number, t = 0) {
   const s = k;
   if (s < 0.14) return;
@@ -147,8 +161,7 @@ export function drawCar(kind: Kind, sx: number, sy: number, k: number, t = 0) {
       for (const x of [-18, -6, 6, 18]) box(x - 0.5, -72, 1.2, 42, '#00000030');                            // its ribs
       box(-18, -80, 36, 8, '#33402a');                                                                       // the cab roof above it
       poly([-26, -72, -30, -72, -30, -30, -26, -30], '#ffffff14');
-      for (let i = 0; i < 3; i++) { const p = (t * 0.7 + i / 3) % 1; g.globalAlpha = (1 - p) * 0.22; oval(Math.sin(i * 4 + t) * 8, -6 - p * 26, 12 + p * 20, 5 + p * 8, '#d8c4a0'); }   // a little dust off the tyres
-      g.globalAlpha = 1;
+      dust(t, 40);                                                                                           // a little dust off the tyres
     });
   } else if (kind === 'goats') {
     at(sx, sy, s, () => {                                                                                // a small flock walking across the road, side on
@@ -182,6 +195,7 @@ export function drawCar(kind: Kind, sx: number, sy: number, k: number, t = 0) {
       stroke([-18, -30, -18, -66], '#4a4e56', 1.6); stroke([-12, -30, -12, -66], '#4a4e56', 1.6);           // ladder rails
       for (let y = -34; y > -66; y -= 6) stroke([-18, y, -12, y], '#4a4e56', 1.2);
       circle(0, -80, 5, '#4a4e56'); box(-3, -83, 6, 3, '#2a2c2e');                                           // the hatch on top
+      truckArt(t); dust(t, 38);
     });
   } else if (kind === 'tempo') {
     at(sx, sy, s, () => {                                                                                // a white Tempo Traveller from behind: roof carrier, a big rear window, blue stripe
@@ -193,6 +207,7 @@ export function drawCar(kind: Kind, sx: number, sy: number, k: number, t = 0) {
       box(-27, -32, 54, 4, '#2c6eb0');
       box(-26, -40, 5, 12, '#d8342b'); box(21, -40, 5, 12, '#d8342b'); rrect(-8, -26, 16, 7, 1, '#f4f2ea');
       stroke([-24, -62, 24, -62], '#2a2c30', 1.4); rrect(-20, -74, 40, 12, 4, '#6b4a2a'); rrect(-10, -78, 20, 7, 3, '#3a6a8a');   // rack, bags and a bedroll
+      dust(t, 32, 0.16);
     });
   } else if (kind === 'yak') {
     at(sx, sy, s, () => {                                                                                // three yaks from behind: shaggy rumps, hanging tails, a hairy skirt to the ground
@@ -218,6 +233,7 @@ export function drawCar(kind: Kind, sx: number, sy: number, k: number, t = 0) {
       rrect(-8, -26, 16, 7, 1, '#f4f2ea');                                                                   // plate
       stroke([-22, -55, 22, -55], '#2a2c30', 1.4);                                                            // roof rails
       rrect(-17, -66, 34, 12, 4, '#6b4a2a'); stroke([-6, -66, -6, -54], '#2a1c10', 1.2); stroke([6, -66, 6, -54], '#2a1c10', 1.2); // luggage strapped on the roof
+      dust(t, 32, 0.16);
     });
   } else {
     // another rider: the same drawing as yours, with their own colours and a duffel bag strapped on
