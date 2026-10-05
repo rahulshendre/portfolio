@@ -19,12 +19,22 @@ function texture(g: CanvasRenderingContext2D, i: number, p1: Projected, p2: Proj
     const side = k % 2 ? 1 : -1, x = p1.x + side * (p1.w * (1.45 + r(k) * 4.5)), y = p2.y + r(k + 9) * h, sz = 1 + r(k + 3) * 2.4 * (1 + a);
     g.fillStyle = xp ? (r(k + 5) > 0.5 ? '#3f7a2a' : '#c4e87a') : (r(k + 5) > 0.5 ? '#7a5a3c' : '#e0c8a0'); g.fillRect(x, y, sz * 1.5, sz);
   }
-  g.globalAlpha = 0.16 * a;
+  g.globalAlpha = 0.22 * a;
+  for (const sd of [-1, 1]) if (r(10 + sd) > 0.35) trap2(g, p1, p2, sd * (0.975 - r(11 + sd) * 0.05), 0.03 + r(12 + sd) * 0.03, xp ? '#8a9a5a' : '#c8b08a');   // dust and grit drifted in from the verge, thicker in places
+  g.globalAlpha = 0.2 * a;
   for (const off of [-0.3, 0.3]) trap2(g, p1, p2, off, 0.055, '#141210');                  // tyre tracks polished into the road
+  if (r(13) > 0.86) trap2(g, p1, p2, (r(14) - 0.5) * 0.45, 0.04 + r(15) * 0.05, '#131315');    // an oil stain
+  const blk = Math.floor(i / 9), rb = (n: number) => Math.abs(Math.sin(blk * 12.9898 + n * 78.233) * 43758.5453) % 1;
+  if (rb(1) > 0.55) { g.globalAlpha = 0.5 * a; trap2(g, p1, p2, (rb(2) - 0.5) * 1.5, 0.007 + rb(3) * 0.006, '#1c1a18'); }  // a seam of tar running down the road for a few segments
   g.globalAlpha = 0.5 * a;
   if (r(1) > 0.82) { g.strokeStyle = '#2a2622'; g.lineWidth = Math.max(1, p1.w * 0.006); g.beginPath();   // a crack across the road
     const x0 = p1.x + (r(2) - 0.5) * p1.w * 1.4; g.moveTo(x0, p1.y); g.lineTo(x0 + (r(3) - 0.5) * p1.w * 0.5, (p1.y + p2.y) / 2); g.lineTo(x0 + (r(4) - 0.5) * p1.w * 0.6, p2.y); g.stroke(); }
-  if (r(6) > 0.9) { g.globalAlpha = 0.3 * a; trap2(g, p1, p2, (r(7) - 0.5) * 1.3, 0.08 + r(8) * 0.1, '#2e2b28'); } // a darker tarmac patch, in perspective with the road
+  if (r(6) > 0.86) { g.globalAlpha = 0.3 * a; trap2(g, p1, p2, (r(7) - 0.5) * 1.3, 0.08 + r(8) * 0.1, r(9) > 0.5 ? '#2e2b28' : '#8a867e'); } // a patch of fresh tar, or of old bleached tarmac, in perspective with the road
+  if (r(16) > 0.93) {                                                                       // a pothole: a dark hollow with the sun catching its far lip
+    const px = p1.x + p1.w * (r(17) - 0.5) * 1.3, py = (p1.y + p2.y) / 2, rx = Math.max(1.5, p1.w * (0.05 + r(18) * 0.05)), ry = Math.max(1, h * 0.2);
+    g.globalAlpha = 0.75 * a; g.fillStyle = '#161514'; g.beginPath(); g.ellipse(px, py, rx, ry, 0, 0, Math.PI * 2); g.fill();
+    g.globalAlpha = 0.22 * a; g.fillStyle = '#ffffff'; g.beginPath(); g.ellipse(px + rx * 0.12, py - ry * 0.7, rx * 0.8, Math.max(0.5, ry * 0.2), 0, 0, Math.PI * 2); g.fill();
+  }
   g.globalAlpha = 1;
 }
 function trap2(g: CanvasRenderingContext2D, p1: Projected, p2: Projected, off: number, wd: number, col: string) {

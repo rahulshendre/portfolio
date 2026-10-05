@@ -3,7 +3,7 @@ import { box, circle, label, mix, rrect, smooth, use } from '../hd/draw';
 import { CAM_HEIGHT, CAM_NAMES, CAMS, drawPOV, drawTop, RIDER_SCALE, type Cam } from '../hd/cameras';
 import { drawRider } from '../hd/rider';
 import { drawSpeedLines } from '../hd/speed';
-import { finish } from '../hd/finish';
+import { finish, grade } from '../hd/finish';
 import { LowRes } from '../hd/pixel';
 import { setGarageBike } from '../hd/garage';
 import type { Look } from '../rail';
@@ -448,7 +448,7 @@ export class RideScene implements Scene {
       if (!this.lite && this.sky === 'rain') drawRain(g, W, H, this.t, sp);
       if (this.spray.length) this.drawSpray(g, W, H);
       if (this.bolt) drawLightning(g, W, H, HZ, this.bolt);
-      if (!this.lite) finish(g, W, H, HZ, env.tod, this.nightK > 0.5, !small);   // grade, vignette and grain over the world, under the rider and the HUD
+      if (!this.lite) { grade(g, W, H, this.land); finish(g, W, H, HZ, env.tod, this.nightK > 0.5, !small); }   // grade, vignette and grain over the world, under the rider and the HUD
       const beam = this.lights === 'off' ? 0 : Math.max(this.lights === 'on' ? 0.5 : 0, env.tod > 0.55 ? (env.tod - 0.55) / 0.45 : 0, this.nightK * 1.4);
       const beamA = Math.min(1, beam);
       if (!this.lite && beamA > 0) drawHeadlight(g, W, H, HZ, this.lean, beamA, { wet: this.sky === 'rain' ? 1 : 0, mist: this.sky === 'fog' || this.sky === 'snow' ? 1 : 0, t: this.t, pitch: this.pitchK, dark: Math.min(1, this.nightK * 1.25 + Math.max(0, env.tod - 0.45) * 0.9) });

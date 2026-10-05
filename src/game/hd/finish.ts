@@ -43,6 +43,19 @@ function build(W: number, H: number, HZ: number, tod: number, night: boolean, gr
   return c;
 }
 
+/** How much colour each land loses to the grade: Bliss was candy, so it is pulled back hard; the Himalaya is already dusty. */
+const GRADE_DESAT = { xp: 0.24, himalaya: 0.07 } as const;
+
+/** Pull the colour out of everything drawn so far by blending a grey in the 'saturation' mode: brightness stays, hue stays, the loud greens and pinks calm down. */
+export function grade(ctx: CanvasRenderingContext2D, W: number, H: number, land: keyof typeof GRADE_DESAT) {
+  ctx.save();
+  ctx.globalCompositeOperation = 'saturation';
+  ctx.globalAlpha = GRADE_DESAT[land];
+  ctx.fillStyle = '#808080';
+  ctx.fillRect(0, 0, W, H);
+  ctx.restore();
+}
+
 /** Draw the finishing pass. `tod` 0..1 shifts the bloom slightly as the day goes on; it is rebuilt only when the size or the hour changes noticeably. */
 export function finish(ctx: CanvasRenderingContext2D, W: number, H: number, HZ: number, tod: number, night = false, grain = true) {
   const q = Math.round(tod * 6) / 6;
