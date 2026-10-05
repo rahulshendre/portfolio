@@ -1,7 +1,7 @@
 // The roadside of the Bliss land (the old Windows XP wallpaper): round green trees, bushes, drifts of wildflowers. Same smooth shapes and the same low
 // light from the right as the rest of the ride. In this land the dry things of Ladakh (boulders, scrub, snow, cairns, yaks, camels) are swapped for these.
 import { at, g, rnd } from './draw';
-import { BOARDS, BRO, FINISH, GARAGE_BOARDS, LAKE_FROM, shore, TOWNS } from './track-ladakh';
+import { BOARDS, BRO, FINISH, GARAGE_BOARDS, LAKE_FROM, LANE_G, shore, TOWNS } from './track-ladakh';
 import { drawArch, drawBarn, drawBlossom as drawBlossomC, drawCastle, drawChurch, drawCottage, drawFolly, drawHamlet, drawHaystack, drawManor, drawPicnic, drawScarecrow, drawSignpost, drawStoneWall, drawTeaRoom, drawWell, drawWindmill } from './country';
 import { drawBicycle, drawLampPost, drawProduceStand, drawShopfront, drawTollhouse, drawVillager, drawWelcomeArch } from './village';
 import { drawPond } from './pond';
@@ -144,7 +144,7 @@ export function xpExtras(i: number, salt = 0, own: readonly { o: number; type: s
   }
   const bill = GARAGE_BOARDS.find((b) => i > FINISH - b.back - 45 && i <= FINISH - b.back + 3);         // the huge garage boards stand clear, with an open view of them down the road
   const signed = BOARDS.some((b) => i > b.i - 12 && i <= b.i + 2) || BRO.some((b) => i > b.i - 8 && i <= b.i + 1);   // keep clear of the roadside boards
-  const inTown = TOWNS.some((t) => i >= t.gate - 8 && i <= t.to + 4), river = i >= 270 && i < 620, lake = i >= LAKE_FROM - 10 && i < 1260, home = i >= FINISH - 56 && i <= FINISH + 8;
+  const inTown = TOWNS.some((t) => i >= t.gate - 8 && i <= t.to + 4), river = i >= 270 && i < 620, lake = i >= LAKE_FROM - 10 && i < 1260, home = i >= FINISH - 56 && i <= LANE_G + 4;
   const hard = out.filter((e) => !SOFT.has(e.type));
   const clear = (e: Extra) => !own.some((q) => crowds(e, q)) && (!SOFT.has(e.type) || !hard.some((h) => h !== e && crowds(e, h)));   // the country's own things and the farm's animals take their place first
   const kept = out.filter((e) => clear(e) && !(bill && Math.sign(e.o) === Math.sign(bill.o) && Math.abs(e.o) > 2.2) && !(signed && Math.abs(e.o) < 3.4) && !(inTown && Math.abs(e.o) < 5) && !(river && e.o < -2.4 && e.o > -9.5) && !(lake && e.o > shore(i) - 1.2 && e.o > 0) && !(home && Math.abs(e.o) < 8));

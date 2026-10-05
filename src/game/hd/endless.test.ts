@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { dice, World, type VSeg } from './endless';
-import { CHAPTERS, FINISH } from './track-ladakh';
+import { CHAPTERS, FINISH, LANE_G } from './track-ladakh';
 import { milestones } from '../../data/site';
 
 const LEN = CHAPTERS.map((c) => c.to - c.from);
@@ -43,15 +43,16 @@ describe('the endless road', () => {
     const x = new World(milestones, dice(3));
     const first = x.nextGarage(0);
     expect(x.segs.length).toBeLessThan(first);                       // planned, not built
-    x.ensure(first + 5);
-    expect(x.segs[first]!.props.some((p) => p.type === 'garage')).toBe(true);
-    expect(x.segs[first]!.src).toBe(FINISH);
+    x.ensure(first + 20);
+    const at = first + (LANE_G - FINISH);                              // the garage stands at the end of the exit lane, a little past where the plan counts it
+    expect(x.segs[at]!.lane!.some((p) => p.type === 'garage')).toBe(true);
+    expect(x.segs[at]!.src).toBe(LANE_G);
     x.ensure(20 * 1260);
-    const found = x.segs.flatMap((s, i) => (s!.props.some((p) => p.type === 'garage') ? [i] : []));
+    const found = x.segs.flatMap((s, i) => (s!.lane?.some((p) => p.type === 'garage') ? [i] : []));
     const highs = chapters(x, x.segs.length).filter((c) => c === 'high').length;
     expect(found.length).toBe(highs);
-    expect(found[1]).toBe(x.nextGarage(found[0] + 1));
-    expect(x.prevGarage(found[1] + 1)).toBe(found[1]);
+    expect(found[1] - (LANE_G - FINISH)).toBe(x.nextGarage(found[0] - (LANE_G - FINISH) + 1));
+    expect(x.prevGarage(found[1] - (LANE_G - FINISH) + 1)).toBe(found[1] - (LANE_G - FINISH));
   });
   it('keeps the career markers in story order whichever chapter they fall in', () => {
     const labels = w.segs.flatMap((s) => s!.props.filter((p) => p.type === 'ms').map((p) => p.label));

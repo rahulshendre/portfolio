@@ -7,7 +7,7 @@ import { xpExtras } from './meadow';
 import { puddleAt, puddleHalf } from './puddles';
 import { setStirSeg } from './stir';
 export { LIGHTS } from './props';
-import { altitude, duneK, FINISH, lakeK, riverK, shore, ROAD_W, SEG_L, terraceK, type Prop, type Segment } from './track-ladakh';
+import { altitude, duneK, laneAt, LANE_END, LANE_FROM, LANE_G, laneShift, lakeK, riverK, shore, ROAD_W, SEG_L, terraceK, type Prop, type Segment } from './track-ladakh';
 import type { VSeg } from './endless';
 import { drawCar, type Car } from './traffic';
 
@@ -45,6 +45,8 @@ export interface View {
   W: number; H: number; HZ: number;
   pos: number; px: number; camH: number;
   bgOff: number; t: number; env: Env; lite?: boolean;
+  /** From this segment on, the exit lane to the garage is the road the bike is on (and the main road is drawn beside it). */
+  fork?: number;
   /** Multiplies the distance haze: about 2.4 in fog. */
   fogK?: number;
   /** Rain on the Bliss land: puddles lie on the road and the verge. */
@@ -72,6 +74,42 @@ function trap(a: { x: number; y: number; w: number }, b: { x: number; y: number;
 }
 
 const scaled = (p: Projected, k: number, dx = 0) => ({ x: p.x + p.w * dx, y: p.y, w: p.w * k });
+
+/** How far to the right of the exit lane the main road lies, `n` segments along the lane, in road half-widths (the lane is 2.5 from the road's middle where it opens out, and pulls away from there). */
+const lanesGap = (n: number) => 2.5 + laneShift(n) / ROAD_W;
+
+/**
+ * A whole road drawn beside the one you are on: its shoulders, kerbs, tarmac, edge lines and centre dashes. `c1` and `c2` are where its middle lies at the near and far ends of the segment, in road
+ * half-widths from the middle of yours, and `k1` and `k2` how wide it is there, as a multiple of the usual.
+ */
+function roadBand(g: CanvasRenderingContext2D, p1: Projected, p2: Projected, c1: number, c2: number, k1: number, k2: number, alt: number, F: (col: string) => string, shoulder: string, tar: string) {
+  const quad = (m: number, fill: string, d1 = 0, d2 = d1) =>
+    fillPoly([p1.x + p1.w * (c1 + d1 - k1 * m), p1.y + 1, p1.x + p1.w * (c1 + d1 + k1 * m), p1.y + 1, p2.x + p2.w * (c2 + d2 + k2 * m), p2.y, p2.x + p2.w * (c2 + d2 - k2 * m), p2.y], fill);
+  quad(1.35, F(shoulder)); quad(1.08, F(alt ? '#e8b923' : '#222')); quad(1, F(tar));
+  if (p1.w > 36) for (const sd of [-1, 1]) quad(0.012, F('#e9e3d1'), sd * 0.93 * k1, sd * 0.93 * k2);
+  if (alt) quad(0.02, F('#e9e3d1'));
+}
+
+/**
+ * The exit lane to the garage, seen from the main road (see `laneAt`): a road of its own opening out beside it, the hatched island between them, and painted arrows. Each segment gets the lane's
+ * position at its near end and its far end, so it bends away smoothly. Near its end the tarmac gives way to the garage's concrete forecourt.
+ */
+function laneRoad(g: CanvasRenderingContext2D, si: number, p1: Projected, p2: Projected, alt: number, F: (col: string) => string, shoulder: string, tar: string) {
+  const a = laneAt(si), b = laneAt(Math.min(si + 1, LANE_G + 1));
+  if (!a || !b) return;
+  const forecourt = si - LANE_FROM >= LANE_END - LANE_FROM - 4;
+  roadBand(g, p1, p2, a.c, b.c, a.w / 2, b.w / 2, alt, F, shoulder, forecourt ? '#8d8983' : tar);
+  const quad = (o1: number, o2: number, w1: number, w2: number, fill: string) =>
+    fillPoly([p1.x + p1.w * (o1 - w1), p1.y + 1, p1.x + p1.w * (o1 + w1), p1.y + 1, p2.x + p2.w * (o2 + w2), p2.y, p2.x + p2.w * (o2 - w2), p2.y], fill);
+  const line = F('#e9e3d1');
+  if (a.gore > 0.02 || b.gore > 0.02) {                                                   // the island: dark tarmac with white bars across it on every other segment, and a line down its outer side
+    const m1 = -(1.08 + a.gore / 2), m2 = -(1.08 + b.gore / 2);
+    quad(m1, m2, a.gore / 2, b.gore / 2, F('#4a4846'));
+    if (si % 2 === 0) { g.globalAlpha = 0.85; quad(m1, m2, a.gore / 2 * 0.86, b.gore / 2 * 0.86, line); g.globalAlpha = 1; }
+    quad(-(1.08 + a.gore), -(1.08 + b.gore), 0.012, 0.012, line);
+  }
+  if (si % 9 === 4 && a.w > 1.8 && !forecourt) { g.globalAlpha = 0.9; fillPoly([p1.x + p1.w * (a.c - 0.26), p1.y, p1.x + p1.w * (a.c + 0.26), p1.y, p2.x + p2.w * b.c, p2.y], line); g.globalAlpha = 1; }   // an arrow painted on the lane
+}
 
 function groundCols(i: number, xp = false) {
   if (xp) return { grass: ['#7cbc3c', '#72b234'] as [string, string], shoulder: ['#b2bf6e', '#a8b564'] as [string, string] };   // Bliss: two greens in bands, and a pale verge
@@ -176,19 +214,21 @@ export function renderRoad(g: CanvasRenderingContext2D, segs: (Seg | undefined)[
       trap(scaled(p1, wd, m), scaled(p2, wd, m), F(mix(c.grass[alt], alt ? '#3fb0b6' : '#46b9be', a)));
       trap(scaled(p1, wd * 0.45, m + wd * 0.3), scaled(p2, wd * 0.45, m + wd * 0.3), F(mix(c.grass[alt], '#8fdadd', a * 0.8))); // a lighter current down the middle
     }
-    if (si >= FINISH - 18 && si <= FINISH + 12) {                // the forecourt: a concrete apron in front of the garage, with painted bays
-      const ap = smooth(FINISH - 18, FINISH - 12, si) * (1 - smooth(FINISH + 8, FINISH + 12, si));
-      trap(scaled(p1, 3.2, -4.4), scaled(p2, 3.2, -4.4), F(mix(c.grass[alt], alt ? '#8d8983' : '#96918a', ap)));
-      for (const o of [-2.4, -3.6, -4.8, -6.0]) trap(scaled(p1, 0.02, o), scaled(p2, 0.02, o), F(mix(c.grass[alt], '#e9e3d1', ap * 0.85)));
+    const forked = v.fork !== undefined && i >= v.fork, ln = si - LANE_FROM;
+    const onRoad = !forked || ln <= LANE_G - LANE_FROM + 1;                           // once the bike is on the lane, its road ends at the garage
+    const tar = forked && ln >= LANE_END - LANE_FROM - 4 ? '#8d8983' : alt ? road0 : road1;   // (the lane ends in the garage's concrete forecourt)
+    if (onRoad) {
+      trap(scaled(p1, 1.35), scaled(p2, 1.35), F(c.shoulder[alt]));
+      trap(scaled(p1, 1.08), scaled(p2, 1.08), F(alt ? '#e8b923' : '#222'));
+      trap(p1, p2, F(tar));
+      if (p1.w > 36) {                                           // the solid edge lines are under a pixel wide beyond this: not worth painting
+        trap(scaled(p1, 0.012, -0.93), scaled(p2, 0.012, -0.93), F('#e9e3d1'));
+        trap(scaled(p1, 0.012, 0.93), scaled(p2, 0.012, 0.93), F('#e9e3d1'));
+      }
+      if (alt) trap(scaled(p1, 0.02), scaled(p2, 0.02), F('#e9e3d1'));
     }
-    trap(scaled(p1, 1.35), scaled(p2, 1.35), F(c.shoulder[alt]));
-    trap(scaled(p1, 1.08), scaled(p2, 1.08), F(alt ? '#e8b923' : '#222'));
-    trap(p1, p2, F(alt ? road0 : road1));
-    if (p1.w > 36) {                                           // the solid edge lines are under a pixel wide beyond this: not worth painting
-      trap(scaled(p1, 0.012, -0.93), scaled(p2, 0.012, -0.93), F('#e9e3d1'));
-      trap(scaled(p1, 0.012, 0.93), scaled(p2, 0.012, 0.93), F('#e9e3d1'));
-    }
-    if (alt) trap(scaled(p1, 0.02), scaled(p2, 0.02), F('#e9e3d1'));
+    if (forked) { if (ln >= 0) roadBand(g, p1, p2, lanesGap(ln), lanesGap(ln + 1), 1, 1, alt, F, c.shoulder[alt], alt ? road0 : road1); }   // the road you left, now off to the right
+    else laneRoad(g, si, p1, p2, alt, F, c.shoulder[alt], road1);                 // the lane to the garage, where there is one
     if (v.wet && xp) {                                           // rain puddles: a patch of sky on the road or the verge, round in perspective, with rings where the drops land
       const pd = puddleAt(i);
       if (pd) {
@@ -207,7 +247,7 @@ export function renderRoad(g: CanvasRenderingContext2D, segs: (Seg | undefined)[
         }
       }
     }
-    if (!v.lite && i - baseI < 34 && p1.y - p2.y > 1.5) texture(g, i, p1, p2, W, alt, i - baseI, xp);
+    if (!v.lite && onRoad && i - baseI < 34 && p1.y - p2.y > 1.5) texture(g, i, p1, p2, W, alt, i - baseI, xp);
     maxy = p1.y;
   }
 
@@ -222,28 +262,35 @@ export function renderRoad(g: CanvasRenderingContext2D, segs: (Seg | undefined)[
     const s = segs[i]!;
     if (!s.p1 || s.p1.cz <= CAM_DEPTH) continue;
     const k = (s.p1.s * W) / 2, here = BY_SEG.get(i);
-    const list = xp ? meadowOf(s) : s.props;         // the Bliss land adds trees and flowers of its own
-    if (!list.length && !here) continue;                       // nothing to draw here: no clip to set up
+    const main = xp ? meadowOf(s) : s.props, byLane = s.lane;                     // the Bliss land adds trees and flowers of its own
+    if (!main.length && !byLane && !here) continue;            // nothing to draw here: no clip to set up
+    const forked = v.fork !== undefined && i >= v.fork, lane = forked ? null : laneAt(s.src);
+    const mainShift = forked ? lanesGap(s.src - LANE_FROM) * ROAD_W : 0;          // in the lane's view, the main road lies off to the right; in the main road's, the lane lies off to the left
+    const laneShiftW = lane ? lane.c * ROAD_W : 0;
     // The clip hides what the next hill crest should hide. Where the ground runs on flat or downhill from the one in front (the usual case) there is nothing to hide, and a clip per segment is dear.
     const hilly = s.clip! < s.p1.y - 1;
     if (hilly) { g.save(); g.beginPath(); g.rect(0, 0, W, s.clip!); g.clip(); }
     setStirSeg(i);                                              // who stands here is asked how startled they are by the horn
-    for (const p of list) {
-      if (i - baseI < 6 && NEAR_HIDE.has(p.type)) continue;                       // small roadside things vanish just before they'd swallow the screen
-      const ks = k * PROP_K * (PROP_SIZE[p.type] ?? 1), px = s.p1.x + k * p.o * ROAD_W;
-      if (px < -ks * 190 || px > W + ks * 190) continue;                          // wholly off the side of the screen: nothing to draw
-      drawProp(p.type, px, s.p1.y, ks, p);
-      if (p.type === 'pole') {                                                     // wires sag from this pole back to the last (farther) one
-        if (lastPole && ks < 0.9) wires(g, px, s.p1.y - 121 * ks, ks, lastPole.x, lastPole.y, lastPole.s);
-        lastPole = { x: px, y: s.p1.y - 121 * ks, s: ks };
+    const put = (list: readonly AnyProp[], shift: number) => {
+      for (const p of list) {
+        if (i - baseI < 6 && NEAR_HIDE.has(p.type)) continue;                       // small roadside things vanish just before they'd swallow the screen
+        const ks = k * PROP_K * (PROP_SIZE[p.type] ?? 1), px = s.p1!.x + k * (p.o * ROAD_W + shift);
+        if (px < -ks * 190 || px > W + ks * 190) continue;                          // wholly off the side of the screen: nothing to draw
+        drawProp(p.type, px, s.p1!.y, ks, p);
+        if (p.type === 'pole') {                                                     // wires sag from this pole back to the last (farther) one
+          if (lastPole && ks < 0.9) wires(g, px, s.p1!.y - 121 * ks, ks, lastPole.x, lastPole.y, lastPole.s);
+          lastPole = { x: px, y: s.p1!.y - 121 * ks, s: ks };
+        }
       }
-    }
+    };
+    put(main, mainShift);
+    if (byLane) put(byLane, laneShiftW);
     if (here) for (const car of here) {                                            // a vehicle sits part-way along its segment: place it exactly, not at the segment's start, so it glides instead of stepping
       const f = (car.z - i * SEG_L) / SEG_L, cp = project(s.y1 + (s.y2 - s.y1) * f, car.z, s.camX1! + (s.camX2! - s.camX1!) * f, camY, v.pos, W, H, HZ, ROAD_W);
       const near = v.camH * CAM_DEPTH, fade = Math.min(1, (cp.cz - near * 0.55) / (near * 0.4));   // one that is drawing level with the rider melts away rather than popping out
       if (fade <= 0) continue;
       g.globalAlpha = fade;
-      drawCar(car.kind, cp.x + ((cp.s * W) / 2) * car.o * ROAD_W, cp.y, ((cp.s * W) / 2) * PROP_K * 0.5, v.t);
+      drawCar(car.kind, cp.x + ((cp.s * W) / 2) * (car.o * ROAD_W + mainShift), cp.y, ((cp.s * W) / 2) * PROP_K * 0.5, v.t);
       g.globalAlpha = 1;
     }
     if (hilly) g.restore();

@@ -10,6 +10,42 @@ export const SEG_L = 200;
 export const ROAD_W = 1100;
 export const N = 1400; // road keeps going past the garage so the horizon never runs out
 export const FINISH = 1180; // garage sits here
+/**
+ * The way to the garage is a second road, a motorway-style exit: it leaves the left of the main road at `LANE_FROM`, runs beside it behind a hatched island, then bends away to the left (about 58
+ * degrees, between 8 and 40 segments from its start) and runs straight to the garage at `LANE_G`. Steer into it and it is THE road: the camera follows its bend, and the main road is drawn as the
+ * second road beside it. Both share one index; `n = i - LANE_FROM` is a place along the lane. Positions are in road half-widths from the middle of the main road, negative to the left.
+ */
+export const LANE_FROM = FINISH - 44;
+export const LANE_G = LANE_FROM + 52;       // the garage stands at the end of the lane
+export const LANE_END = LANE_G - 8;         // where the bike pulls up in front of it
+const BEND_FROM = 8, BEND_TO = 40, BEND_K = 20;
+/** How hard the lane curves to the left `n` segments from its start: nothing, then a smooth burst, then nothing. Same units as a segment's `curve`; take it from the main road's. */
+export const laneCurve = (n: number) => { const t = (n - BEND_FROM) / (BEND_TO - BEND_FROM); return t <= 0 || t >= 1 ? 0 : BEND_K * Math.sin(Math.PI * t) ** 2; };
+// How fast the lane is moving sideways from the main road (world units a segment) and how far it has got, worked out once from its curve.
+const DX: number[] = [0], EX: number[] = [0];
+for (let n = 0; n < 120; n++) { DX.push(DX[n] + laneCurve(n)); EX.push(EX[n] + DX[n]); }
+const tab = (T: number[], n: number) => { const k = Math.min(T.length - 2, Math.max(0, Math.floor(n))); return T[k] + (T[k + 1] - T[k]) * (n - k); };
+/** How far the lane has pulled away from the main road, in world units, `n` segments along it (it carries straight on past the end of the table). */
+export const laneShift = (n: number) => (n <= 0 ? 0 : n < EX.length - 1 ? tab(EX, n) : EX[EX.length - 1] + DX[DX.length - 1] * (n - (EX.length - 1)));
+export interface Lane {
+  /** the middle of the lane, its edge nearer the main road and its edge farther from it */
+  c: number; inner: number; outer: number;
+  /** how wide the lane is; how wide the hatched island is between it and the road's kerb; how far the lane has pulled away from the road, in road half-widths */
+  w: number; gore: number; away: number;
+}
+export function laneAt(i: number): Lane | null {
+  const n = i - LANE_FROM;
+  if (n < 0 || n > LANE_G - LANE_FROM + 1) return null;
+  const away = laneShift(n) / ROAD_W, w = 2 * smooth(0, 8, n);                                    // it opens out from nothing to a whole road wide
+  const inner = -(1.5 + away), outer = inner - w, island = -1.08 - inner;                         // and pulls away; the island is the gap between the road's kerb and the lane
+  return { c: (inner + outer) / 2, inner, outer, w, gore: island * (1 - smooth(0.45, 0.7, island)), away };
+}
+/** Whether a bike at sideways position `px` is on tarmac out here: in the lane itself, or on the island's hatching. */
+export const paved = (l: Lane, px: number) => (px <= l.inner + 0.05 && px >= l.outer - 0.1) || (px <= -1.08 && px >= -(1.08 + l.gore));
+/** Whether a bike at `z` (in segments, counted so the garage's chapter is laid out as the track is) has steered into the lane: it is in it, past where it has opened out, and with room to run. */
+export const inLane = (z: number, px: number) => { const l = laneAt(z); return !!l && z - LANE_FROM >= 8 && z <= LANE_END - 8 && px <= l.inner + 0.04 && px >= l.outer - 0.1; };
+/** Segments near the lane, where the country gives way to it. */
+const laneZone = (i: number) => i >= LANE_FROM - 2 && i <= LANE_G + 4;
 export const MILESTONE_SEGS = [150, 420, 690, 960, 1110];
 export const PASS_TOP = 900;
 export const BOARDS = [
@@ -75,7 +111,11 @@ export const SEAM = 40;
 export type PropType =
   | 'billboard' | 'gantry' | 'house' | 'chorten' | 'poplar' | 'flags' | 'canopy' | 'mani' | 'boulder' | 'bro' | 'ms' | 'board' | 'stone' | 'snow' | 'yak' | 'garage' | 'sign' | 'pole' | 'scrub' | 'tuft' | 'cairn' | 'chevron' | 'gompa' | 'palace' | 'stupahill' | 'reed' | 'duck' | 'dhaba' | 'parked' | 'kiang' | 'marmot' | 'lamp' | 'dog' | 'darchog' | 'flagmound' | 'village' | 'camel' | 'limit' | 'cone' | 'crew' | 'summit' | 'camp' | 'shop' | 'gate' | 'stall' | 'monk' | 'buddha' | 'monastery' | 'tourer' | 'gurdwara' | 'checkpost';
 export interface Prop { o: number; type: PropType; label?: string; sub?: string; lines?: readonly string[]; v?: number }
-export interface Segment { i: number; y1: number; y2: number; curve: number; props: Prop[]; zone: Zone }
+export interface Segment {
+  i: number; y1: number; y2: number; curve: number; props: Prop[]; zone: Zone;
+  /** What stands by the exit lane to the garage, placed from the middle of that lane (see `laneAt`); only the stretch around the garage has any. */
+  lane?: Prop[];
+}
 
 const TAU = Math.PI * 2;
 const smooth = (a: number, b: number, x: number) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
@@ -118,7 +158,7 @@ function build(milestones: readonly { top: string; label: string }[], lo: number
   const segs: Segment[] = new Array(N);
   for (let i = lo; i < hi; i++) segs[i] = { i, y1: hill(i), y2: hill(i + 1), curve: bend(i), props: [], zone: zoneAt(i) };
   const add = (i: number, p: Prop) => segs[i]?.props.push(p);
-  const clear = (i: number) => BOARDS.some((b) => i > b.i - 12 && i <= b.i + 2) || BRO.some((b) => i > b.i - 8 && i <= b.i + 1);
+  const clear = (i: number) => BOARDS.some((b) => i > b.i - 12 && i <= b.i + 2) || BRO.some((b) => i > b.i - 8 && i <= b.i + 1) || laneZone(i);   // nothing grows by the exit lane
   /**
    * Scatter `type` beside segment `i` in clumps and clearings instead of on a beat: each side has its own drift of cover (`wave` segments to a clump); where it rises past
    * `from` things may stand, thicker the higher it gets (`rate` scales the chance). `kind` gives the prop's `v` and `reach` how far from the road it stands, both from a roll of the dice.
@@ -140,7 +180,7 @@ function build(milestones: readonly { top: string; label: string }[], lo: number
   for (let i = Math.max(4, lo); i < Math.min(FINISH + 80, hi); i++) {
     const z = zoneAt(i), r = rnd(i), r2 = rnd(i + 17);
     // BRO-painted edge stones, black and yellow on the drop side of the pass
-    if (i % 4 === 0) { add(i, { o: -1.13, type: 'stone', v: 0 }); add(i, { o: 1.13, type: 'stone', v: z === 'pass' ? 1 : 0 }); }
+    if (i % 4 === 0) { if (!laneZone(i)) add(i, { o: -1.13, type: 'stone', v: 0 }); add(i, { o: 1.13, type: 'stone', v: z === 'pass' ? 1 : 0 }); }
     if (clear(i)) continue;
     if (z === 'leh') {
       if (i % 7 === 0 && i > 14) add(i, { o: (i % 14 ? 1 : -1) * (2.2 + r * 0.7), type: 'house', v: r2 > 0.8 ? 3 : Math.floor(r2 * 3) });
@@ -237,8 +277,19 @@ function build(milestones: readonly { top: string; label: string }[], lo: number
   add(664, { o: 2.3, type: 'checkpost' });                                                                              // the army check post at the foot of the pass
   // the garage: huge boards counting down to it, a gantry over the road just before, then the building itself, shut
   for (const b of GARAGE_BOARDS) add(FINISH - b.back, { o: b.o, type: 'billboard', label: 'SHENDRE', sub: `GARAGE · ${Math.round(kmOf(b.back) * 2) / 2} KM` });
-  add(FINISH - 36, { o: 0, type: 'gantry', label: 'SHENDRE', sub: 'GARAGE' });
-  add(FINISH, { o: -4.1, type: 'garage' });
-  for (let i = FINISH - 44; i < FINISH; i += 8) add(i, { o: -1.75, type: 'lamp' });   // the lit approach
+  add(FINISH - 62, { o: 0, type: 'gantry', label: 'SHENDRE', sub: 'GARAGE' });
+  const addLane = (i: number, p: Prop) => (segs[i] && (segs[i].lane ??= []).push(p));
+  addLane(LANE_G, { o: 0, type: 'garage' });                                                      // the garage stands at the end of the exit lane, square on to whoever rides down it
+  // the lit approach: lamps by the road, then along the outer edge of the exit lane
+  for (let i = FINISH - 92; i < FINISH - 44; i += 8) if (!laneZone(i)) add(i, { o: -1.75, type: 'lamp' });
+  for (let i = LANE_FROM + 10; i < LANE_END + 4; i += 8) addLane(i, { o: -1.4, type: 'lamp' });
+  // signs that lead you to it: a first warning, a limit, a sign for the exit, the big one at the mouth of the lane, chevrons along the island, a crawl limit on the lane, and a last reminder near its end
+  add(FINISH - 78, { o: -1.9, type: 'sign', label: 'SHENDRE GARAGE', sub: '300 M' });
+  add(FINISH - 58, { o: 1.95, type: 'limit', v: 30 });
+  add(FINISH - 52, { o: -1.9, type: 'sign', label: 'SHENDRE GARAGE', sub: 'NEXT LEFT' });
+  add(LANE_FROM - 1, { o: -2.9, type: 'sign', label: 'SHENDRE GARAGE', sub: '← EXIT' });
+  for (let i = LANE_FROM + 8; i <= LANE_FROM + 24; i += 4) add(i, { o: -(1.08 + laneAt(i)!.gore * 0.55), type: 'chevron', v: -1 });
+  add(LANE_FROM + 6, { o: laneAt(LANE_FROM + 6)!.outer - 0.6, type: 'limit', v: 20 });
+  addLane(LANE_END - 8, { o: 1.45, type: 'sign', label: 'SHENDRE GARAGE', sub: 'CLOSED' });
   return segs;
 }

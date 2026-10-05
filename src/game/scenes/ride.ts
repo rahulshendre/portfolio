@@ -9,7 +9,7 @@ import { setGarageBike } from '../hd/garage';
 import type { Look } from '../rail';
 import { envAt, hazeAt } from '../hd/background';
 import { DRAW_DIST, meadowOf, renderRoad } from '../hd/road';
-import { altitude, kmOf, lakeK, riverK, TOWNS, townAt, PASS_TOP, elevation, FINISH, LAKE_FROM, SEG_L, zoneAt } from '../hd/track-ladakh';
+import { altitude, kmOf, lakeK, riverK, TOWNS, townAt, PASS_TOP, elevation, FINISH, inLane, LAKE_FROM, LANE_END, LANE_FROM, laneAt, laneCurve, paved, SEG_L, zoneAt } from '../hd/track-ladakh';
 import { dice, World } from '../hd/endless';
 import { BIKE_HALF, capBehind, HALF, honkAt, LEFT, overlaps, stepTraffic, trafficAt, type Car } from '../hd/traffic';
 import { LIGHTS } from '../hd/props';
@@ -31,6 +31,10 @@ import { milestones, site } from '../../data/site';
 interface Drop { x: number; y: number; vx: number; vy: number; life: number; r: number }
 
 const MAX_S = SEG_L * 37;
+/** How long the arrival at the garage takes, in seconds: the light goes and the summary comes up before the door scene. */
+const TURN_T = 1.8;
+/** How fast the exit lane carries the bike to the garage, in km/h: a crawl. */
+const LANE_KMH = 25;
 /** The speedometer's top: the bike never shows more than this. */
 const KMH = 110;
 /** World units per second for each metre per second of the bike's real speed, chosen so the top speed lands on MAX_S. */
@@ -77,12 +81,12 @@ const INK = '#1b1712', HUD = '#fff6e0', ACCENT = '#e8b923';
 
 export class RideScene implements Scene {
   mode = 'hd' as const;
-  private phase: 'title' | 'ride' | 'knock' = 'title';
+  private phase: 'title' | 'ride' | 'lane' | 'knock' = 'title';
   private world = makeWorld();
   /** The road: built a little ahead of the bike and dropped behind it. */
   private get segs() { return this.world.segs; }
   private cars: Car[] = []; private nextCarZ = 70 * SEG_L;
-  private lastSeg = -1; private elevK = 3500; private altE = 0; private lakeE = 0; private knockT = 0; private told = new Set<number>();
+  private lastSeg = -1; private elevK = 3500; private altE = 0; private lakeE = 0; private knocked = false; private fork: number | undefined = undefined; private told = new Set<number>();
   private pos = 0; private px = LEFT; private speed = 0; private lean = 0; private braking = false; private lastSpeed = 0; private avgDt = 1 / 60; private lite = false; private honkT = 0; private gearNow = 0; private birdT = 2; private rung = new Set<number>();
   private photo = false; private photoT = 0; private paused = false; private lights: 'auto' | 'on' | 'off' = 'auto'; private gas = false; private brake = false; private trip = 0; private vx = 0; private bolt: Bolt | null = null; private boltIn = 6; private rideTime: RideTime = 'auto'; private land: Theme = 'himalaya'; private nightK = 0; private todK = -1; private callT = 4; private called = new Set<number>(); private owlT = 12; private gasWas = false; private rough = 0; private bumpT = 0; private nearT = 0; private rideT = 0; private topKmh = 0; private passed = 0; private honks = 0; private stopT = 0; private sky: Sky = 'clear'; private inPud: object | null = null; private spray: Drop[] = [];
   private cam: Cam = 'behind';
@@ -238,6 +242,18 @@ export class RideScene implements Scene {
     this.flash = 0.12;
   }
 
+  /**
+   * The bike steers into the exit lane: from here it is the road. The curve it bends by (see `laneCurve`) is added to the segments ahead, the camera takes its heading from them, and the road the bike
+   * has left is drawn beside it. `c` is where the lane's middle lay from the main road's: the bike's sideways position is measured from the lane's middle now.
+   */
+  private takeLane(segI: number, c: number) {
+    this.phase = 'lane'; this.fork = segI; this.px -= c;
+    for (let i = segI; i < segI + 70; i++) { const s = this.segs[i]; if (s) s.curve -= laneCurve(s.src - LANE_FROM); }
+  }
+
+  /** How far the arrival at the garage has come, 0 to 1, eased at both ends (zero until the bike has pulled up). */
+  private turnK() { if (this.phase !== 'knock') return 0; const t = Math.min(1, this.stopT / TURN_T); return t * t * t * (t * (t * 6 - 15) + 10); }
+
   private show(msg: string, big = false, t = big ? 3.4 : 2.6) { this.banner = { lines: msg.split('|'), t, big, total: t }; }
 
   private setCam(c: Cam) {
@@ -318,20 +334,21 @@ export class RideScene implements Scene {
     const playerZ = this.pos + CAM_HEIGHT[this.cam] * CAM_DEPTH;
     const sp = this.speed / MAX_S;
 
-    // the garage stands closed once a round: the huge boards have counted down to it. Stop in front of the shutter and knock, and the door opens.
-    const garage = this.world.nextGarage(segI - 4), toGarage = garage - segI;
+    // the garage stands closed once a round, at the end of an exit lane that peels off to the left: the huge boards and the signs have led to it. Steer into the lane and it carries you the rest of the way, and the door opens.
+    const garage = this.world.nextGarage(segI - 4), toGarage = garage - segI, rel = playerZ / SEG_L - (garage - FINISH), lane = laneAt(rel);   // rel: where we are, counting the garage at FINISH
     if (this.phase === 'ride') {
-      if (toGarage <= 80 && toGarage >= -8 && !this.told.has(garage)) { this.told.add(garage); this.show('SHENDRE GARAGE|CLOSED · STOP AND KNOCK', false, 3.4); }
-      if (toGarage <= 28 && toGarage >= -8 && this.speed < 30) {
-        this.knockT += dt;
-        if (this.knockT > 1.6) { this.phase = 'knock'; this.show('KNOCK KNOCK|SOMEONE IS COMING', true, 2.6); engine.knock(); }
-      } else this.knockT = Math.max(0, this.knockT - dt * 2);
+      if (toGarage <= 80 && toGarage >= -8 && !this.told.has(garage)) { this.told.add(garage); this.show('SHENDRE GARAGE|TAKE THE LEFT LANE', false, 3.4); }
+      if (inLane(rel, this.px)) { this.takeLane(segI, lane!.c); this.show('SHENDRE GARAGE|FOLLOW THE LANE', false, 2.4); }
     }
     if (this.phase === 'knock') {
-      this.speed = 0;                                                                              // pulled up: the engine settles, a summary of the ride shows, then the door opens
+      this.speed *= Math.max(0, 1 - dt * 2.2); this.vx *= Math.max(0, 1 - dt * 3);                    // pulled up outside: the engine settles, the light goes, then a summary of the ride shows and the door opens
       if (this.stopT === 0) { this.stopT = 0.001; setTimeout(() => { engine.mute(); radio.setLevel(1); }, 700); }
+      if (!this.knocked && this.stopT > TURN_T * 0.8) { this.knocked = true; engine.knock(); this.show('KNOCK KNOCK|SOMEONE IS COMING', true, 2.6); }
       this.stopT += dt;
-      if (this.stopT > 3.6) { this.fade += dt; if (this.fade > 0.7) { this.commit(); return this.onArrive(); } }
+      if (this.stopT > TURN_T + 3.2) { this.fade += dt; if (this.fade > 0.7) { this.commit(); return this.onArrive(); } }
+    } else if (this.phase === 'lane') {
+      this.speed += (LANE_KMH / 3.6 * K - this.speed) * Math.min(1, dt * 2);                          // the lane takes the bike down to a crawl, whatever you do with the throttle
+      if (rel >= LANE_END) this.phase = 'knock';
     } else {
       // real forces: thrust against drag, rolling resistance, the slope under the wheels and the brakes. With nothing pressed
       // the bike settles to a relaxed 55 km/h; gas climbs toward 110, and the climb up to the pass costs it speed.
@@ -339,35 +356,37 @@ export class RideScene implements Scene {
       this.speed = bikeStep(this.speed / K, dt, { gas: this.gas, brake: this.brake, grade, cruise: V_CRUISE, top: V_TOP * (seg.zone === 'pass' ? 0.92 : 1), rough: this.rough, side: this.vx, grip: { clear: 1, fog: 0.95, rain: 0.65, snow: 0.55 }[this.sky] }) * K;
     }
 
+    const tpx = this.fork === undefined ? this.px : 99;                                      // once on the exit lane the main road's traffic is somewhere else
     const gaps = this.cars.map((c) => c.z - playerZ);
-    stepTraffic(this.cars, playerZ, this.px, dt, MAX_S);
+    stepTraffic(this.cars, playerZ, tpx, dt, MAX_S);
     this.cars.forEach((c, n) => {
-      if (gaps[n] > 0 && c.z - playerZ <= 0 && Math.abs(c.o - this.px) < 0.9 && this.speed > MAX_S * 0.25) {                       // just went by
+      if (gaps[n] > 0 && c.z - playerZ <= 0 && Math.abs(c.o - tpx) < 0.9 && this.speed > MAX_S * 0.25) {                       // just went by
         engine.whoosh();
         if (c.kind === 'goats' || c.kind === 'marmot') return;
         this.passed++;
-        const clear = Math.abs(c.o - this.px) - HALF[c.kind] - BIKE_HALF;                                                            // the daylight between the two, in road half-widths
+        const clear = Math.abs(c.o - tpx) - HALF[c.kind] - BIKE_HALF;                                                            // the daylight between the two, in road half-widths
         if (clear > 0 && clear < 0.09 && this.speed > MAX_S * 0.55 && this.nearT <= 0) { this.nearT = 2.5; this.show('CLOSE CALL|MIND THE PAINT', false, 1.1); }
       }
     });
-    const capped = capBehind(this.cars, playerZ, this.px, this.speed, MAX_S);
+    const capped = capBehind(this.cars, playerZ, tpx, this.speed, MAX_S);
     this.speed = capped.speed;
     if (capped.blocker && !capped.blocker.warned) {
       capped.blocker.warned = true;
       this.show(matchMedia('(pointer: coarse)').matches ? 'STUCK BEHIND A TRUCK|HONK, OR STEER AROUND' : 'STUCK BEHIND A TRUCK|H TO HONK, OR STEER AROUND');
     }
 
-    const steer = held ? 0 : input.steer();   // a finger on a pedal is not a steering touch
+    const steer = held || this.phase === 'knock' || this.phase === 'lane' ? 0 : input.steer();   // a finger on a pedal is not a steering touch
     // nothing steers the bike but you. Sideways motion has inertia and depends on forward speed: a bike that is not moving does not slide about
     const vNow = this.speed / K;
     this.vx = lateralStep(this.vx, dt, { v: vNow, steer, laneError: 0 });
     // a bend pushes a fast bike wide: the harder the bend and the faster you are, the more you must lean into it
     this.px += this.vx * dt - seg.curve * sp * sp * dt * 0.1 * agility(vNow);
+    if (this.phase === 'lane') { const gap = -this.px; this.px += gap * Math.min(1, dt * 2.5); this.vx = gap * 2.5; }   // on the lane the bike keeps to its middle, whatever way it bends
     // sideswipe: touching a vehicle beside you shoves you away from it and scrubs speed
     for (const c of this.cars) {
       if (c.kind === 'marmot') continue;
       const gap = c.z - playerZ;
-      if (Math.abs(gap) < 0.7 * SEG_L && overlaps(c, this.px, BIKE_HALF, 0)) {                 // the bump uses the width of what is drawn
+      if (Math.abs(gap) < 0.7 * SEG_L && overlaps(c, tpx, BIKE_HALF, 0)) {                 // the bump uses the width of what is drawn
         this.vx += (this.px >= c.o ? 1 : -1) * 2.2 * dt * 8; this.speed *= 1 - dt * 1.5;
         if (this.bumpT <= 0) { this.bumpT = 1.2; engine.thud(); this.show(c.kind === 'goats' || c.kind === 'yak' ? 'CAREFUL|MIND THE ANIMALS' : 'CAREFUL|WATCH THE TRAFFIC', false, 1.2); }
       }
@@ -379,8 +398,9 @@ export class RideScene implements Scene {
     for (const d of this.spray) { d.x += d.vx * dt; d.y += d.vy * dt; d.vy += 1.7 * dt; d.life -= dt; }
     if (this.spray.length) this.spray = this.spray.filter((d) => d.life > 0);
     // the tarmac ends near |1.1|: past it the ground is gravel, dust and stones
-    this.rough = Math.min(1, Math.max(0, (Math.abs(this.px) - 1.08) / 0.12));
-    if (this.px > 1.3 || this.px < -1.3) { this.px = Math.max(-1.3, Math.min(1.3, this.px)); this.vx *= -0.2; }
+    this.rough = this.phase === 'lane' || this.phase === 'knock' || (lane && paved(lane, this.px)) ? 0 : Math.min(1, Math.max(0, (Math.abs(this.px) - 1.08) / 0.12));   // the lane and its island are tarmac too
+    const lo = lane ? Math.min(-1.3, lane.outer - 0.05) : -1.3;                                       // out by the lane the road is wider on the left
+    if (this.phase === 'ride' && (this.px > 1.3 || this.px < lo)) { this.px = Math.max(lo, Math.min(1.3, this.px)); this.vx *= -0.2; }
     const leanTo = Math.max(-1, Math.min(1, this.vx / 1.4)) + seg.curve * 0.25 * agility(vNow);     // lean follows the sideways motion and the bend, and vanishes at a standstill
     this.lean += (Math.max(-1, Math.min(1, leanTo)) - this.lean) * Math.min(1, dt * 8);
 
@@ -438,7 +458,7 @@ export class RideScene implements Scene {
       const punch = REDUCED ? 1 : 1 + Math.max(0, sp - 0.8) * 0.2 + (this.gas && sp > 0.9 ? 0.012 : 0);   // at full throttle the view widens a touch
       g.translate(W / 2, H * HZ); g.scale(punch, punch); g.translate(-W / 2, -H * HZ);
       if (!REDUCED) g.translate(0, Math.round(Math.sin(this.t * 47) * sp * sp * 1.6 + Math.sin(this.t * 19) * sp * 0.7)); // the road hums up through the suspension at speed
-      renderRoad(g, this.segs, { W, H, HZ, pos: this.pos, px: this.px, camH: CAM_HEIGHT[this.cam], bgOff: this.bgOff, t: this.t, env, lite: this.lite, haze: this.nightK > 0.01 ? mix(hazeAt(env.tod, this.land), '#232b58', this.nightK) : hazeAt(env.tod, this.land), fogK: this.sky === 'fog' ? 2.4 : 1, wet: this.land === 'xp' && this.sky === 'rain' }, this.cars);
+      renderRoad(g, this.segs, { W, H, HZ, pos: this.pos, px: this.px, camH: CAM_HEIGHT[this.cam], bgOff: this.bgOff, fork: this.fork, t: this.t, env, lite: this.lite, haze: this.nightK > 0.01 ? mix(hazeAt(env.tod, this.land), '#232b58', this.nightK) : hazeAt(env.tod, this.land), fogK: this.sky === 'fog' ? 2.4 : 1, wet: this.land === 'xp' && this.sky === 'rain' }, this.cars);
       g.restore();
       if (!this.lite) drawSpeedLines(g, W, H, HZ, sp, this.t);
       drawSkyTint(g, W, H, HZ, this.sky);
@@ -454,7 +474,9 @@ export class RideScene implements Scene {
       if (!this.lite && this.sky === 'rain') drawRain(g, W, H, this.t, sp);
       if (this.spray.length) this.drawSpray(g, W, H);
       if (this.bolt) drawLightning(g, W, H, HZ, this.bolt);
-      if (!this.lite) { grade(g, W, H, this.land); finish(g, W, H, HZ, env.tod, this.nightK > 0.5, !small); }   // grade, vignette and grain over the world, under the rider and the HUD
+      if (!this.lite) { grade(g, W, H, this.land); finish(g, W, H, HZ, env.tod, this.nightK > 0.5, !small); }
+      const dim = this.turnK();
+      if (dim > 0) { g.fillStyle = `rgba(0,0,0,${(dim * dim * 0.85).toFixed(3)})`; g.fillRect(0, 0, W, H); }   // the light goes as the turn completes   // grade, vignette and grain over the world, under the rider and the HUD
       const beam = this.lights === 'off' ? 0 : Math.max(this.lights === 'on' ? 0.5 : 0, env.tod > 0.55 ? (env.tod - 0.55) / 0.45 : 0, this.nightK * 1.4);
       const beamA = Math.min(1, beam);
       if (!this.lite && beamA > 0) drawHeadlight(g, W, H, HZ, this.lean, beamA, { wet: this.sky === 'rain' ? 1 : 0, mist: this.sky === 'fog' || this.sky === 'snow' ? 1 : 0, t: this.t, pitch: this.pitchK, dark: Math.min(1, this.nightK * 1.25 + Math.max(0, env.tod - 0.45) * 0.9) });
@@ -529,7 +551,7 @@ export class RideScene implements Scene {
       drawCluster(g, 12, H - px - 22 - 106 - (coarse ? 132 : 0), narrow ? 0.9 : 1, { kmh: sp * KMH, frac: sp, gear, elev: Math.round(this.elevK), temp, trip: this.trip, lights: beam }, narrow);
     }
     if (coarse && this.phase === 'ride') drawPedals(g, W, H, this.gas, this.brake);
-    if (this.stopT > 0.4) this.summary(W, H);
+    if (this.stopT > TURN_T) this.summary(W, H);
     if (this.paused) {
       g.fillStyle = 'rgba(20,14,8,0.5)'; g.fillRect(0, 0, W, H);
       label('PAUSED', W / 2, H * 0.45, Math.max(28, Math.round(W / 18)), ACCENT, { font: FONT_DISPLAY, align: 'center', shadow: INK });
@@ -548,7 +570,7 @@ export class RideScene implements Scene {
 
   /** After pulling up at the garage: how the ride went. */
   private summary(W: number, H: number) {
-    const g = this.screen.ctx, a = Math.min(1, (this.stopT - 0.4) / 0.5) * (1 - Math.min(1, this.fade / 0.5));
+    const g = this.screen.ctx, a = Math.min(1, (this.stopT - TURN_T) / 0.5) * (1 - Math.min(1, this.fade / 0.5));
     const m = Math.floor(this.rideT / 60), s = Math.floor(this.rideT % 60);
     const rows: [string, string][] = [['TIME', `${m}:${String(s).padStart(2, '0')}`], ['DISTANCE', `${this.odo.toFixed(1)} KM`], ['TOP SPEED', `${Math.round(this.topKmh)} KM/H`], ['OVERTAKES', String(this.passed)], ['HONKS', String(this.honks)], ['NEXT STOP', 'RED HAT']];
     const px = Math.max(13, Math.round(W / (W < 700 ? 30 : 62))), cw = Math.min(W - 32, 340), ch = 96 + rows.length * (px + 12) + 14, x = W / 2 - cw / 2, y = H * 0.24;
@@ -574,7 +596,7 @@ export class RideScene implements Scene {
     box(x0 + f * w - 2, y, 5, 12, '#ffffff');
     const place = this.land === 'xp' ? (BLISS_CHAPTER[CHAPTER(src)] ?? CHAPTER(src)) : CHAPTER(src), left = garage - segI;
     label(place, W / 2, y + 28, Math.max(11, px - 2), HUD, { align: 'center', font: FONT_MONO, shadow: INK });
-    if (left > -10 && left < 480) label(left > 28 ? `SHENDRE GARAGE  ${kmOf(left).toFixed(1)} KM` : 'SHENDRE GARAGE  CLOSED · STOP TO KNOCK', W / 2, y + 28 + Math.max(11, px - 2) + 6, Math.max(10, px - 3), ACCENT, { align: 'center', font: FONT_MONO, shadow: INK });
+    if (left > -10 && left < 480) label(left > 28 ? `SHENDRE GARAGE  ${kmOf(left).toFixed(1)} KM` : 'SHENDRE GARAGE  ← LEFT LANE', W / 2, y + 28 + Math.max(11, px - 2) + 6, Math.max(10, px - 3), ACCENT, { align: 'center', font: FONT_MONO, shadow: INK });
   }
 
   private title(W: number, H: number) {
