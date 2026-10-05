@@ -5,7 +5,8 @@ import { BOARDS, BRO, FINISH, GARAGE_BOARDS, LAKE_FROM, shore, TOWNS } from './t
 import { drawArch, drawBarn, drawBlossom as drawBlossomC, drawCastle, drawChurch, drawCottage, drawFolly, drawHamlet, drawHaystack, drawManor, drawPicnic, drawScarecrow, drawSignpost, drawStoneWall, drawTeaRoom, drawWell, drawWindmill } from './country';
 import { drawBicycle, drawLampPost, drawProduceStand, drawShopfront, drawTollhouse, drawVillager, drawWelcomeArch } from './village';
 import { drawPond } from './pond';
-import { drawBush, drawPoplarTree, drawTree, seedOf } from './foliage';
+import { grove } from './field';
+import { drawBush, drawPoplarTree, drawTree, HERO, seedOf } from './foliage';
 import { BLOOM } from './palette';
 import { drawCollie, drawCows, drawDeer, drawFlock, drawHens, drawHorses, drawPaddock, drawRabbits } from './farm';
 
@@ -116,11 +117,15 @@ const SIDE = (q: number, salt: number) => (Math.sin(q * 7.7 + salt) > 0 ? 1 : -1
  */
 export function xpExtras(i: number, salt = 0, own: readonly { o: number; type: string }[] = []): Extra[] {
   const qi = i + salt * 1.618, out: Extra[] = [], r = rnd(qi * 1.9 + 4), r2 = rnd(qi * 3.3 + 1), r3 = rnd(qi * 5.1 + 7), side = r2 > 0.5 ? 1 : -1;
-  if (i % 3 === 0 && r > 0.35) out.push({ o: side * (3.1 + r3 * 5.2), type: 'tree', v: Math.floor(r * 40) });
-  if (i % 7 === 2) out.push({ o: -side * (3.4 + r * 5.5), type: 'tree', v: Math.floor(r3 * 40) });
-  if (i % 4 === 1 && r3 > 0.3) out.push({ o: side * (9 + r * 20), type: 'tree', v: Math.floor(r * 90) });      // on the far slopes: small and many
-  if (i % 5 === 0) out.push({ o: -side * (1.65 + r3 * 0.5), type: 'flowers', v: Math.floor(r2 * 30) });
-  if (i % 11 === 4) out.push({ o: side * (1.7 + r * 1.2), type: 'bush', v: Math.floor(r3 * 30) });
+  // Cover comes in groves and clearings (see `grove`), each side of the road on its own drift: a grove has a few big trees, bushes at its edge and small trees thickening up the slope;
+  // a clearing is open grass with a patch of wildflowers. Where a grove peaks, one tree stands taller than the rest.
+  for (const sd of [-1, 1]) {
+    const d = grove(qi, sd, 18, 7 + salt), far = grove(qi, sd, 30, 19 + salt), bloom = grove(qi, sd, 9, 31 + salt), q = rnd(qi * 2.3 + sd * 5.9), q2 = rnd(qi * 3.7 + sd * 2.1), q3 = rnd(qi * 6.1 + sd * 8.3);
+    if (d > 0.5 && q < (d - 0.38) * 1.3) out.push({ o: sd * (3.1 + q2 * 5.2), type: 'tree', v: d > 0.74 && q3 < 0.45 ? HERO + Math.floor(q * 40) : Math.floor(q3 * 60) });
+    if (d > 0.36 && d < 0.6 && q3 < 0.3) out.push({ o: sd * (1.8 + q2 * 2.4), type: 'bush', v: Math.floor(q * 30) });
+    if (far > 0.42 && q2 < (far - 0.3) * 1.3) out.push({ o: sd * (9 + q * 20), type: 'tree', v: Math.floor(q3 * 90) });      // on the far slopes: small and many
+    if (bloom > 0.6 && q3 < 0.7) out.push({ o: sd * (1.65 + q * 0.5), type: 'flowers', v: Math.floor(q2 * 30) });
+  }
   // the farms: animals in the fields, windmills and barns on the slopes, haystacks and scarecrows, a stone wall running beside the lane in stretches
   if (i % 17 === 5 && r > 0.2) out.push({ o: SIDE(qi, 1) * (6 + r3 * 10), type: 'cows', v: i % 7 });
   if (i % 19 === 8 && r < 0.85) out.push({ o: SIDE(qi, 2) * (5.5 + r2 * 11), type: 'flock', v: i % 5 });

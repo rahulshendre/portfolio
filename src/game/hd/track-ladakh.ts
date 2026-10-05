@@ -4,6 +4,8 @@
 //   valley  the Indus valley: open desert road, ochre mountains, army convoys
 //   pass    the Khardung La climb: hairpins, snow, a canopy of prayer flags at the top
 //   lake    down to a turquoise high-altitude lake, and the garage at dusk
+import { grove } from './field';
+
 export const SEG_L = 200;
 export const ROAD_W = 1100;
 export const N = 1400; // road keeps going past the garage so the horizon never runs out
@@ -117,6 +119,19 @@ function build(milestones: readonly { top: string; label: string }[], lo: number
   for (let i = lo; i < hi; i++) segs[i] = { i, y1: hill(i), y2: hill(i + 1), curve: bend(i), props: [], zone: zoneAt(i) };
   const add = (i: number, p: Prop) => segs[i]?.props.push(p);
   const clear = (i: number) => BOARDS.some((b) => i > b.i - 12 && i <= b.i + 2) || BRO.some((b) => i > b.i - 8 && i <= b.i + 1);
+  /**
+   * Scatter `type` beside segment `i` in clumps and clearings instead of on a beat: each side has its own drift of cover (`wave` segments to a clump); where it rises past
+   * `from` things may stand, thicker the higher it gets (`rate` scales the chance). `kind` gives the prop's `v` and `reach` how far from the road it stands, both from a roll of the dice.
+   */
+  const scatter = (i: number, type: PropType, k: { wave: number; from: number; rate: number; salt: number; reach: (r: number) => number; kind?: (r: number) => number }) => {
+    for (const side of [-1, 1]) {
+      const d = grove(i, side, k.wave, SALT + k.salt);
+      if (d < k.from || rnd(i * 2.9 + side * 7.3 + k.salt * 13) >= (d - k.from + 0.12) * k.rate) continue;
+      const r = rnd(i * 4.3 + side * 3.1 + k.salt);
+      add(i, { o: side * k.reach(r), type, v: k.kind ? k.kind(rnd(i * 6.7 + side + k.salt * 5)) : 0 });
+    }
+  };
+  const third = (r: number) => Math.floor(r * 3);
 
   MILESTONE_SEGS.forEach((i, k) => milestones[k] && add(i, { o: -1.7, type: 'ms', label: milestones[k].top, sub: milestones[k].label }));
   for (const b of BOARDS) add(b.i, { o: b.o, type: 'board', label: b.id });
@@ -129,35 +144,35 @@ function build(milestones: readonly { top: string; label: string }[], lo: number
     if (clear(i)) continue;
     if (z === 'leh') {
       if (i % 7 === 0 && i > 14) add(i, { o: (i % 14 ? 1 : -1) * (2.2 + r * 0.7), type: 'house', v: r2 > 0.8 ? 3 : Math.floor(r2 * 3) });
-      if (i % 4 === 2) add(i, { o: (r > 0.5 ? 1 : -1) * (1.7 + r2 * 1.6), type: 'poplar', v: r2 > 0.3 ? 1 : 0 });
+      scatter(i, 'poplar', { wave: 16, from: 0.45, rate: 1.5, salt: 1, reach: (q) => 1.7 + q * 1.6, kind: (q) => (q > 0.3 ? 1 : 0) + 2 * Math.floor((q * 977) % 12) });   // golden groves by the houses, bare stretches between
       if (i % 31 === 0) add(i, { o: (r > 0.5 ? 1 : -1) * 2.6, type: 'chorten' });
       if (i % 23 === 11) add(i, { o: (r > 0.5 ? 1 : -1) * 1.7, type: 'flags' });
       if (i >= 170 && i < 190) add(i, { o: -2.6, type: 'mani' });
     } else if (z === 'valley') {
-      if (i % 5 === 0 && r > 0.4) add(i, { o: (r2 > 0.5 ? 1 : -1) * (1.8 + r * 3), type: 'boulder', v: Math.floor(r2 * 3) });
-      if (i % 40 < 6 && i % 2 === 0) add(i, { o: (i % 80 < 40 ? 1 : -1) * (1.8 + r * 1.2), type: 'poplar', v: 1 });
+      scatter(i, 'boulder', { wave: 10, from: 0.52, rate: 0.8, salt: 2, reach: (q) => 1.8 + q * 3, kind: third });
+      if (i % 2 === 0) scatter(i, 'poplar', { wave: 12, from: 0.66, rate: 1.6, salt: 3, reach: (q) => 1.8 + q * 1.2, kind: (q) => 1 + 2 * Math.floor((q * 977) % 12) });
       if (i % 47 === 0) add(i, { o: -1.7, type: 'flags' });
     } else if (z === 'pass') {
       const a = altitude(i);
-      if (i % 4 === 0 && r > 0.35) add(i, { o: (r2 > 0.4 ? -1 : 1) * (1.8 + r * 2.4), type: 'boulder', v: Math.floor(r2 * 3) });
+      scatter(i, 'boulder', { wave: 9, from: 0.5, rate: 1, salt: 2, reach: (q) => 1.8 + q * 2.4, kind: third });
       if (r < a * 0.55) add(i, { o: (r2 > 0.5 ? 1 : -1) * (1.35 + r2 * 1.8), type: 'snow', v: Math.floor(r * 3) });
       if (i % 61 === 7) add(i, { o: (r > 0.5 ? 1 : -1) * 2.6, type: 'yak' });
       if (i > PASS_TOP - 14 && i < PASS_TOP + 10 && i % 3 === 0) add(i, { o: 0, type: 'canopy' });
       if (i === PASS_TOP + 4) add(i, { o: 2.4, type: 'chorten' });
       if (i % 29 === 0) add(i, { o: -1.7, type: 'flags' });
     } else {
-      if (i % 5 === 0 && r > 0.45 && i < FINISH - 12) add(i, { o: (r2 > 0.5 ? 1 : -1) * (1.8 + r * 2.5), type: 'boulder', v: Math.floor(r2 * 3) });
+      if (i < FINISH - 12) scatter(i, 'boulder', { wave: 10, from: 0.54, rate: 0.8, salt: 2, reach: (q) => 1.8 + q * 2.5, kind: third });
       if (i === FINISH - 6) add(i, { o: -1.8, type: 'flags' });
     }
   }
   // the country around the road: poles marching along one side, scrub and grass, cairns at the pass, chevrons on the bends
   for (let i = Math.max(6, lo); i < Math.min(FINISH + 40, hi); i++) {
     if (clear(i)) continue;
-    const z = zoneAt(i), r = rnd(i * 1.7 + 3), r2 = rnd(i * 3.1 + 9);
-    if (i % 9 === 3 && (z !== 'pass' || i < 780) && i < FINISH - 20) add(i, { o: 1.72, type: 'pole' });
-    if ((z === 'valley' || z === 'lake') && i % 2 === 0 && r > 0.4) add(i, { o: (r2 > 0.5 ? 1 : -1) * (1.5 + r * 5), type: 'scrub', v: Math.floor(r2 * 3) });
-    if (z === 'leh' && i % 3 === 1 && r > 0.5) add(i, { o: (r2 > 0.5 ? 1 : -1) * (1.5 + r * 3), type: 'scrub', v: Math.floor(r2 * 3) });
-    if (z === 'lake' && i % 2 === 1 && r > 0.3) add(i, { o: (r2 > 0.5 ? 1 : -1) * (1.5 + r * 4), type: 'tuft', v: Math.floor(r2 * 3) });
+    const z = zoneAt(i), r = rnd(i * 1.7 + 3);
+    if (i % 9 === 3 && (z !== 'pass' || i < 780) && i < FINISH - 20) add(i, { o: 1.72, type: 'pole' });                  // poles do march: that beat is real
+    if (z === 'valley' || z === 'lake') scatter(i, 'scrub', { wave: 14, from: 0.4, rate: 1.4, salt: 4, reach: (q) => 1.5 + q * 5, kind: third });
+    if (z === 'leh') scatter(i, 'scrub', { wave: 14, from: 0.44, rate: 1.3, salt: 4, reach: (q) => 1.5 + q * 3, kind: third });
+    if (z === 'lake') scatter(i, 'tuft', { wave: 11, from: 0.4, rate: 1.1, salt: 5, reach: (q) => 1.5 + q * 4, kind: third });
     if (z === 'pass' && i % 37 === 11) add(i, { o: (r > 0.5 ? 1 : -1) * 1.9, type: 'cairn' });
     if (Math.abs(segs[i].curve) > 2 && i % 8 === 0) add(i, { o: segs[i].curve > 0 ? -1.62 : 1.62, type: 'chevron', v: segs[i].curve > 0 ? 1 : -1 });
   }
