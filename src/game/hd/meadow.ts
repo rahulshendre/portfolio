@@ -1,53 +1,15 @@
 // The roadside of the Bliss land (the old Windows XP wallpaper): round green trees, bushes, drifts of wildflowers. Same smooth shapes and the same low
 // light from the right as the rest of the ride. In this land the dry things of Ladakh (boulders, scrub, snow, cairns, yaks, camels) are swapped for these.
-import { at, box, circle, g, oval, rnd, stroke } from './draw';
+import { at, g, rnd } from './draw';
 import { BOARDS, BRO, FINISH, GARAGE_BOARDS, LAKE_FROM, shore, TOWNS } from './track-ladakh';
 import { drawArch, drawBarn, drawBlossom as drawBlossomC, drawCastle, drawChurch, drawCottage, drawFolly, drawHamlet, drawHaystack, drawManor, drawPicnic, drawScarecrow, drawSignpost, drawStoneWall, drawTeaRoom, drawWell, drawWindmill } from './country';
 import { drawBicycle, drawLampPost, drawProduceStand, drawShopfront, drawTollhouse, drawVillager, drawWelcomeArch } from './village';
 import { drawPond } from './pond';
+import { drawBush, drawPoplarTree, drawTree, seedOf } from './foliage';
+import { BLOOM } from './palette';
 import { drawCollie, drawCows, drawDeer, drawFlock, drawHens, drawHorses, drawPaddock, drawRabbits } from './farm';
 
 const SH = 'rgba(20,48,10,0.22)';
-const LEAF: [string, string, string, string][] = [   // shaded base, body, lit top, highlight
-  ['#35692a', '#4f9a35', '#86c64e', '#b4e36c'],
-  ['#3a6e2a', '#5ba63a', '#9acf56', '#c6ea78'],
-  ['#2f5f28', '#478f33', '#74b84a', '#a0d868'],
-  ['#44722a', '#68ac3a', '#a8d45a', '#d2ee80'],
-];
-const BLOOM = ['#ffffff', '#ffe14a', '#ff9ac2', '#ffffff', '#8ab8ff', '#ffb04a'];
-
-/** A round tree: a trunk, then a canopy of overlapping lobes, darkest on the left and catching the sun on the right. */
-export function drawTree(sx: number, sy: number, k: number, v = 0) {
-  const s = k * (0.85 + (v % 4) * 0.1);
-  if (s < 0.1) return;
-  const [a, b, c, d] = LEAF[v % LEAF.length];
-  if (s < 0.2) {                                                                  // far off: a trunk, a dark canopy and its lit side are all that show
-    at(sx, sy, s, () => { box(-3, -40, 6, 40, '#5a4030'); oval(0, -66, 36, 30, a); oval(10, -72, 26, 22, b); });
-    return;
-  }
-  at(sx, sy, s, () => {
-    oval(-20, 1, 42, 5, SH);                                                       // the shadow falls away from the sun
-    box(-3.5, -40, 7, 40, '#5a4030'); box(1, -40, 2.5, 40, '#7a5a40');
-    oval(0, -66, 38, 32, a); oval(-16, -58, 22, 20, a);
-    oval(5, -70, 32, 28, b); oval(-8, -78, 18, 15, b);
-    oval(14, -80, 20, 17, c); oval(0, -90, 15, 11, c);
-    oval(20, -86, 9, 7, d); oval(8, -96, 6, 4, d);
-  });
-}
-
-/** A low bush; some carry flowers. */
-export function drawBush(sx: number, sy: number, k: number, v = 0) {
-  const s = k * (0.7 + (v % 3) * 0.16);
-  if (s < 0.12) return;
-  const [a, b, c, d] = LEAF[v % LEAF.length];
-  if (s < 0.22) { at(sx, sy, s, () => { oval(-6, -10, 26, 12, a); oval(8, -14, 18, 11, b); }); return; }
-  at(sx, sy, s, () => {
-    oval(-8, 1, 30, 4, SH);
-    oval(-10, -10, 16, 11, a); oval(10, -10, 18, 13, b); oval(0, -17, 17, 12, b); oval(8, -21, 10, 7, c); oval(11, -23, 4, 3, d);
-    if (v % 3 === 0) for (let i = 0; i < 6; i++) circle(-14 + rnd(v + i) * 30, -8 - rnd(v * 2 + i) * 16, 1.9, BLOOM[(v + i) % BLOOM.length]);
-  });
-}
-
 /** A drift of wildflowers in the grass. */
 export function drawFlowers(sx: number, sy: number, k: number, v = 0) {
   const s = k * (0.5 + (v % 3) * 0.1);
@@ -104,10 +66,10 @@ export const XP_DRAW: Record<string, XpDraw | null> = {
   flags: (x, y, k, p) => drawBlossomC(x, y, k, p.v ?? 0),
   darchog: (x, y, k) => drawScarecrow(x, y, k),
   flagmound: (x, y, k) => drawHaystack(x, y, k),
-  boulder: (x, y, k, p) => drawBush(x, y, k, p.v ?? 0),
-  scrub: (x, y, k, p) => drawBush(x, y, k, p.v ?? 0),
+  boulder: (x, y, k, p) => drawBush(x, y, k, seedOf(p.v ?? 0, p.o)),
+  scrub: (x, y, k, p) => drawBush(x, y, k, seedOf(p.v ?? 0, p.o)),
   tuft: (x, y, k, p) => drawFlowers(x, y, k, p.v ?? 0),
-  cairn: (x, y, k, p) => drawBush(x, y, k, p.v ?? 0),
+  cairn: (x, y, k, p) => drawBush(x, y, k, seedOf(p.v ?? 0, p.o)),
   snow: null,
   // animals
   yak: (x, y, k, p) => drawCows(x, y, k, p.v ?? 0),
@@ -116,8 +78,9 @@ export const XP_DRAW: Record<string, XpDraw | null> = {
   marmot: (x, y, k, p) => drawRabbits(x, y, k * 0.45, p.v ?? 0),
   dog: (x, y, k, p) => ((p.v ?? 0) % 2 ? drawCollie(x, y, k, p.v ?? 0) : drawHens(x, y, k, p.v ?? 0)),
   // what the Bliss land adds of its own (see xpExtras)
-  tree: (x, y, k, p) => drawTree(x, y, k, p.v ?? 0),
-  bush: (x, y, k, p) => drawBush(x, y, k, p.v ?? 0),
+  tree: (x, y, k, p) => drawTree(x, y, k, seedOf(p.v ?? 0, p.o)),
+  poplar: (x, y, k, p) => drawPoplarTree(x, y, k, false, seedOf((p.v ?? 0) >> 1, p.o)),
+  bush: (x, y, k, p) => drawBush(x, y, k, seedOf(p.v ?? 0, p.o)),
   flowers: (x, y, k, p) => drawFlowers(x, y, k, p.v ?? 0),
   cows: (x, y, k, p) => drawCows(x, y, k, p.v ?? 0),
   flock: (x, y, k, p) => drawFlock(x, y, k, p.v ?? 0),

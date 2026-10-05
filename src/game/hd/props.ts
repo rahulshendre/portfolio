@@ -8,6 +8,7 @@ import { drawBillboard, drawGantry } from './garagesign';
 import { drawBoard, drawBro, drawChevron, drawLimit, drawSign, setSignLight, SIGN_EMIT, SIGN_GLOW } from './signs';
 import { drawBuddha, drawCheckPost, drawGurdwara, drawMonastery } from './landmarks';
 import { drawCamel, drawCamp, drawCone, drawCrew, drawSummit, drawVillage } from './scenery';
+import { drawPoplarTree } from './foliage';
 import { XP_DRAW } from './meadow';
 import { getLand, setLand } from './land';
 
@@ -57,19 +58,9 @@ export function drawChorten(sx: number, sy: number, k: number) {
   });
 }
 
-export function drawPoplar(sx: number, sy: number, k: number, gold = 1) {
-  const s = k * 0.95;
-  if (s < 0.16) return;
-  at(sx, sy, s, () => {
-    oval(0, 0, 18, 2.5, 'rgba(40,24,10,0.22)');
-    cast(84, 16);
-    box(-2, -70, 4, 70, '#5a4030');
-    const leaf = gold ? '#c8a848' : '#6a8a48';
-    const dark = gold ? '#a88838' : '#4a6a38';
-    oval(0, -78, 14, 36, leaf);
-    oval(-6, -70, 10, 24, dark);
-    oval(6, -88, 9, 20, leaf);
-  });
+/** A golden or green poplar; `seed` picks the individual so a grove is never one tree repeated. */
+export function drawPoplar(sx: number, sy: number, k: number, gold = 1, seed = 0) {
+  drawPoplarTree(sx, sy, k, !!gold, seed);
 }
 
 export function drawMani(sx: number, sy: number, k: number) {
@@ -401,7 +392,7 @@ export function drawProp(type: string, sx: number, sy: number, k: number, p: { l
   switch (type) {
     case 'house': return drawHouse(sx, sy, k, p.v ?? 0);
     case 'chorten': return drawChorten(sx, sy, k);
-    case 'poplar': return drawPoplar(sx, sy, k, getLand() === 'xp' ? 0 : (p.v ?? 1));
+    case 'poplar': return drawPoplar(sx, sy, k, getLand() === 'xp' ? 0 : (p.v ?? 1) & 1, ((p.v ?? 0) >> 1) + Math.floor(Math.abs(p.o ?? 0) * 131));
     case 'flags': return drawFlags(sx, sy, k);
     case 'canopy': return drawCanopy(sx, sy, k);
     case 'mani': return drawMani(sx, sy, k);

@@ -1,5 +1,6 @@
 // The buildings and landmarks of the Bliss land: thatched and tiled cottages, a red barn, windmills, a village church, a hilltop castle and manor, a wishing well.
 // Drawn in the same local unit space and the same low light (the sun is on the right) as the Himalayan ones they stand in for.
+import { drawBlossomTree } from './foliage';
 import { at, box, circle, g, hgrad, label, oval, poly, rrect, stroke, use, vgrad } from './draw';
 
 export const SH = 'rgba(24,52,12,0.22)';
@@ -333,12 +334,9 @@ export function drawScarecrow(sx: number, sy: number, k: number) {
 export function drawBlossom(sx: number, sy: number, k: number, v = 0) {
   const s = k * (0.9 + (v % 3) * 0.08);
   if (s < 0.14) return;
+  drawBlossomTree(sx, sy, s, v * 3 + 2);                                                         // the tree itself is painted once and cached; only the petals drifting down are live
   const t = clock();
   at(sx, sy, s, () => {
-    oval(-20, 1, 42, 5, SH);
-    box(-4, -42, 8, 42, '#4a3426'); box(1, -42, 2.5, 42, '#6a4e3a'); stroke([0, -40, -16, -62], '#4a3426', 4); stroke([0, -40, 16, -64], '#4a3426', 4);
-    for (const [x, y, rx, ry, c] of [[0, -68, 40, 30, '#f2a6c0'], [-18, -62, 24, 20, '#ec8fb0'], [16, -76, 26, 20, '#f8c0d4'], [4, -88, 22, 16, '#fad2e0'], [26, -66, 16, 14, '#fbd8e6']] as const) oval(x, y, rx, ry, c);
-    for (let i = 0; i < 16; i++) circle(-34 + hash(i + v) * 68, -52 - hash(i * 3 + v) * 48, 1.6, hash(i) > 0.5 ? '#ffffff' : '#e8789c');
     for (let i = 0; i < 7; i++) { const p = (t * 0.18 + hash(i + v)) % 1; g.globalAlpha = 1 - p; circle(-30 + hash(i * 2 + v) * 60 + Math.sin(p * 6 + i) * 8, -48 + p * 50, 1.8, '#f8c0d4'); }
     g.globalAlpha = 1;
   });
