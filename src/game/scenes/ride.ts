@@ -93,7 +93,7 @@ export class RideScene implements Scene {
   private get night() { return this.rideTime === 'night'; }
   private pitchK = 0;   // the bike's nose: dips under braking, lifts under power, and the headlight follows
   private bikeImg: HTMLImageElement | null = null;   // the garage's own picture of your bike, shown on the arrival card
-  private pixel = typeof location !== 'undefined' && new URLSearchParams(location.search).has('pixel'); private low = new LowRes();
+  private pixel = typeof location === 'undefined' || !new URLSearchParams(location.search).has('smooth'); private low = new LowRes();
   private bgOff = 0; private t = 0; private odo = 0; private fade = 0; private flash = 0;
   private banner = { lines: [] as string[], t: 0, big: false, total: 2.6 };
 
