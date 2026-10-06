@@ -46,6 +46,16 @@ export function oval(x: number, y: number, rx: number, ry: number, fill: string 
   g.fill();
 }
 
+/** The shade colour on dry ground (rock and dust) and on grass, as an rgb triple. Shade on grass leans green, not brown. */
+export const DUST = '34,20,9', GRASS = '18,40,10';
+
+/** Soft ground shade under a prop: three nested ovals, darkest at the foot, pushed a little away from the sun (which is on the right). Replaces the one flat oval every prop used to stand on. */
+export function shade(w: number, h: number, a = 0.22, tone = DUST) {
+  oval(-w * 0.1, h * 0.3, w * 1.18, h * 1.35, `rgba(${tone},${(a * 0.4).toFixed(3)})`);
+  oval(-w * 0.05, h * 0.12, w * 0.92, h * 1.02, `rgba(${tone},${(a * 0.55).toFixed(3)})`);
+  oval(0, 0, w * 0.6, h * 0.62, `rgba(${tone},${(a * 0.85).toFixed(3)})`);
+}
+
 export function stroke(pts: number[], color: string, width: number) {
   g.beginPath();
   g.moveTo(pts[0], pts[1]);

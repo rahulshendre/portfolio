@@ -1,6 +1,6 @@
 // The streets of a Bliss village, in place of the Ladakhi bazaar: brick-and-timber shopfronts with striped awnings, a welcome arch of stone and wood, a farm-produce stand,
 // villagers in straw hats, parked bicycles, Victorian lamp posts and a tollhouse. Same unit space as town.ts.
-import { at, box, circle, fit, g, mix, oval, poly, rrect, stroke, vgrad } from './draw';
+import { at, box, circle, fit, g, mix, oval, poly, rrect, stroke, vgrad, shade, GRASS } from './draw';
 import { startled } from './stir';
 import { bunting, SH } from './country';
 
@@ -24,7 +24,7 @@ export function drawShopfront(sx: number, sy: number, k: number, v = 0) {
   if (s < 0.16) return;
   const P = BLISS_SHOPS[v % BLISS_SHOPS.length];
   at(sx, sy, s, () => {
-    oval(0, 0, 44, 5, SH); poly([-32, 0, 32, 0, -70, 30, -108, 30], 'rgba(24,52,12,0.12)');
+    shade(44, 5, 0.22, GRASS); poly([-32, 0, 32, 0, -70, 30, -108, 30], 'rgba(24,52,12,0.12)');
     box(-32, -88, 64, 88, P.wall); box(10, -88, 22, 88, P.lit);
     if (P.brick) for (let r = 0; r < 17; r++) for (let c = 0; c < 8; c++) box(-32 + c * 8 + (r % 2) * 4, -87 + r * 5.2, 7, 0.7, 'rgba(0,0,0,0.18)');
     poly([-39, -88, 39, -88, 28, -108, -28, -108], P.roof); poly([0, -88, 39, -88, 28, -108, 0, -108], P.roofLit);      // the roof, seen from the front
@@ -65,7 +65,7 @@ export function drawWelcomeArch(sx: number, sy: number, k: number, name = '') {
 export function drawProduceStand(sx: number, sy: number, k: number, v = 0) {
   if (k < 0.16) return;
   at(sx, sy, k * 0.9, () => {
-    oval(0, 0, 36, 4, SH);
+    shade(36, 4, 0.22, GRASS);
     for (const x of [-30, 30]) { stroke([x, -4, x, -74], '#6a4a34', 3); }
     for (let i = 0; i < 6; i++) poly([-36 + i * 12, -58, -24 + i * 12, -58, -22 + i * 12, -72 + (i % 2) * 0, -34 + i * 12, -72], i % 2 ? '#f4f2ea' : (v % 2 ? '#d8503c' : '#3c7ab8'));
     for (let i = 0; i < 6; i++) poly([-36 + i * 12, -58, -24 + i * 12, -58, -30 + i * 12, -50], i % 2 ? '#f4f2ea' : (v % 2 ? '#d8503c' : '#3c7ab8'));
@@ -187,7 +187,7 @@ export function drawBicycle(sx: number, sy: number, k: number, v = 0) {
   const B = BIKES[v % BIKES.length], f = v % 2 ? 1 : -1;
   at(sx, sy, k * 0.9, () => {
     g.scale(f, 1);
-    oval(0, 0, 36, 3, SH);
+    shade(36, 3, 0.22, GRASS);
     for (const x of [-22, 22]) {
       circle(x, -17, 17, '#1a1a1e'); circle(x, -17, 15, '#e8e4d8'); circle(x, -17, 13.4, '#8fc0a0'); circle(x, -17, 13.2, '#8fc0a0');                       // tyre and rim (the inside shows the grass)
       g.globalAlpha = 0.8; circle(x, -17, 13.2, '#cfe4d0'); g.globalAlpha = 1;
@@ -222,7 +222,7 @@ export function drawLampPost(sx: number, sy: number, k: number) {
 export function drawTollhouse(sx: number, sy: number, k: number) {
   if (k < 0.16) return;
   at(sx, sy, k, () => {
-    oval(0, 0, 46, 5, SH);
+    shade(46, 5, 0.22, GRASS);
     box(-26, -48, 52, 48, '#c0b6a2'); box(8, -48, 18, 48, '#d4cbb8'); box(-28, -6, 56, 6, '#8e8574');
     for (let r = 0; r < 5; r++) for (let c = 0; c < 4; c++) box(-26 + c * 13 + (r % 2) * 6, -46 + r * 9, 12, 0.8, 'rgba(0,0,0,0.18)');
     poly([-34, -48, 34, -48, 22, -72, -22, -72], '#56626e'); poly([0, -48, 34, -48, 22, -72, 0, -72], '#74828f');
@@ -240,7 +240,7 @@ export function drawTollhouse(sx: number, sy: number, k: number) {
 export function drawMilkCart(sx: number, sy: number, k: number) {
   if (k < 0.16) return;
   at(sx, sy, k * 0.8, () => {
-    oval(0, 0, 40, 4, SH);
+    shade(40, 4, 0.22, GRASS);
     box(-30, -34, 60, 6, '#8a5a30'); box(-30, -40, 60, 6, '#a8743c'); for (const x of [-26, 26]) { circle(x, -14, 14, '#4a3224'); circle(x, -14, 11, '#a8743c'); for (let i = 0; i < 6; i++) { const a = (i / 6) * Math.PI; stroke([x - Math.cos(a) * 11, -14 - Math.sin(a) * 11, x + Math.cos(a) * 11, -14 + Math.sin(a) * 11], '#4a3224', 1.4); } circle(x, -14, 2.6, '#2a1c14'); }
     for (let i = 0; i < 4; i++) { const x = -22 + i * 15; rrect(x - 5, -62, 10, 22, 3, '#d8dce0'); box(x - 6, -64, 12, 4, '#9aa0a8'); box(x - 5, -52, 10, 2, '#3c7ab8'); box(x - 3, -66, 6, 3, '#9aa0a8'); }
     stroke([30, -36, 56, -22], '#6a4a30', 3);

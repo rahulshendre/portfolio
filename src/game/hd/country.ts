@@ -1,7 +1,7 @@
 // The buildings and landmarks of the Bliss land: thatched and tiled cottages, a red barn, windmills, a village church, a hilltop castle and manor, a wishing well.
 // Drawn in the same local unit space and the same low light (the sun is on the right) as the Himalayan ones they stand in for.
 import { drawBlossomTree } from './foliage';
-import { at, box, circle, g, hgrad, label, oval, poly, rrect, stroke, use, vgrad } from './draw';
+import { at, box, circle, g, hgrad, label, oval, poly, rrect, stroke, use, vgrad, shade, GRASS } from './draw';
 
 export const SH = 'rgba(24,52,12,0.22)';
 const hash = (n: number) => Math.abs(Math.sin(n * 12.9898) * 43758.5453) % 1;
@@ -108,7 +108,7 @@ export function drawCottage(sx: number, sy: number, k: number, v = 0) {
   if (s < 0.16) return;
   const P = COTTAGES[v % COTTAGES.length];
   at(sx, sy, s, () => {
-    oval(0, 0, 42, 5, SH); poly([-30, 0, 30, 0, -76, 24, -110, 24], 'rgba(24,52,12,0.12)');
+    shade(42, 5, 0.22, GRASS); poly([-30, 0, 30, 0, -76, 24, -110, 24], 'rgba(24,52,12,0.12)');
     box(-31, -46, 62, 46, P.wall); box(10, -46, 21, 46, P.lit); box(-31, -6, 62, 6, '#a29a8a');                       // walls, the lit end, a stone footing
     if (P.kind === 'tudor') {                                                                                              // black timber framing over cream plaster
       for (const x of [-31, -10, 10, 29]) box(x - 1.3, -46, 2.6, 40, P.shutter);
@@ -137,7 +137,7 @@ export function drawCottage(sx: number, sy: number, k: number, v = 0) {
 export function drawBarn(sx: number, sy: number, k: number) {
   if (k < 0.16) return;
   at(sx, sy, k * 0.9, () => {
-    oval(0, 0, 76, 7, SH);
+    shade(76, 7, 0.22, GRASS);
     box(40, -78, 22, 78, hgrad(40, 62, [[0, '#c8c4bc'], [0.5, '#ece8e0'], [1, '#aaa69e']])); oval(51, -78, 11, 5, '#d8d4cc');   // the silo and its dome
     poly([40, -78, 62, -78, 56, -92, 46, -92], '#9a9690');
     box(-58, -56, 100, 56, '#a63a2c'); box(10, -56, 32, 56, '#c04a38'); box(-58, -6, 100, 6, '#8a2e22');
@@ -283,7 +283,7 @@ export function drawWell(sx: number, sy: number, k: number) {
   const s = k * 0.95;
   if (s < 0.16) return;
   at(sx, sy, s, () => {
-    oval(0, 0, 28, 4, SH);
+    shade(28, 4, 0.22, GRASS);
     box(-20, -26, 40, 26, hgrad(-20, 20, [[0, '#948a78'], [0.55, '#c8bea8'], [1, '#a29886']]));
     for (let r = 0; r < 4; r++) for (let c = 0; c < 5; c++) box(-20 + c * 8 + (r % 2) * 4, -24 + r * 6.5, 7, 0.8, 'rgba(0,0,0,0.2)');
     oval(0, -26, 20, 5, '#5a5448'); oval(0, -26, 17, 3.6, '#1c2a30');
@@ -299,7 +299,7 @@ export function drawHaystack(sx: number, sy: number, k: number) {
   const s = k * 0.9;
   if (s < 0.16) return;
   at(sx, sy, s, () => {
-    oval(0, 0, 44, 5, SH);
+    shade(44, 5, 0.22, GRASS);
     for (const [x, sc] of [[-26, 0.78], [26, 0.9]] as const) {
       g.save(); g.translate(x, 0); g.scale(sc, sc);
       poly([-26, 0, -22, -34, -8, -56, 8, -56, 22, -34, 26, 0], hgrad(-26, 26, [[0, '#b8963e'], [0.55, '#e8c860'], [1, '#c8a64a']]));
@@ -318,7 +318,7 @@ export function drawScarecrow(sx: number, sy: number, k: number) {
   if (s < 0.16) return;
   const sway = Math.sin(clock() * 1.6) * 1.4;
   at(sx, sy, s, () => {
-    oval(0, 0, 26, 3.4, SH);
+    shade(26, 3.4, 0.22, GRASS);
     for (const [x, h] of [[-26, 30], [-16, 36], [18, 34], [28, 28], [-34, 24], [36, 26]] as const) { stroke([x, 0, x, -h], '#9a8a30', 1.6); poly([x, -h, x - 3, -h - 9, x + 3, -h - 9], '#d8bc50'); }   // corn
     box(-1.8, -82, 3.6, 82, '#6a4a30'); box(-30, -64, 60, 3.4, '#6a4a30');
     poly([-12, -64, 12, -64, 14, -34, -14, -34], '#b8503a'); poly([0, -64, 12, -64, 14, -34, 0, -34], '#d8685a');          // a ragged red shirt
@@ -358,7 +358,7 @@ export function drawArch(sx: number, sy: number, k: number) {
 export function drawStoneWall(sx: number, sy: number, k: number) {
   if (k < 0.16) return;
   at(sx, sy, k * 0.9, () => {
-    oval(0, 0, 54, 4, SH);
+    shade(54, 4, 0.22, GRASS);
     box(-48, -26, 96, 26, hgrad(-48, 48, [[0, '#8e8574'], [0.55, '#bcb29e'], [1, '#9a907e']]));
     for (let r = 0; r < 4; r++) for (let c = 0; c < 8; c++) { const w = 10 + hash(r * 9 + c) * 4; box(-47 + c * 12 + (r % 2) * 6, -24 + r * 6.4, w, 5.6, hash(r + c * 3) > 0.5 ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.12)'); }
     for (let i = 0; i < 12; i++) oval(-44 + i * 8 + hash(i) * 3, -27, 4.5, 3, '#5a9a38');
@@ -370,7 +370,7 @@ export function drawStoneWall(sx: number, sy: number, k: number) {
 export function drawSignpost(sx: number, sy: number, k: number) {
   if (k < 0.16) return;
   at(sx, sy, k, () => {
-    oval(0, 0, 72, 7, SH);
+    shade(72, 7, 0.22, GRASS);
     for (const x of [-52, 52]) { box(x - 4, -110, 8, 110, '#6a4a34'); box(x - 4, -110, 2.6, 110, '#8a6a4e'); }
     rrect(-70, -138, 140, 60, 6, '#8a6244'); rrect(-66, -134, 132, 52, 4, '#f0e4c0');
     label('HIGH PASTURE', 0, -112, 17, '#5a3a24', { align: 'center', weight: 800 });
@@ -385,7 +385,7 @@ export function drawSignpost(sx: number, sy: number, k: number) {
 export function drawPicnic(sx: number, sy: number, k: number) {
   if (k < 0.16) return;
   at(sx, sy, k, () => {
-    oval(0, 0, 80, 6, SH);
+    shade(80, 6, 0.22, GRASS);
     poly([-58, -2, 46, -2, 62, 12, -74, 12], '#d8503c'); for (let i = 0; i < 8; i++) { poly([-58 + i * 14 - i * 2, -2, -50 + i * 14 - i * 2, -2, -62 + i * 14 - i * 2, 12, -70 + i * 14 - i * 2, 12], i % 2 ? '#f6f1e6' : '#d8503c'); }
     rrect(-34, -20, 28, 18, 4, '#a07850'); box(-34, -14, 28, 2, '#7a5a38'); stroke([-30, -20, -20, -32, -10, -20], '#7a5a38', 1.6);    // the basket
     circle(10, -6, 5, '#e8503a'); circle(20, -5, 4, '#f4c430'); box(24, -14, 7, 14, '#58b050'); box(24, -17, 7, 3, '#f6f1e6');          // fruit and a bottle
@@ -400,7 +400,7 @@ export function drawTeaRoom(sx: number, sy: number, k: number) {
   const s = k * 0.95;
   if (s < 0.16) return;
   at(sx, sy, s, () => {
-    oval(0, 0, 54, 5, SH);
+    shade(54, 5, 0.22, GRASS);
     box(-34, -50, 68, 50, '#f4ecd8'); box(12, -50, 22, 50, '#fffaf0'); box(-34, -6, 68, 6, '#a29a8a');
     roof(-44, 44, -50, -82, 16, '#8a4a60', '#a8607a'); box(-4, -98, 9, 20, '#9a5a46'); smoke(0, -100, 0.28);
     rrect(-24, -76, 48, 15, 3, '#2f4a3a'); rrect(-22, -74, 44, 11, 2, '#f0e4c0'); label('TEA ROOM', 0, -65, 9.5, '#2f4a3a', { align: 'center', weight: 800 });

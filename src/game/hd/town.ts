@@ -1,6 +1,6 @@
 // The things a Ladakhi town street is made of: two-storey shopfronts with painted window frames, the welcome gate across the road,
 // a fruit stall under an umbrella and a monk walking by. Local unit space, drawn through at().
-import { at, box, circle, fit, g, oval, poly, rrect, stroke } from './draw';
+import { at, box, circle, fit, g, oval, poly, rrect, stroke, shade } from './draw';
 import { flagString } from './flags';
 
 const SH = 'rgba(40,24,10,0.22)';
@@ -23,7 +23,7 @@ export function drawShop(sx: number, sy: number, k: number, v = 0) {
   if (s < 0.16) return;
   const P = SHOPS[v % SHOPS.length];
   at(sx, sy, s, () => {
-    oval(0, 0, 42, 5, SH);
+    shade(42, 5);
     poly([-32, 0, 32, 0, -70, 34, -108, 34], 'rgba(34,20,12,0.12)');
     box(-32, -92, 64, 88, P.wall); box(22, -92, 10, 88, 'rgba(60,36,20,0.15)');                      // the wall and its shaded end
     box(-35, -97, 70, 7, '#c8b898'); box(-35, -97, 70, 2, 'rgba(255,255,255,0.35)');                  // the flat roof edge
@@ -65,7 +65,7 @@ export function drawGate(sx: number, sy: number, k: number, name = '') {
 export function drawStall(sx: number, sy: number, k: number, v = 0) {
   if (k < 0.16) return;
   at(sx, sy, k * 0.9, () => {
-    oval(0, 0, 34, 4, SH);
+    shade(34, 4);
     stroke([0, 0, 0, -78], '#6b4b30', 3);
     for (let i = 0; i < 6; i++) poly([-36 + i * 12, -60, -24 + i * 12, -60, 0, -84], i % 2 ? '#f4f2ea' : (v % 2 ? '#c8392b' : '#2c6eb0'));
     box(-30, -26, 60, 5, '#6b4b30'); box(-28, -21, 4, 21, '#5a4030'); box(24, -21, 4, 21, '#5a4030');         // the table
@@ -79,7 +79,7 @@ export function drawMonk(sx: number, sy: number, k: number, v = 0) {
   if (k < 0.16) return;
   const step = Math.sin(performance.now() / 260 + v * 2) * 2.2;
   at(sx, sy, k * 1.1, () => {
-    oval(0, 0, 11, 2.4, SH);
+    shade(11, 2.4);
     stroke([-3, -8, -3 + step, 0], '#3a2a22', 3); stroke([3, -8, 3 - step, 0], '#3a2a22', 3);                  // feet and legs under the robe
     poly([-9, -12, 9, -12, 11, -40, -11, -40], '#8a1f2a'); poly([-9, -12, 0, -12, 0, -40, -11, -40], '#a52a36');   // the maroon robe
     poly([-11, -40, 2, -22, 8, -40, 11, -40, 4, -18, -6, -24], '#e8a51a');                                     // the saffron sash across it
@@ -99,7 +99,7 @@ export function drawParkedBike(sx: number, sy: number, k: number, v = 0) {
   if (k < 0.16) return;
   const T = TOURERS[v % TOURERS.length];
   at(sx, sy, k * 0.75, () => {
-    oval(0, 0, 18, 3.4, SH);
+    shade(18, 3.4);
     rrect(-7, -50, 14, 50, 5, '#141416'); for (let i = 0; i < 6; i++) box(-6, -46 + i * 8, 12, 2, '#2c2c30');                    // the rear tyre with its blocks
     stroke([-14, -44, -12, -20], '#2a2a2e', 3); stroke([14, -44, 12, -20], '#2a2a2e', 3);                                        // twin shocks
     rrect(-11, -62, 22, 16, 4, T.body); rrect(-7, -58, 14, 4, 1.5, '#c8392b'); rrect(-5, -50, 10, 4, 1, '#f2eee2');            // tail, lamp and plate

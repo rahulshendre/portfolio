@@ -1,7 +1,7 @@
 // Everything that stands by the road with writing on it: the social hoardings (YouTube, X, LinkedIn, GitHub, PipeCD), the Border Roads slogan
 // boards, green direction boards, speed limits and chevrons. All are drawn in local units with (0, 0) at the foot of the post, on real posts
 // that reach the ground, with a cast shadow, reflective sheen, weathering and, as the light goes, lamps and a glow on the face.
-import { at, box, circle, fit, g, hgrad, label, oval, poly, rnd, rrect, stroke, vgrad } from './draw';
+import { at, box, circle, fit, g, hgrad, label, oval, poly, rnd, rrect, stroke, vgrad, shade } from './draw';
 import { LOGOS, type LogoId } from './logos';
 import { site, socials } from '../../data/site';
 
@@ -88,7 +88,7 @@ export function drawBoard(sx: number, sy: number, k: number, id = 'github') {
   if (k < 0.16) return;
   const B = BRANDS[id] ?? BRANDS.github, near = k > 0.34, seed = id.charCodeAt(0) * 7.3;
   at(sx, sy, k, () => {
-    oval(0, 0, 70, 6, 'rgba(40,24,10,0.25)');
+    shade(70, 6, 0.25);
     cast(170, 150, 0.14);
     // a hoarding on two steel posts, with a catwalk rail under the face
     post(-54, -166, 6); post(54, -166, 6);
@@ -128,15 +128,15 @@ export function drawBro(sx: number, sy: number, k: number, lines?: readonly stri
   if (k < 0.16) return;
   const near = k > 0.34, seed = (lines?.[0]?.charCodeAt(0) ?? 66) * 3.7;
   at(sx, sy, k, () => {
-    oval(0, 0, 56, 5, 'rgba(40,24,10,0.24)');
+    shade(56, 5, 0.24);
     cast(96, 100, 0.13);
     post(-44, -28, 5); post(44, -28, 5);                                                          // short steel legs
     stroke([-44, -30, 44, -30], '#3a3e44', 2);
     // a yellow reflective board with a rounded black field, as the BRO paint and plate it
-    rrect(-58, -96, 116, 68, 6, vgrad(-96, -28, [[0, '#f6cb2a'], [1, '#e0a812']]));
+    rrect(-58, -96, 116, 68, 6, vgrad(-96, -28, [[0, '#dcb838'], [1, '#c29a1c']]));   // routine boards are a duller yellow than the warning chevrons and the exit, so the eye goes to those first
     rrect(-53, -91, 106, 58, 4, '#15120e');
     rrect(-53, -91, 106, 58, 4, 'rgba(255,255,255,0.03)');
-    if (lines) lines.forEach((ln, i) => fit(ln, 0, -68 + i * 17, 94, 11, '#f6cb2a', 700));
+    if (lines) lines.forEach((ln, i) => fit(ln, 0, -68 + i * 17, 94, 11, '#e3bf3c', 700));
     // the small print every board carries
     box(-20, -43, 40, 0.8, 'rgba(246,203,42,0.45)');
     fit('BRO · HIMANK', 0, -36, 40, 4.6, 'rgba(246,203,42,0.7)', 600);
@@ -154,7 +154,7 @@ export function drawSign(sx: number, sy: number, k: number, top?: string, sub?: 
   if (k < 0.16) return;
   const near = k > 0.34, seed = (top?.charCodeAt(0) ?? 71) * 2.3;
   at(sx, sy, k, () => {
-    oval(0, 0, 50, 5, 'rgba(40,24,10,0.24)');
+    shade(50, 5, 0.24);
     cast(88, 90, 0.13);
     post(-34, -34, 5); post(34, -34, 5);
     rrect(-52, -96, 104, 62, 5, '#e9ece8');                                                       // the white edge of the board
@@ -180,7 +180,7 @@ export function drawSign(sx: number, sy: number, k: number, top?: string, sub?: 
 export function drawLimit(sx: number, sy: number, k: number, kmh = 40) {
   if (k < 0.16) return;
   at(sx, sy, k, () => {
-    oval(0, 0, 11, 1.8, 'rgba(40,24,10,0.22)');
+    shade(11, 1.8, 0.22);
     cast(96, 6, 0.12);
     post(0, -76, 4, true);
     circle(0, -94, 23, '#0006'); circle(0, -94, 22, '#c8312a'); circle(0, -94, 15.5, '#f9f8f3');                                     // a thick red ring round a white face
@@ -195,7 +195,7 @@ export function drawLimit(sx: number, sy: number, k: number, kmh = 40) {
 export function drawChevron(sx: number, sy: number, k: number, dir = 1) {
   if (k < 0.16) return;
   at(sx, sy, k, () => {
-    oval(0, 0, 10, 1.8, 'rgba(40,24,10,0.22)');
+    shade(10, 1.8, 0.22);
     cast(100, 5, 0.12);
     post(0, -62, 4, true);
     rrect(-30, -108, 60, 50, 5, '#15120e'); rrect(-27, -105, 54, 44, 3.5, vgrad(-105, -61, [[0, '#f8d030'], [1, '#e3ac12']]));

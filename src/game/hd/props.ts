@@ -1,5 +1,5 @@
 // Roadside props for the Ladakh ride, drawn in local unit space via at().
-import { at, box, circle, fit, g, glow, hgrad, hill, label, oval, poly, rrect, stroke, vgrad } from './draw';
+import { at, box, circle, fit, g, glow, hgrad, hill, label, oval, poly, rrect, stroke, vgrad, shade } from './draw';
 import { drawCar } from './traffic';
 import { drawCanopy, drawDarchog, drawFlagMound, drawFlags } from './flags';
 import { drawGate, drawMonk, drawParkedBike, drawShop, drawStall } from './town';
@@ -8,7 +8,7 @@ import { drawBillboard, drawGantry } from './garagesign';
 import { drawBoard, drawBro, drawChevron, drawLimit, drawSign, setSignLight, SIGN_EMIT, SIGN_GLOW } from './signs';
 import { drawBuddha, drawCheckPost, drawGurdwara, drawMonastery } from './landmarks';
 import { drawCamel, drawCamp, drawCone, drawCrew, drawSummit, drawVillage } from './scenery';
-import { drawPoplarTree } from './foliage';
+import { drawDryScrub, drawPoplarTree } from './foliage';
 import { XP_DRAW } from './meadow';
 import { getLand, setLand } from './land';
 
@@ -24,7 +24,7 @@ export function drawHouse(sx: number, sy: number, k: number, v = 0) {
   const s = k * 0.9;
   if (s < 0.16) return;
   at(sx, sy, s, () => {
-    oval(0, 0, 36, 5.0, 'rgba(40,24,10,0.22)');
+    shade(36, 5.0);
     cast(70, 52, 0.14);
     const wall = ['#f0ebe0', '#e8d8c0', '#d8c8a8', '#f0dca8'][v % 4];
     box(-28, -52, 56, 48, wall);
@@ -46,7 +46,7 @@ export function drawChorten(sx: number, sy: number, k: number) {
   const s = k * 0.85;
   if (s < 0.16) return;
   at(sx, sy, s, () => {
-    oval(0, 0, 24, 3.4, 'rgba(40,24,10,0.22)');
+    shade(24, 3.4);
     cast(70, 22, 0.14);
     box(-18, -20, 36, 18, '#ebe4d4');
     box(-14, -36, 28, 16, '#ebe4d4');
@@ -67,7 +67,7 @@ export function drawMani(sx: number, sy: number, k: number) {
   const s = k * 0.55;
   if (s < 0.16) return;
   at(sx, sy, s, () => {
-    oval(0, 0, 54, 4, 'rgba(40,24,10,0.22)');
+    shade(54, 4);
     box(-50, -18, 100, 16, '#a89880');
     for (let i = 0; i < 8; i++) box(-46 + i * 12, -16, 10, 12, i % 2 ? '#8a7a68' : '#b8a890');
     box(-48, -22, 96, 4, '#c8b898');
@@ -82,16 +82,35 @@ export function drawMani(sx: number, sy: number, k: number) {
   });
 }
 
+const hash = (n: number) => { const x = Math.sin(n * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
+/** Rock colours: shade, body, sunlit face, lit top. Warm sandstone, grey granite, rusty iron stone. */
+const ROCK = [
+  ['#52433a', '#8a7260', '#b9977a', '#cdb08f'],
+  ['#4c4a4a', '#7c7a78', '#a8a5a0', '#c4c0b8'],
+  ['#5a3f35', '#8e6a58', '#b98c72', '#cca486'],
+] as const;
+
+/** A lumpy boulder: a jittered dome (so no two match) cut into a shaded face, a lit face and a lit top, with a dark foot, cracks and a few specks of lichen. */
 export function drawBoulder(sx: number, sy: number, k: number, v = 0) {
   const s = k * (0.8 + (v % 3) * 0.15);
   if (s < 0.16) return;
+  const [dk, md, lt, top] = ROCK[v % 3];
   at(sx, sy, s, () => {
-    const w = 22 + v * 3;
-    oval(2, 0, w * 1.05, 4, 'rgba(40,24,10,0.25)');                                                            // contact shadow
-    poly([-w, 0, -w - 4, -10, -w * 0.6, -24, w * 0.15, -30, w * 0.75, -22, w + 4, -8, w, 0], '#9a7860');        // the body
-    poly([w * 0.15, -30, w * 0.75, -22, w + 4, -8, w, 0, w * 0.35, -6], '#c09a7c');                              // sunlit face (the sun is on the right)
-    poly([-w, 0, -w - 4, -10, -w * 0.6, -24, -w * 0.3, -10, -w * 0.5, 0], '#6d5242');                            // shaded face
-    poly([-w * 0.6, -24, w * 0.15, -30, w * 0.05, -20, -w * 0.4, -16], '#b48c70');                               // a lit top plane
+    const w = 22 + v * 3, h = 26 + (v % 4) * 3;
+    shade(w * 1.05, 4);
+    const pt = (t: number): [number, number] => {
+      const a = Math.PI * (1 - t), r = 0.82 + hash(v * 7.3 + t * 13) * 0.3;
+      return [Math.cos(a) * w * r, -Math.sin(a) * h * r * (0.9 + hash(v * 3.1 + t * 5) * 0.2)];
+    };
+    const P = [0.08, 0.2, 0.34, 0.47, 0.6, 0.74, 0.88].map(pt);
+    poly([-w, 0, ...P.flat(), w, 0], md);                                                                         // the body
+    poly([-w, 0, ...P[0], ...P[1], -w * 0.2, -h * 0.34, -w * 0.5, 0], dk);                                        // shaded face (the sun is on the right)
+    poly([...P[3], ...P[4], ...P[5], ...P[6], w, 0, w * 0.35, -4], lt);                                           // sunlit face
+    poly([...P[1], ...P[2], ...P[3], ...P[4], w * 0.1, -h * 0.5, -w * 0.3, -h * 0.46], top);                      // lit top plane
+    poly([-w, 0, -w * 0.88, -4.5, w * 0.88, -4.5, w, 0], 'rgba(10,6,2,0.2)');                                     // dark foot where it meets the ground
+    stroke([...P[2], -w * 0.1, -h * 0.3, -w * 0.18, -h * 0.12], dk, 1.1);                                         // a crack
+    stroke([...P[4], w * 0.3, -h * 0.34], 'rgba(40,28,20,0.45)', 0.9);
+    for (let i = 0; i < 3; i++) circle(-w * 0.5 + hash(v + i * 4.1) * w * 1.2, -h * (0.15 + hash(v * 2 + i) * 0.5), 1.4 + hash(v + i) * 1.4, i % 2 ? '#a4a05a' : '#c28a4a');   // lichen
   });
 }
 
@@ -99,7 +118,7 @@ export function drawSnow(sx: number, sy: number, k: number, v = 0) {
   const s = k * 0.7;
   if (s < 0.16) return;
   at(sx, sy, s, () => {
-    oval(0, 0, 20, 2.8, 'rgba(40,24,10,0.22)');
+    shade(20, 2.8);
     oval(0, -6, 18 + v * 4, 8, '#f0f4f8');
     oval(-8, -8, 10, 5, '#e0e8f0');
   });
@@ -109,7 +128,7 @@ export function drawYak(sx: number, sy: number, k: number) {
   const s = k * 0.85;
   if (s < 0.16) return;
   at(sx, sy, s, () => {
-    oval(0, 0, 26, 3.6, 'rgba(40,24,10,0.22)');
+    shade(26, 3.6);
     oval(0, -14, 22, 12, '#3a3028');
     oval(18, -20, 10, 8, '#3a3028'); // head
     box(22, -28, 3, 8, '#2a2218'); // horn
@@ -138,7 +157,7 @@ export function drawMilestone(sx: number, sy: number, k: number, top?: string, s
   const s = k;
   if (s < 0.16) return;
   at(sx, sy, s, () => {
-    oval(0, 0, 30, 4, 'rgba(40,24,10,0.22)');
+    shade(30, 4);
     rrect(-28, -104, 56, 100, 7, '#f4f2ea');
     rrect(-28, -104, 56, 34, 7, '#e8b923'); box(-28, -80, 56, 10, '#e8b923');
     box(-28, -104, 9, 100, '#00000010');                                                    // shaded left edge
@@ -206,7 +225,7 @@ export function drawPole(sx: number, sy: number, k: number) {
   const s = k;
   if (s < 0.16) return;
   at(sx, sy, s, () => {
-    oval(0, 0, 9, 1.6, SH);
+    shade(9, 1.6);
     cast(128, 5, 0.2);
     box(-2.4, -128, 4.8, 128, '#4a3a2c'); box(-2.4, -128, 1.6, 128, '#6f5844');                       // wood, lit on the left
     box(-28, -118, 56, 4.5, '#3a2e24'); box(-20, -124, 40, 3.5, '#3a2e24');                             // cross arms
@@ -216,14 +235,7 @@ export function drawPole(sx: number, sy: number, k: number) {
 
 /** A tuft of dry scrub. */
 export function drawScrub(sx: number, sy: number, k: number, v = 0) {
-  const s = k * (0.8 + (v % 3) * 0.2);
-  if (s < 0.16) return;
-  at(sx, sy, s, () => {
-    oval(0, 0, 15, 2.6, SH);
-    const cols = ['#8a7a3a', '#a08c48', '#6c6a34'];
-    for (let i = 0; i < 8; i++) { const a = -1.2 + (i / 7) * 2.4; stroke([0, -1, Math.sin(a) * 15, -8 - Math.cos(a) * 12], cols[(i + v) % 3], 2.4); }
-    oval(0, -6, 6, 4, '#8a7a3a');
-  });
+  drawDryScrub(sx, sy, k, v);
 }
 
 /** Green grass by the water. */
@@ -231,7 +243,7 @@ export function drawTuft(sx: number, sy: number, k: number, v = 0) {
   const s = k * (0.8 + (v % 3) * 0.2);
   if (s < 0.16) return;
   at(sx, sy, s, () => {
-    oval(0, 0, 12, 2, SH);
+    shade(12, 2);
     for (let i = 0; i < 11; i++) { const a = -1.1 + (i / 10) * 2.2; stroke([Math.sin(a) * 3, -1, Math.sin(a) * 13, -10 - Math.cos(a) * 12 - (i % 3) * 3], i % 2 ? '#7fa04a' : '#a4b860', 2); }
   });
 }
@@ -241,7 +253,7 @@ export function drawCairn(sx: number, sy: number, k: number) {
   const s = k;
   if (s < 0.16) return;
   at(sx, sy, s, () => {
-    oval(0, 0, 18, 3, SH);
+    shade(18, 3);
     oval(0, -6, 15, 7, '#8f8a82'); oval(1, -16, 11, 6, '#a29c92'); oval(0, -24, 7, 4.5, '#b6b0a6'); oval(3, -28, 4, 2.6, '#c8c2b8');
     oval(4, -8, 8, 4, '#b0aaa0');
   });
@@ -283,7 +295,7 @@ export function drawDhaba(sx: number, sy: number, k: number) {
   const s = k * 0.95;
   if (s < 0.16) return;
   at(sx, sy, s, () => {
-    oval(0, 0, 44, 5, SH);
+    shade(44, 5);
     box(-30, -50, 60, 46, '#7a5c40'); box(-30, -50, 60, 5, '#5a4230');                                    // plank back wall
     for (const x of [-20, -10, 0, 10, 20]) box(x, -50, 0.8, 46, '#00000030');
     poly([-38, -50, 38, -50, 32, -66, -32, -66], '#2c6eb0'); poly([-38, -50, -22, -50, -18, -66, -32, -66], '#4a86c4'); // blue tarp roof, lit at the left
@@ -313,7 +325,7 @@ export function drawKiang(sx: number, sy: number, k: number, v = 0) {
   at(sx, sy, s, () => {
     for (const [x, y, sc, f, graze] of [[-34, 0, 0.9, 1, 0], [-2, -3, 1, -1, 1], [34, 1, 0.85, 1, 0]] as const) {
       g.save(); g.translate(x, y); g.scale(sc * f, sc);
-      oval(0, 0, 26, 3.4, 'rgba(40,24,10,0.22)');
+      shade(26, 3.4);
       for (const lx of [-13, -9, 8, 12]) box(lx, -15, 3, 15, '#c7b7a0');                                   // pale legs
       oval(0, -24, 20, 9, '#a2673c'); oval(1, -18, 17, 5.5, '#efe6d2');                                    // chestnut back, white belly
       stroke([-14, -30, 12, -31], '#5a3a24', 1.6);                                                          // the dark stripe down the back
@@ -331,7 +343,7 @@ export function drawMarmot(sx: number, sy: number, k: number, v = 0) {
   const s = k * 1.1;
   if (s < 0.16) return;
   at(sx, sy, s, () => {
-    oval(0, 0, 14, 2.4, SH);
+    shade(14, 2.4);
     oval(-5, -5, 16, 5, '#8f8a82'); oval(-3, -9, 11, 4.6, '#a29c92');                                     // the rock
     oval(1, -17, 5, 7.5, '#b48a5a'); oval(1, -14, 3.4, 4.6, '#d8b98a');                                   // chestnut body, pale belly
     circle(1, -25, 3.6, '#a87a4c'); oval(2.4, -24.2, 1.8, 1.4, '#e6d0ac');                                // head and muzzle
@@ -347,7 +359,7 @@ export function drawDog(sx: number, sy: number, k: number, v = 0) {
   const f = v % 2 ? 1 : -1, wag = Math.sin(performance.now() / 160 + v) * 5;
   at(sx, sy, s, () => {
     g.scale(f, 1);
-    oval(0, 0, 15, 2.6, SH);
+    shade(15, 2.6);
     stroke([-9, -6, -15 - wag * 0.3, -3 + wag * 0.4], '#a8794a', 3);                                    // tail, wagging
     poly([-9, -3, -8, -18, 0, -24, 4, -3], '#c48a56'); oval(-1, -10, 8, 8, '#c48a56');                  // haunches and chest
     oval(3, -22, 4, 8, '#c48a56'); circle(5, -30, 5.2, '#c48a56'); oval(9.5, -28.5, 3.4, 2.4, '#e2b98a'); // neck, head and muzzle

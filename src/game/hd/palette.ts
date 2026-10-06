@@ -13,6 +13,8 @@ export const RAMPS = {
   poplarGreen: ['#27441f', '#3d6531', '#5b863b', '#84a851', '#aac76c'],
   blossom: ['#9c4a68', '#c4708f', '#e394b0', '#f2b8cb', '#fadbe5'],
   poplarGold: ['#68481a', '#8f6420', '#b88a30', '#d8ae4c', '#eecf78'],
+  scrubOlive: ['#3d3a1e', '#5c5629', '#7c733a', '#9d9150', '#bcae6c'],  // Ladakh scrub: dry, grey-olive, never green
+  scrubDust: ['#4a3d2a', '#6c5b3d', '#8d795a', '#ae9a76', '#cdbb94'],
 } as const satisfies Record<string, Ramp>;
 export type RampName = keyof typeof RAMPS;
 

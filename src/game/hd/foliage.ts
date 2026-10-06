@@ -6,7 +6,7 @@ import { BARK, BLOOM, RAMPS, type RampName } from './palette';
 
 /** Added to a tree's `v` to make it a tall one: the lone big tree where a grove peaks. */
 export const HERO = 1000;
-export type Species = 'oak' | 'beech' | 'birch' | 'poplar' | 'bush' | 'blossom';
+export type Species = 'oak' | 'beech' | 'birch' | 'poplar' | 'bush' | 'scrub' | 'blossom';
 
 interface Spec {
   trunk: { h: number; w: number; lean: number; bark: keyof typeof BARK } | null;
@@ -20,6 +20,7 @@ const SPECS: Record<Species, Spec> = {
   poplar: { trunk: { h: 22, w: 5, lean: 0, bark: 'dark' }, cx: 0, cy: -68, rx: 10, ry: 54, n: 34, r0: 6, r1: 11 },
   blossom: { trunk: { h: 42, w: 9, lean: -0.05, bark: 'dark' }, cx: 0, cy: -70, rx: 40, ry: 27, n: 21, r0: 11, r1: 19 },
   bush: { trunk: null, cx: 0, cy: -13, rx: 26, ry: 8, n: 9, r0: 8, r1: 13 },
+  scrub: { trunk: null, cx: 0, cy: -7, rx: 17, ry: 5, n: 8, r0: 4.5, r1: 7.5 },
 };
 const VARIANTS = 10;
 const TAU = Math.PI * 2;
@@ -50,7 +51,7 @@ function blob(x: number, y: number, r: number, seed: number, fill: string) {
 
 function paint(species: Species, ramp: readonly string[], seed: number, bloom: boolean) {
   const sp = SPECS[species], { cx, cy, rx, ry } = sp, k = seed * 7.13 + species.length;
-  oval(-rx * 0.45, 1.5, rx * 1.15, species === 'bush' ? 4 : 5.5, SHADOW);                       // the shadow falls away from the sun
+  oval(-rx * 0.45, 1.5, rx * 1.15, species === 'bush' ? 4 : species === 'scrub' ? 2.6 : 5.5, SHADOW);                       // the shadow falls away from the sun
   if (sp.trunk) {
     const { h, w, lean, bark } = sp.trunk, b = BARK[bark], tx = lean * h, top = -h;
     poly([-w * 0.7, 1, w * 0.7, 1, tx + w * 0.38, top, tx - w * 0.38, top], b[0]);                // the trunk, shaded
@@ -132,7 +133,7 @@ export function drawFoliage(species: Species, sx: number, sy: number, k: number,
   const s = k * (0.8 + rnd(v * 3.1 + 1) * 0.36) * (hero ? 1.38 : 1);
   if (s < 0.1) return;
   const spr = sprite(species, ramp, v % VARIANTS, bloom, tierFor(s));
-  const sway = Math.sin(clock() * 1.15 + v * 1.7) * (species === 'poplar' ? 0.016 : species === 'bush' ? 0.006 : 0.011);
+  const sway = Math.sin(clock() * 1.15 + v * 1.7) * (species === 'poplar' ? 0.016 : species === 'bush' || species === 'scrub' ? 0.006 : 0.011);
   at(sx, sy, s, () => {
     g.imageSmoothingEnabled = false;                                                               // sprites are painted close to the size they are drawn, so no filtering is needed (see TIERS)
     g.transform(1, 0, sway, 1, 0, 0);                                                              // lean the whole thing a hair, from the foot up
@@ -149,6 +150,11 @@ export function drawTree(sx: number, sy: number, k: number, v = 0) {
 /** A low bush; some carry flowers. */
 export function drawBush(sx: number, sy: number, k: number, v = 0) {
   drawFoliage('bush', sx, sy, k * 0.9, v, `leaf${(v % VARIANTS) % 4}` as RampName, (v % VARIANTS) % 3 === 0);
+}
+
+/** A low tuft of dry highland scrub: grey-olive or dust, painted like the bushes but never green. */
+export function drawDryScrub(sx: number, sy: number, k: number, v = 0) {
+  drawFoliage('scrub', sx, sy, k * 0.9, v, v % 2 ? 'scrubDust' : 'scrubOlive');
 }
 
 /** A tall narrow poplar, golden or green. `seed` picks which one. */

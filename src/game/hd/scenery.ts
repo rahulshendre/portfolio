@@ -1,5 +1,5 @@
 // Bigger pieces of the country: a hillside village, the double-humped camels of the Nubra dunes, a speed-limit sign.
-import { at, box, circle, g, label, oval, poly, rrect, stroke } from './draw';
+import { at, box, circle, g, label, oval, poly, rrect, stroke, shade } from './draw';
 import { flagString } from './flags';
 
 const SH = 'rgba(40,24,10,0.2)';
@@ -30,7 +30,7 @@ export function drawCamel(sx: number, sy: number, k: number, v = 0) {
   at(sx, sy, k, () => {
     for (const [x, sc, f] of [[-24, 1, 1], [28, 0.85, -1]] as const) {
       g.save(); g.translate(x, 0); g.scale(sc * f, sc);
-      oval(0, 0, 32, 4, SH);
+      shade(32, 4);
       for (const lx of [-16, -10, 10, 16]) stroke([lx, -22, lx + (lx > 0 ? 1 : -1), 0], '#6d4a30', 3.4);      // long legs
       oval(0, -34, 28, 12, '#a07850'); oval(2, -28, 24, 7, '#b48c60');                                          // body
       oval(-10, -50, 8, 12, '#8a6440'); oval(9, -49, 8, 11, '#8a6440');                                          // two humps
@@ -60,7 +60,7 @@ export function drawCrew(sx: number, sy: number, k: number) {
   if (k < 0.16) return;
   const now = performance.now() / 1000;
   at(sx, sy, k, () => {
-    oval(0, 0, 52, 5, SH);
+    shade(52, 5);
     // the tar drum, with smoke
     box(24, -26, 18, 26, '#1d1a17'); box(24, -26, 18, 3, '#3a3530'); box(24, -14, 18, 2, '#3a3530'); oval(33, -26, 9, 2.5, '#0f0d0b');
     for (let i = 0; i < 3; i++) { const p = (now * 0.4 + i / 3) % 1; g.globalAlpha = (1 - p) * 0.3; circle(33 + Math.sin(p * 5 + i) * 4, -30 - p * 34, 4 + p * 8, '#8a8580'); }
@@ -84,7 +84,7 @@ export function drawCrew(sx: number, sy: number, k: number) {
 export function drawSummit(sx: number, sy: number, k: number) {
   if (k < 0.16) return;
   at(sx, sy, k, () => {
-    oval(0, 0, 90, 8, SH);
+    shade(90, 8);
     poly([-90, 0, -70, -14, -40, -20, -10, -10, 30, -18, 70, -12, 92, 0], '#f2f5f9'); poly([-70, -14, -40, -20, -20, -12, -50, -6], '#dfe8f2');   // a drift of snow round the base
     box(-62, -100, 6, 100, '#5a5048'); box(56, -100, 6, 100, '#5a5048');
     rrect(-76, -146, 152, 78, 6, '#1b1712'); rrect(-72, -142, 144, 70, 4, '#f2c318');
@@ -100,7 +100,7 @@ export function drawSummit(sx: number, sy: number, k: number) {
 export function drawCamp(sx: number, sy: number, k: number) {
   if (k < 0.16) return;
   at(sx, sy, k, () => {
-    oval(0, 0, 80, 6, SH);
+    shade(80, 6);
     for (const [x, w, h, col, dark] of [[-40, 30, 34, '#e8b923', '#b98f16'], [26, 26, 30, '#ecebe4', '#bfbdb2'], [62, 20, 24, '#d8342b', '#a6231b']] as const) {
       poly([x - w, 0, x - w * 0.55, -h * 0.85, x, -h, x + w * 0.55, -h * 0.85, x + w, 0], col);             // a dome tent, lit on the left
       poly([x, -h, x + w * 0.55, -h * 0.85, x + w, 0, x + w * 0.2, 0], dark);

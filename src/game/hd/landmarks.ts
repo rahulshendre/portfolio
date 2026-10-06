@@ -1,5 +1,5 @@
 // Landmarks seen from far off, on the hills beside the road: the great seated Buddhas of Diskit and Shey, and Thiksey's tiered monastery.
-import { at, box, circle, hgrad, hill, oval, poly, rrect, stroke } from './draw';
+import { at, box, circle, hgrad, hill, oval, poly, rrect, stroke, shade } from './draw';
 import { flagString } from './flags';
 
 /** A seated Buddha on a lotus plinth on a hill. `v` 0 is the pale, gold-faced Maitreya of Diskit; 1 the gilded Buddha of Shey. */
@@ -44,7 +44,7 @@ export function drawMonastery(sx: number, sy: number, k: number) {
 export function drawGurdwara(sx: number, sy: number, k: number) {
   if (k < 0.16) return;
   at(sx, sy, k, () => {
-    oval(0, 0, 76, 8, 'rgba(40,24,10,0.22)');
+    shade(76, 8);
     box(-62, -50, 124, 50, '#f6f2e8'); box(28, -50, 34, 50, 'rgba(60,36,20,0.12)'); box(-66, -56, 132, 8, '#e0d8c4');
     for (const x of [-46, -22, 2, 26, 46]) { rrect(x - 5, -38, 11, 26, 4, '#3a4a58'); }
     box(-30, -80, 60, 26, '#f6f2e8'); box(-34, -84, 68, 6, '#e0d8c4');                                        // the upper hall
@@ -62,7 +62,7 @@ export function drawGurdwara(sx: number, sy: number, k: number) {
 export function drawCheckPost(sx: number, sy: number, k: number) {
   if (k < 0.16) return;
   at(sx, sy, k, () => {
-    oval(0, 0, 44, 5, 'rgba(40,24,10,0.22)');
+    shade(44, 5);
     box(-24, -52, 48, 52, '#8a8f6a'); box(10, -52, 14, 52, 'rgba(0,0,0,0.14)'); box(-28, -58, 56, 8, '#5a5f44');       // the booth in army green
     rrect(-16, -42, 18, 14, 2, '#33475a'); rrect(-16, -42, 18, 4, 1, 'rgba(255,255,255,0.18)'); box(8, -40, 10, 40, '#4a4d38');
     box(30, -6, 6, 6, '#3a3a3e');
