@@ -18,7 +18,7 @@ export const MY_PLATE = 'MH12';
 /** Rear view of the hero rider. `lean` runs -1 (left) to 1 (right); `braking` lights the tail lamp. */
 export function drawRider(ctx: CanvasRenderingContext2D, W: number, H: number, lean: number, t: number, speedFrac: number, braking = false, scale = 1) {
   const sc = Math.min(H * 0.074, W * 0.1) * scale;          // pixels per unit
-  drawRiderAt(ctx, W / 2 + lean * sc * 0.25, H - Math.max(14, H * 0.03), sc, lean, t, speedFrac, braking, { plate: MY_PLATE });
+  drawRiderAt(ctx, W / 2 + lean * sc * 0.25, H - Math.max(14, H * 0.03), sc, lean, t, speedFrac, braking, { plate: MY_PLATE, bag: true });
 }
 
 /** The same rider anywhere on screen, at any size, with their own gear: used for the other riders on the road. */
@@ -38,7 +38,7 @@ export function drawRiderAt(ctx: CanvasRenderingContext2D, cx: number, gy: numbe
     g.rotate(a);
 
     // ---- rear tyre, with a tread that scrolls up as you ride
-    const tw = 0.38 * sq;
+    const tw = 0.33 * sq;
     rrect(-tw, -1.18, tw * 2, 1.18, 0.16, hgrad(-tw, tw, [[0, '#0a0a0b'], [0.5, K.tyre], [1, '#0a0a0b']]));
     g.save();
     g.beginPath(); g.roundRect(-tw, -1.18, tw * 2, 1.18, 0.16); g.clip();
@@ -78,7 +78,11 @@ export function drawRiderAt(ctx: CanvasRenderingContext2D, cx: number, gy: numbe
     // ---- seat, lit from the window side
     poly([-0.4, -1.52, 0.4, -1.52, 0.5, -1.4, -0.5, -1.4], hgrad(-0.5, 0.5, [[0, K.seat], [0.35, K.seatLit], [1, K.seat]]));
 
-    if (look.bag) { rrect(-0.5, -1.98, 1.0, 0.58, 0.14, '#6b4a2a'); rrect(-0.5, -1.98, 1.0, 0.16, 0.08, '#8a6238'); stroke([-0.2, -1.98, -0.2, -1.4], '#2a1c10', 0.04); stroke([0.2, -1.98, 0.2, -1.4], '#2a1c10', 0.04); }
+    if (look.bag) {
+      rrect(-0.62, -2.02, 1.24, 0.62, 0.18, hgrad(-0.62, 0.62, [[0, '#4a3220'], [0.35, '#7a5634'], [0.7, '#6b4a2a'], [1, '#43301f']]));               // a rolled tail bag strapped over the pillion seat
+      rrect(-0.62, -2.02, 1.24, 0.14, 0.07, '#9a7040'); stroke([-0.24, -2.02, -0.24, -1.4], '#241810', 0.045); stroke([0.24, -2.02, 0.24, -1.4], '#241810', 0.045);
+      rrect(-0.29, -1.78, 0.1, 0.07, 0.02, '#c9a15a'); rrect(0.19, -1.78, 0.1, 0.07, 0.02, '#c9a15a');                                                 // the buckles
+    }
     // the rider is drawn a touch smaller than life, so the bike carries the picture
     g.save(); g.translate(0, -1.5); g.scale(0.92, 0.92); g.translate(0, 1.5);
     // ---- the white tank, its black stripe and the rubber knee pads: what shows of the bike beside the rider
@@ -89,7 +93,9 @@ export function drawRiderAt(ctx: CanvasRenderingContext2D, cx: number, gy: numbe
     for (const s of [-1, 1]) {
       poly([s * 0.2, -1.95, s * 0.5, -1.9, s * 0.62, -1.42, s * 0.5, -1.22, s * 0.26, -1.4],
         hgrad(Math.min(s * 0.2, s * 0.62), Math.max(s * 0.2, s * 0.62), [[0, K.pants], [0.5, K.pantsLit], [1, K.pants]]));       // thigh
-      poly([s * 0.5, -1.3, s * 0.66, -1.36, s * 0.6, -0.78, s * 0.46, -0.74], K.pants);                                              // shin
+      poly([s * 0.46, -1.3, s * 0.7, -1.38, s * 0.62, -0.8, s * 0.44, -0.76], hgrad(Math.min(s * 0.44, s * 0.7), Math.max(s * 0.44, s * 0.7), [[0, K.pants], [0.5, K.pantsLit], [1, K.pants]]));   // shin
+      oval(s * 0.6, -1.36, 0.13, 0.11, K.pantsLit); oval(s * 0.6, -1.36, 0.09, 0.075, K.pants);                                       // the knee, gripping the tank
+      rrect(s * 0.42 - 0.04, -0.9, 0.3, 0.1, 0.04, '#0f1013');                                                                          // the boot cuff
       rrect(s * 0.44 - 0.05, -0.82, 0.24, 0.34, 0.07, hgrad(s * 0.4, s * 0.68, [[0, K.boot], [0.4, K.bootLit], [1, K.boot]]));       // boot
       rrect(s * 0.44 - 0.07, -0.52, 0.28, 0.07, 0.03, '#0b0b0d');                                                                     // sole
     }
@@ -111,23 +117,28 @@ export function drawRiderAt(ctx: CanvasRenderingContext2D, cx: number, gy: numbe
     }
 
     // ---- torso: jacket with a back panel, shoulders, reflective band
-    poly([-0.5, -2.68, 0.5, -2.68, 0.58, -2.5, 0.46, -1.85, -0.46, -1.85, -0.58, -2.5],
-      hgrad(-0.58, 0.58, [[0, K.jacketDark], [0.3, K.jacket], [0.62, K.jacketLit], [1, K.jacketDark]]));
+    poly([-0.46, -2.7, 0.46, -2.7, 0.62, -2.52, 0.5, -2.1, 0.46, -1.82, -0.46, -1.82, -0.5, -2.1, -0.62, -2.52],
+      hgrad(-0.62, 0.62, [[0, K.jacketDark], [0.3, K.jacket], [0.62, K.jacketLit], [1, K.jacketDark]]));
+    for (const s of [-1, 1]) { oval(s * 0.27, -2.4, 0.17, 0.14, '#ffffff10'); oval(s * 0.27, -2.4, 0.17, 0.14, 'rgba(0,0,0,0.12)'); stroke([s * 0.1, -2.6, s * 0.22, -2.1], '#0000001a', 0.03); }   // shoulder-blade armour
+    rrect(-0.48, -1.9, 0.96, 0.1, 0.04, K.jacketDark);                                                                                      // the hem band over the hips
     poly([-0.34, -2.56, 0.34, -2.56, 0.38, -2.06, -0.38, -2.06], '#ffffff12');                         // back panel
     stroke([-0.46, -2.02, 0.46, -2.02], K.band, 0.055);                                                // reflective band
     stroke([0, -2.62, 0, -1.9], K.jacketDark, 0.025);                                                  // spine seam
-    poly([-0.58, -2.5, -0.5, -2.68, -0.36, -2.64, -0.44, -2.42], K.jacketLit);                         // shoulder, lit side
+    poly([-0.62, -2.52, -0.46, -2.7, -0.3, -2.66, -0.4, -2.42], K.jacketLit);                         // shoulder, lit side
     for (const s of [-1, 1]) {
       // arms out to the grips: upper arm to the elbow, forearm forward
-      stroke([s * 0.5, -2.56, s * 0.7, -2.36], K.jacket, 0.2);
-      stroke([s * 0.7, -2.36, s * 0.78, -2.24], K.jacketDark, 0.16);
+      stroke([s * 0.54, -2.56, s * 0.72, -2.34], K.jacket, 0.25);
+      stroke([s * 0.72, -2.34, s * 0.79, -2.24], K.jacketDark, 0.19); circle(s * 0.72, -2.34, 0.095, K.jacketLit);   // the elbow
     }
 
     // ---- helmet: white shell, a red racing stripe and a dark vent
-    circle(0, -2.98, 0.34, vgrad(-3.32, -2.64, [[0, '#ffffff'], [0.55, K.helmet], [1, K.helmetShade]]));
-    stroke([0, -3.3, 0, -2.7], K.stripe, 0.07);
-    rrect(-0.14, -2.78, 0.28, 0.07, 0.03, '#2a2c33');                                                  // neck roll
-    rrect(-0.09, -3.16, 0.18, 0.05, 0.02, '#20232a');                                                  // rear vent
+    rrect(-0.12, -2.86, 0.24, 0.2, 0.05, '#7a5238');                                                    // the neck
+    poly([-0.26, -2.72, -0.16, -2.9, 0.16, -2.9, 0.26, -2.72, 0.2, -2.64, -0.2, -2.64], K.jacketLit);   // the stand-up collar
+    oval(0, -3.0, 0.335, 0.36, vgrad(-3.36, -2.64, [[0, '#ffffff'], [0.5, K.helmet], [1, K.helmetShade]]));
+    oval(0, -2.83, 0.3, 0.1, 'rgba(60,56,50,0.35)');                                                     // the shell's lower rim, in shadow
+    rrect(-0.04, -3.34, 0.08, 0.6, 0.03, K.stripe);                                                      // the racing stripe
+    rrect(-0.015, -3.34, 0.02, 0.6, 0.01, '#ff8a7a');
+    rrect(-0.14, -2.76, 0.28, 0.06, 0.03, '#2a2c33');                                                    // neck roll
     oval(-0.13, -3.13, 0.07, 0.11, '#ffffff66');                                                       // gloss, lit from the left
     g.restore();
     g.restore();
