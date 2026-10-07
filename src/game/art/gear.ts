@@ -48,12 +48,12 @@ export const OUTFITS = {
     ...SHARED,
     jacket: ['#08090d', '#13151b', '#22252e', '#383d4a', '#646c7e'] as Ramp,
     jeans: ['#07090e', '#10131b', '#1c212e', '#2d3547', '#4a556d'] as Ramp,
-    leather: ['#06060a', '#101015', '#1b1b22', '#2c2c36', '#4b4b59'] as Ramp,
+    leather: ['#07070b', '#14141a', '#24242d', '#3b3b47', '#66667a'] as Ramp,
     helmet: ['#737a90', '#aeb5c6', '#dde1ea', '#f6f7fb', '#ffffff'] as Ramp,            // white, with a cool shadow
     accent: ['#3a3d44', '#686c76', '#a0a5b0', '#d0d4dc', '#f2f4f8'] as Ramp,           // silver
     stripe: null,                                                                       // no stripe: a clean white shell
     visor: ['#04050a', '#0a0c11', '#12151c', '#222733', '#5d6a82'] as Ramp,            // black, with a cold glint
-    canvas: ['#0e0f12', '#1a1c21', '#2a2d34', '#3f434d', '#5d626e'] as Ramp,           // a black roll
+    canvas: ['#1c1d19', '#2f3029', '#4a4b41', '#6c6c5f', '#908f80'] as Ramp,           // a dark olive-grey roll, so it never reads as part of the black jeans
     band: '#dfe3ea',
   },
 } satisfies Record<string, Outfit>;

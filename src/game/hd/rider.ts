@@ -101,11 +101,11 @@ export function drawRiderAt(ctx: CanvasRenderingContext2D, cx: number, gy: numbe
     for (const s of [-1, 1]) {
       poly([s * 0.2, -1.95, s * 0.5, -1.9, s * 0.62, -1.42, s * 0.5, -1.22, s * 0.26, -1.4],
         hgrad(Math.min(s * 0.2, s * 0.62), Math.max(s * 0.2, s * 0.62), [[0, K.pants], [0.5, K.pantsLit], [1, K.pants]]));       // thigh
-      poly([s * 0.46, -1.3, s * 0.7, -1.38, s * 0.62, -0.8, s * 0.44, -0.76], hgrad(Math.min(s * 0.44, s * 0.7), Math.max(s * 0.44, s * 0.7), [[0, K.pants], [0.5, K.pantsLit], [1, K.pants]]));   // shin
-      oval(s * 0.6, -1.36, 0.13, 0.11, K.pantsLit); oval(s * 0.6, -1.36, 0.09, 0.075, K.pants);                                       // the knee, gripping the tank
-      rrect(s * 0.42 - 0.04, -0.9, 0.3, 0.1, 0.04, '#0f1013');                                                                          // the boot cuff
-      rrect(s * 0.44 - 0.05, -0.82, 0.24, 0.34, 0.07, hgrad(s * 0.4, s * 0.68, [[0, K.boot], [0.4, K.bootLit], [1, K.boot]]));       // boot
-      rrect(s * 0.44 - 0.07, -0.52, 0.28, 0.07, 0.03, '#0b0b0d');                                                                     // sole
+      poly([s * 0.4, -1.3, s * 0.76, -1.4, s * 0.68, -0.8, s * 0.42, -0.74], hgrad(Math.min(s * 0.4, s * 0.76), Math.max(s * 0.4, s * 0.76), [[0, K.pants], [0.5, K.pantsLit], [1, K.pants]]));   // shin, a calf that swells then tapers
+      oval(s * 0.62, -1.36, 0.16, 0.13, K.pantsLit); oval(s * 0.62, -1.36, 0.11, 0.09, K.pants);                                       // the knee, gripping the tank
+      rrect(s * 0.42 - 0.08, -0.98, 0.34, 0.1, 0.04, '#0f1013');                                                                          // the boot cuff
+      rrect(s * 0.44 - 0.09, -0.9, 0.34, 0.44, 0.09, hgrad(s * 0.36, s * 0.72, [[0, K.boot], [0.4, K.bootLit], [1, K.boot]]));       // boot, taller and broader
+      rrect(s * 0.44 - 0.11, -0.5, 0.38, 0.08, 0.03, '#0b0b0d');                                                                     // sole
     }
 
     // upper body leans a little against the bike, so it reads as weight on the pegs
@@ -125,7 +125,7 @@ export function drawRiderAt(ctx: CanvasRenderingContext2D, cx: number, gy: numbe
     }
 
     // ---- torso: jacket with a back panel, shoulders, reflective band
-    poly([-0.46, -2.7, 0.46, -2.7, 0.62, -2.52, 0.5, -2.1, 0.46, -1.82, -0.46, -1.82, -0.5, -2.1, -0.62, -2.52],
+    poly([-0.5, -2.7, 0.5, -2.7, 0.68, -2.52, 0.54, -2.1, 0.5, -1.82, -0.5, -1.82, -0.54, -2.1, -0.68, -2.52],
       hgrad(-0.62, 0.62, [[0, K.jacketDark], [0.3, K.jacket], [0.62, K.jacketLit], [1, K.jacketDark]]));
     for (const s of [-1, 1]) { oval(s * 0.27, -2.4, 0.17, 0.14, '#ffffff10'); oval(s * 0.27, -2.4, 0.17, 0.14, 'rgba(0,0,0,0.12)'); stroke([s * 0.1, -2.6, s * 0.22, -2.1], '#0000001a', 0.03); }   // shoulder-blade armour
     rrect(-0.48, -1.9, 0.96, 0.1, 0.04, K.jacketDark);                                                                                      // the hem band over the hips

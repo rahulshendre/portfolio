@@ -14,12 +14,12 @@ export const PX_PER_M = 49.4;
 const m = (metres: number) => metres * PX_PER_M;
 
 /** The rider's bones, in pixels. */
-export const BONE = { torso: m(0.5), thigh: m(0.44), shin: m(0.44), upper: m(0.32), fore: m(0.4), head: m(0.15) } as const;
+export const BONE = { torso: m(0.48), thigh: m(0.44), shin: m(0.44), upper: m(0.32), fore: m(0.4), head: m(0.15) } as const;
 /** Where the rider meets the bike, in sprite pixels (top-left of the bike sprite is 0, 0). */
 export const SEAT: P = [61, 23];       // the hip joint, a hand above the seat
 export const GRIP: P = [97, 15];       // the near hand grip
 export const PEG: P = [75, 50];        // the near footpeg, where the sole rests
-const LEAN = (15 * Math.PI) / 180;
+const LEAN = (17 * Math.PI) / 180;
 
 const sub = (a: P, b: P): P => [a[0] - b[0], a[1] - b[1]];
 const add = (a: P, b: P): P => [a[0] + b[0], a[1] + b[1]];
@@ -121,20 +121,20 @@ export function drawRiderSide(x: number, y: number) {
   const farJeans = dim(jeans, INK, 0.5), farLeather = dim(leather, INK, 0.5), farJacket = dim(jacket, INK, 0.5);
 
   // ---- the far side: a shade darker and nudged forward, so it sits behind the bike's near side
-  const farKnee: P = [knee[0] + 2, knee[1] - 1], farAnkle: P = [ankle[0] + 3, ankle[1] - 1];
-  solid([tube(add(hip, [1, 0]), farKnee, 3.4, 3), tube(farKnee, farAnkle, 2.9, 2.1)], farJeans);
-  solid([tube([farAnkle[0] - 1, farAnkle[1] - 5], farAnkle, 2.6, 2.6), tube([farAnkle[0] - 1, farAnkle[1] + 2], [farAnkle[0] + 8, farAnkle[1] + 3], 2.2, 2.2)], farLeather);
+  const farKnee: P = [knee[0] + 4, knee[1] - 3], farAnkle: P = [ankle[0] + 7, ankle[1] - 2];
+  solid([tube(add(hip, [1, 0]), farKnee, 3.8, 3.3), tube(farKnee, farAnkle, 3.2, 2.4)], farJeans);
+  solid([tube([farAnkle[0] - 1, farAnkle[1] - 7], farAnkle, 2.9, 2.9), tube([farAnkle[0] - 2, farAnkle[1] + 2], [farAnkle[0] + 8, farAnkle[1] + 3], 2.6, 2.3)], farLeather);
   solid([tube(add(sh, [2, 1]), add(elbow, [2, -1]), 2.4, 2.1), tube(add(elbow, [2, -1]), add(hand, [2, -1]), 2.1, 1.9)], farJacket);
   solid([tube(add(hand, [0, -1]), add(hand, [4, 0]), 2.2, 2.2)], farLeather);
 
   // ---- the rolled tail bag strapped over the pillion seat, the same one the rider carries in the ride's rear view
-  { const t0: P = [44 + x, 23.5 + y], t1: P = [56 + x, 24 + y];
+  { const t0: P = [40 + x, 23.5 + y], t1: P = [51 + x, 24 + y];
     bar(t0, t1, 3.4, 3.4, GEAR.canvas);
     across(t0, t1, 0.28, 3, leather[2]); across(t0, t1, 0.78, 3, leather[2]);                                       // two leather straps
     px(Math.floor(t0[0] + 1), Math.floor(t0[1] - 3), accent[3]); px(Math.floor(t0[0] + 7), Math.floor(t0[1] - 2), accent[3]); }   // a catch of light on the buckles
 
   // ---- the jacket: the hem hanging over the seat, the body leaning from the hip, the rounded shoulder, as one solid
-  solid([tube(add(hip, [-5, 0]), add(hip, [-1, 3]), 3, 3), tube(hip, sh, 6.3, 7.2), tube(add(sh, [-2, 1]), add(sh, [1, -1]), 5.2, 5.2)], jacket);
+  solid([tube(add(hip, [-5, 0]), add(hip, [-1, 3]), 3.3, 3.3), tube(hip, sh, 6.9, 7.8), tube(add(sh, [-2, 1]), add(sh, [1, -1]), 5.8, 5.8)], jacket);
   const fwd: P = [Math.cos(LEAN), Math.sin(LEAN)];
   across(hip, sh, 0.08, 6, jacket[1]);                                                                              // the hem band
   for (let i = 0; i <= 14; i++) { const q = mid(hip, sh, 0.1 + (i / 14) * 0.82); px(Math.floor(q[0] + fwd[0] * 5), Math.floor(q[1] + fwd[1] * 5), jacket[0]); }   // the zip down the front
@@ -146,15 +146,20 @@ export function drawRiderSide(x: number, y: number) {
   solid([tube(add(sh, [-1, -1]), add(sh, [3.5, -3.5]), 3, 2.6)], leather, 0.08);
   across(add(sh, [-1, -1]), add(sh, [3.5, -3.5]), 0.95, 3, accent[2]);
 
-  // ---- the near leg: thigh across the tank and shin back to the peg as one solid, then the boot
-  solid([tube(hip, knee, 3.6, 3.1), tube(knee, ankle, 3.0, 2.2)], jeans);
-  px(Math.floor(knee[0] - 1), Math.floor(knee[1] - 3), jeans[4]); px(Math.floor(knee[0]), Math.floor(knee[1] - 3), jeans[3]);   // a catch of light on the knee
-  solid([tube([ankle[0] - 1, ankle[1] - 6], ankle, 2.7, 2.7), tube([ankle[0] - 2, ankle[1] + 1.5], [ankle[0] + 8, ankle[1] + 2.5], 2.4, 2.1)], leather);
-  across([ankle[0] - 1, ankle[1] - 6], ankle, 0.1, 3, accent[1]);                                                  // the boot's top strap
-  rect(ankle[0] - 4, ankle[1] + 4, 14, 1, '#0e0a08');                                                              // the sole
+  // ---- the near leg: a sturdy thigh across the tank, a knee, a calf that swells and tapers to the ankle, then a proper boot on a steel peg
+  const calf = mid(knee, ankle, 0.38);
+  solid([tube(hip, knee, 4.3, 3.7), tube(knee, calf, 3.7, 3.6), tube(calf, ankle, 3.5, 2.6)], jeans);
+  patch(tube(add(knee, [-1, -1]), add(knee, [1, 0]), 2.6, 2.6), jeans);                                            // the kneecap, a touch lighter
+  px(Math.floor(knee[0] - 2), Math.floor(knee[1] - 4), jeans[4]); px(Math.floor(knee[0] - 1), Math.floor(knee[1] - 4), jeans[3]);
+  for (let i = 1; i < 6; i++) { const q = mid(hip, knee, i / 6); px(Math.floor(q[0]), Math.floor(q[1] + 3), jeans[3]); }   // a line of stitching along the thigh
+  rect(ankle[0] + 2, ankle[1] + 5, 8, 2, GEAR.accent[1]); rect(ankle[0] + 2, ankle[1] + 5, 8, 1, GEAR.accent[3]);   // the footpeg, steel
+  solid([tube([ankle[0] - 1, ankle[1] - 8], ankle, 3.1, 3.1), tube([ankle[0] - 3, ankle[1] + 1.5], [ankle[0] + 9, ankle[1] + 3], 2.9, 2.5)], leather, 0.08);
+  across([ankle[0] - 1, ankle[1] - 8], ankle, 0.12, 3, accent[1]);                                                 // the boot's top strap, silver
+  px(ankle[0] + 7, ankle[1] + 1, leather[4]); px(ankle[0] + 8, ankle[1] + 1, leather[4]); px(ankle[0] + 6, ankle[1], leather[3]);   // a shine on the toe cap
+  rect(ankle[0] - 5, ankle[1] + 5, 15, 1, '#0b0b0e');                                                              // the sole
 
   // ---- the near arm, upper arm and forearm as one sleeve, a leather elbow patch, piping, tape, then the glove
-  solid([tube(sh, elbow, 2.9, 2.4), tube(elbow, hand, 2.4, 2.0)], jacket);
+  solid([tube(sh, elbow, 3.3, 2.8), tube(elbow, hand, 2.8, 2.3)], jacket);
   patch(tube(add(elbow, [-1, 0]), add(elbow, [0, 1]), 1.7, 1.7), leather);
   across(sh, elbow, 0.72, 3, accent[2]);
   across(elbow, hand, 0.55, 3, GEAR.band, 2);
@@ -162,7 +167,7 @@ export function drawRiderSide(x: number, y: number) {
   across(add(hand, [-2, -0.5]), add(hand, [2.5, 1]), 0.05, 3, accent[2]);                                          // a gold cuff
 
   // ---- the head: a full-face helmet in the tank's cream, a smoked visor, a gold stripe over the crown
-  const rx = 7.3, ry = 7.6, hx = head[0], hy = head[1], shell = inBall(head, rx, ry);
+  const rx = 7.5, ry = 7.8, hx = head[0], hy = head[1], shell = inBall(head, rx, ry);
   solid([egg(head, rx, ry), tube([hx + 0.5, hy + 4.6], [hx + 6, hy + 5.4], 2.6, 2.2)], helmet, 0.1);
   const vc: P = [hx + 4.1, hy - 0.5];                                                                              // the visor, a rounded window across the front
   for (let yy = Math.floor(vc[1] - 5); yy <= Math.ceil(vc[1] + 5); yy++) for (let xx = Math.floor(vc[0] - 6); xx <= Math.ceil(vc[0] + 6); xx++) {
