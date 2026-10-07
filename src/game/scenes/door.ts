@@ -1,6 +1,7 @@
 // Outside the garage at dusk: the bike pulls up, the tagged roller door rattles and rolls up.
 import { C } from '../art/palette';
 import { graffitiTag } from '../art/sprites';
+import { drawRiderSide } from '../art/riderside';
 import { bind, bayer, ctx, disc, ellipse, line, poly, rect } from '../engine/pixel';
 import { text, textC, textW } from '../engine/font';
 import { input } from '../engine/input';
@@ -27,22 +28,6 @@ const OX = 80; // the garage is drawn in 480-wide world coordinates, centred in 
 const BIKE_K = 1.4, PAD = { x: 8, y: 24 };
 const ease = (p: number) => 1 - Math.pow(1 - Math.min(1, Math.max(0, p)), 3);
 const glide = (p: number) => 1 - Math.pow(1 - Math.min(1, Math.max(0, p)), 2); // gentler braking for the bike
-
-/** Rahul on the bike, side view, facing right. (x, y) is the bike sprite's top-left. */
-function riderSide(x: number, y: number) {
-  poly([[x + 50, y + 20], [x + 62, y + 18], [x + 81, y + 28], [x + 76, y + 33]], C.jeans);   // thigh over the tank
-  poly([[x + 76, y + 28], [x + 82, y + 31], [x + 75, y + 46], [x + 69, y + 44]], C.jeans);   // shin down to the peg
-  rect(x + 66, y + 44, 11, 4, C.black);                                                       // boot
-  poly([[x + 44, y + 24], [x + 63, y + 24], [x + 80, y + 2], [x + 63, y - 6]], C.jacket);    // back, leaning in
-  line(x + 47, y + 22, x + 64, y - 4, C.jacketLight);
-  poly([[x + 66, y + 1], [x + 76, y - 4], [x + 98, y + 11], [x + 92, y + 17]], C.jacket);    // arm to the bar
-  line(x + 70, y + 1, x + 93, y + 14, '#23252c');
-  rect(x + 92, y + 11, 6, 4, C.black);                                                        // glove
-  rect(x + 70, y - 4, 6, 3, '#23252c');                                                       // collar
-  disc(x + 75, y - 10, 7, C.ink); disc(x + 75, y - 10, 6, C.white);                           // white helmet
-  rect(x + 77, y - 12, 5, 4, '#2a2c33'); rect(x + 78, y - 12, 2, 1, '#6f8fa8');              // visor
-  rect(x + 70, y - 14, 3, 2, '#ffffff'); rect(x + 69, y - 7, 8, 1, C.whiteShade);
-}
 
 export class DoorScene implements Scene {
   mode = 'wide' as const;
@@ -72,7 +57,7 @@ export class DoorScene implements Scene {
     this.sfx.start(() => this.t, this.cues, this.weather, this.time);
     this.bg = paint(WIDE_W, 270, () => this.facade());
     setTimeout(() => { this.room ??= this.makeRoom(); }, 300);
-    this.rig = paint(this.bike.width + PAD.x * 2, this.bike.height + PAD.y, () => { blit(this.bike, PAD.x, PAD.y); riderSide(PAD.x, PAD.y); });
+    this.rig = paint(this.bike.width + PAD.x * 2, this.bike.height + PAD.y, () => { blit(this.bike, PAD.x, PAD.y); drawRiderSide(PAD.x, PAD.y); });
     if (this.time === 'night') nightTint(this.rig);
     this.doorArt = paint(DOOR.w, DOOR.h, () => {
       paintDoor(DOOR.w, DOOR.h, this.weather);
