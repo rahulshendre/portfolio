@@ -76,6 +76,11 @@ const CHAPTER = (i: number) => townAt(i) ??
     : ({ leh: 'LEH TOWN', valley: 'INDUS VALLEY', pass: 'INDUS VALLEY', lake: 'THE LAKE' } as const)[zoneAt(i)]);
 
 const FONT_DISPLAY = '"Fraunces", Georgia, serif';
+/** The fastest ride to the garage this browser has made, in seconds (0 if none). Storage can be blocked, so every touch is guarded. */
+const BEST_KEY = 'ride.best';
+function readBest(): number { try { const v = Number(localStorage.getItem(BEST_KEY)); return Number.isFinite(v) && v > 0 ? v : 0; } catch { return 0; } }
+function writeBest(t: number) { try { localStorage.setItem(BEST_KEY, String(Math.round(t * 10) / 10)); } catch { /* storage blocked: the card just does not remember */ } }
+
 /** The name on the opening card: the pixel font the site's buttons and the garage sign use. */
 const FONT_NAME = '"Silkscreen", ui-monospace, monospace';
 const FONT_MONO = '"IBM Plex Mono", ui-monospace, monospace';
@@ -90,6 +95,8 @@ export class RideScene implements Scene {
   private cars: Car[] = []; private nextCarZ = 70 * SEG_L;
   /** Whether the weather follows the laps (nobody picked one, in the address or at the door); the T key takes it by hand. `lap` is the lap the bike is in. */
   private skyAuto = true; private lap = 0;
+  /** The best ride time on this browser (0 for none yet) and whether this ride beat it; read once when the card comes up. */
+  private best = 0; private newBest = false; private bestRead = false;
   private lastSeg = -1; private elevK = 3500; private altE = 0; private lakeE = 0; private knocked = false; private fork: number | undefined = undefined; private told = new Set<number>();
   private pos = 0; private px = LEFT; private speed = 0; private lean = 0; private braking = false; private lastSpeed = 0; private avgDt = 1 / 60; private lite = false; private honkT = 0; private gearNow = 0; private birdT = 2; private rung = new Set<number>();
   private photo = false; private photoT = 0; private paused = false; private lights: 'auto' | 'on' | 'off' = 'auto'; private gas = false; private brake = false; private trip = 0; private vx = 0; private bolt: Bolt | null = null; private boltIn = 6; private rideTime: RideTime = 'auto'; private land: Theme = 'himalaya'; private nightK = 0; private todK = -1; private callT = 4; private called = new Set<number>(); private owlT = 12; private gasWas = false; private rough = 0; private bumpT = 0; private nearT = 0; private rideT = 0; private topKmh = 0; private passed = 0; private honks = 0; private stopT = 0; private sky: Sky = 'clear'; private inPud: object | null = null; private spray: Drop[] = [];
@@ -582,15 +589,22 @@ export class RideScene implements Scene {
   /** After pulling up at the garage: how the ride went. */
   private summary(W: number, H: number) {
     const g = this.screen.ctx, a = Math.min(1, (this.stopT - TURN_T) / 0.5) * (1 - Math.min(1, this.fade / 0.5));
-    const m = Math.floor(this.rideT / 60), s = Math.floor(this.rideT % 60);
-    const rows: [string, string][] = [['TIME', `${m}:${String(s).padStart(2, '0')}`], ['DISTANCE', `${this.odo.toFixed(1)} KM`], ['TOP SPEED', `${Math.round(this.topKmh)} KM/H`], ['OVERTAKES', String(this.passed)], ['HONKS', String(this.honks)], ['NEXT STOP', 'RED HAT']];
+    if (!this.bestRead) {                                                                          // the first time the card is up: is this the fastest run to the garage so far?
+      this.bestRead = true;
+      const prev = readBest();
+      this.newBest = this.rideT >= 20 && (prev === 0 || this.rideT < prev);                         // a jump to the end with ?at= is not a ride
+      this.best = this.newBest ? this.rideT : prev;
+      if (this.newBest) writeBest(this.rideT);
+    }
+    const clock = (t: number) => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
+    const rows: [string, string, boolean?][] = [['TIME', clock(this.rideT)], ...(this.best > 0 ? [[this.newBest ? 'NEW BEST' : 'BEST', this.newBest ? 'YOUR FASTEST' : clock(this.best), this.newBest] as [string, string, boolean]] : []), ['DISTANCE', `${this.odo.toFixed(1)} KM`], ['TOP SPEED', `${Math.round(this.topKmh)} KM/H`], ['OVERTAKES', String(this.passed)], ['HONKS', String(this.honks)], ['NEXT STOP', 'RED HAT']];
     const px = Math.max(13, Math.round(W / (W < 700 ? 30 : 62))), cw = Math.min(W - 32, 340), ch = 96 + rows.length * (px + 12) + 14, x = W / 2 - cw / 2, y = H * 0.24;
     g.save(); g.globalAlpha = a;
     rrect(x, y, cw, ch, 10, 'rgba(27,23,18,0.9)'); box(x, y + 8, 4, ch - 16, ACCENT);
     if (this.bikeImg) { g.imageSmoothingEnabled = true; g.drawImage(this.bikeImg, x + cw - 24 - 121, y + 12, 121, 57); }
     label('MADE IT', x + 24, y + 38, Math.round(px * 1.9), ACCENT, { font: FONT_DISPLAY });
     label('TRIUMPH SCRAMBLER 400 X', x + 24, y + 82, px - 3, '#a89d8b', { font: FONT_MONO });
-    rows.forEach(([k, v], i) => { const yy = y + 96 + i * (px + 12); label(k, x + 24, yy + px, px - 1, '#a89d8b', { font: FONT_MONO }); label(v, x + cw - 24, yy + px, px, i === rows.length - 1 ? ACCENT : HUD, { font: FONT_MONO, align: 'right', weight: 500 }); });
+    rows.forEach(([k, v, hot], i) => { const yy = y + 96 + i * (px + 12); label(k, x + 24, yy + px, px - 1, hot ? ACCENT : '#a89d8b', { font: FONT_MONO }); label(v, x + cw - 24, yy + px, px, hot || i === rows.length - 1 ? ACCENT : HUD, { font: FONT_MONO, align: 'right', weight: 500 }); });
     g.restore();
   }
 
