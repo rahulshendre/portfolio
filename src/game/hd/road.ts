@@ -3,6 +3,7 @@ import { CAM_DEPTH, project, type Projected } from '../ride/project';
 import { drawBackground, type Env } from './background';
 import { mix, poly as fillPoly, smooth, use } from './draw';
 import { drawProp, setLand, setTod } from './props';
+import { getLand } from './land';
 import { xpExtras } from './meadow';
 import { puddleAt, puddleHalf } from './puddles';
 import { setStirSeg } from './stir';
@@ -66,6 +67,18 @@ export const meadowOf = (s: VSeg): readonly AnyProp[] => (s.merged ??= (() => { 
 const PROP_K = ROAD_W / 55;
 /** Signs and boards were drawn in bigger units than houses, so each gets its own size against the road (a board is about the road's half-width). */
 const PROP_SIZE: Record<string, number> = { billboard: 1.7, gantry: 1.15, board: 0.46, bro: 0.44, sign: 0.52, stone: 0.26, chevron: 0.3, pole: 0.9, gompa: 3, palace: 3, stupahill: 3, ms: 0.75, lamp: 0.9, kiang: 1.5, marmot: 1.6, darchog: 0.9, cone: 0.5, crew: 0.9, summit: 0.6, camp: 1.1, village: 3, buddha: 1.5, monastery: 1.5, monk: 0.55, tourer: 0.8, stall: 0.85, camel: 1.5, limit: 0.5, flagmound: 1.1, dog: 1.2 };
+
+/**
+ * Real-world fit on top of PROP_SIZE, per land. A scale audit (1 prop unit is 3.5 m / 55, the road being 7 m wide) found these drawn far bigger than the people and bikes beside them:
+ * bicycles had wheels 1.6 m across, the parked tourer stood 4 m tall, and the animals were two to ten times life size. Each number brings the thing to about the height in the comment.
+ * People, houses, cars and trees were already near life size and are left alone, apart from the Bliss villagers, who are drawn a little under life size so they sit well beside the bikes.
+ */
+const FIT: Record<string, Record<string, number>> = {
+  himalaya: { tourer: 0.38, dog: 0.22, marmot: 0.15, kiang: 0.44, camel: 0.35 },          // tourer 1.5 m, dog 0.85, marmot 0.5, kiang 1.5, camel 2.6
+  xp: { monk: 0.8, tourer: 0.42, yak: 0.55, camel: 0.4, kiang: 0.37, marmot: 0.17, dog: 0.2 },  // villager 1.4 m, bicycle 0.95, cows 1.5, sheep 0.9, deer 1.7, rabbits 0.35, collie and hens 0.7
+};
+/** How big a prop of this type is drawn against the road, in the current land. */
+export const propSize = (type: string) => (PROP_SIZE[type] ?? 1) * (FIT[getLand()]?.[type] ?? 1);
 
 const NEAR_HIDE = new Set(['chevron', 'pole', 'scrub', 'tuft', 'reed', 'cairn', 'lamp', 'cone', 'monk', 'stall', 'tourer', 'flowers']);
 
@@ -274,7 +287,7 @@ export function renderRoad(g: CanvasRenderingContext2D, segs: (Seg | undefined)[
     const put = (list: readonly AnyProp[], shift: number) => {
       for (const p of list) {
         if (i - baseI < 6 && NEAR_HIDE.has(p.type)) continue;                       // small roadside things vanish just before they'd swallow the screen
-        const ks = k * PROP_K * (PROP_SIZE[p.type] ?? 1), px = s.p1!.x + k * (p.o * ROAD_W + shift);
+        const ks = k * PROP_K * propSize(p.type), px = s.p1!.x + k * (p.o * ROAD_W + shift);
         if (px < -ks * 190 || px > W + ks * 190) continue;                          // wholly off the side of the screen: nothing to draw
         drawProp(p.type, px, s.p1!.y, ks, p);
         if (p.type === 'pole') {                                                     // wires sag from this pole back to the last (farther) one

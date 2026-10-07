@@ -237,6 +237,6 @@ export function drawCar(kind: Kind, sx: number, sy: number, k: number, t = 0) {
     });
   } else {
     // another rider: the same drawing as yours, with their own colours and a duffel bag strapped on
-    drawRiderAt(g, sx, sy, s * 16, 0, t, 0.6, false, { bag: true, colors: { jacket: '#8a3a2e', jacketLit: '#b04c3a', jacketDark: '#5a231d', helmet: '#2f5a3a', helmetShade: '#1f3d28', stripe: '#f0f0e8', pants: '#3a3428', pantsLit: '#4c4536' } });
+    drawRiderAt(g, sx, sy, s * 18.4, 0, t, 0.6, false, { bag: true, colors: { jacket: '#8a3a2e', jacketLit: '#b04c3a', jacketDark: '#5a231d', helmet: '#2f5a3a', helmetShade: '#1f3d28', stripe: '#f0f0e8', pants: '#3a3428', pantsLit: '#4c4536' } });
   }
 }

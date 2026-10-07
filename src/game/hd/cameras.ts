@@ -6,7 +6,7 @@ export const CAMS: Cam[] = ['behind', 'high', 'pov', 'top'];
 export const CAM_NAMES: Record<Cam, string> = { behind: 'BEHIND', high: 'CHASE', pov: 'RIDER POV', top: 'TOP DOWN' };
 export const CAM_HEIGHT: Record<Cam, number> = { behind: 900, high: 1700, pov: 430, top: 900 };
 /** How big the rider is drawn in each camera. */
-export const RIDER_SCALE: Record<Cam, number> = { behind: 1, high: 0.72, pov: 1, top: 1 };
+export const RIDER_SCALE: Record<Cam, number> = { behind: 0.9, high: 0.65, pov: 1, top: 1 };   // 0.9 puts the rider at about 2 m on a 7 m road. It was 2.3 m, a third bigger than the other bikers; they are now scaled up to meet it (traffic.ts)
 
 /** From the seat: tank, bars, mirrors, round speedo. */
 export function drawPOV(ctx: CanvasRenderingContext2D, W: number, H: number, speedFrac: number, t: number, kmh: number) {
