@@ -1,6 +1,7 @@
 // The finishing pass over the ride: the grade, the vignette, a warm bloom on the sun's side and a fine grain, all drawn once into
 // a cached overlay so it costs a single drawImage per frame. This is what makes flat vector shapes feel photographed and lit.
 import { rnd } from './draw';
+import type { Season } from './season';
 
 let cache: { W: number; H: number; HZ: number; tod: number; night: boolean; grain: boolean; canvas: HTMLCanvasElement } | null = null;
 
@@ -53,6 +54,23 @@ export function grade(ctx: CanvasRenderingContext2D, W: number, H: number, land:
   ctx.globalAlpha = GRADE_DESAT[land];
   ctx.fillStyle = '#808080';
   ctx.fillRect(0, 0, W, H);
+  ctx.restore();
+}
+
+/** The colour of the season over everything drawn so far: autumn a warm wash, winter a cool one with the colour drawn down. Easing between two seasons when the road does. */
+export function seasonGrade(ctx: CanvasRenderingContext2D, W: number, H: number, HZ: number, season: Season, next?: Season, blend = 0) {
+  const k = (s: Season) => (season === s ? 1 - blend : 0) + (next === s ? blend : 0);
+  const gold = k('gold'), frost = k('frost');
+  if (gold < 0.01 && frost < 0.01) return;
+  ctx.save();
+  if (frost > 0.01) {
+    ctx.globalCompositeOperation = 'saturation'; ctx.globalAlpha = 0.22 * frost; ctx.fillStyle = '#808080'; ctx.fillRect(0, 0, W, H);
+    ctx.globalCompositeOperation = 'soft-light'; ctx.globalAlpha = 0.34 * frost; ctx.fillStyle = '#a6c4f0'; ctx.fillRect(0, 0, W, H);
+    const hy = H * HZ, haze = ctx.createLinearGradient(0, hy - H * 0.3, 0, hy + H * 0.04);               // snow on the far hills: a pale wash that thickens toward the horizon
+    haze.addColorStop(0, 'rgba(226,238,250,0)'); haze.addColorStop(1, 'rgba(226,238,250,0.5)');
+    ctx.globalCompositeOperation = 'screen'; ctx.globalAlpha = 0.5 * frost; ctx.fillStyle = haze; ctx.fillRect(0, hy - H * 0.3, W, H * 0.34);
+  }
+  if (gold > 0.01) { ctx.globalCompositeOperation = 'soft-light'; ctx.globalAlpha = 0.3 * gold; ctx.fillStyle = '#f4a24e'; ctx.fillRect(0, 0, W, H); }
   ctx.restore();
 }
 

@@ -9,12 +9,13 @@ import { grove } from './field';
 import { drawBush, drawPoplarTree, drawTree, HERO, seedOf } from './foliage';
 import { BLOOM } from './palette';
 import { drawCollie, drawCows, drawDeer, drawFlock, drawHens, drawHorses, drawPaddock, drawRabbits } from './farm';
+import { getSeason } from './season';
 
 const SH = 'rgba(20,48,10,0.22)';
 /** A drift of wildflowers in the grass. */
 export function drawFlowers(sx: number, sy: number, k: number, v = 0) {
   const s = k * (0.5 + (v % 3) * 0.1);
-  if (s < 0.1) return;
+  if (s < 0.1 || getSeason() === 'frost') return;                                                            // no flowers under the snow
   at(sx, sy, s, () => {                                                          // ten flowers, painted as three paths: stems, then the blooms by colour, then their yellow hearts
     g.strokeStyle = '#3f7a2a'; g.lineWidth = 1.5; g.lineCap = 'round'; g.beginPath();
     for (let i = 0; i < 10; i++) { const x = (rnd(v * 7 + i) - 0.5) * 44, h = 5 + rnd(v * 3 + i) * 8; g.moveTo(x, 1); g.lineTo(x + (rnd(i + v) - 0.5) * 3, -h); }

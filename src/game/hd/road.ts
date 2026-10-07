@@ -4,6 +4,7 @@ import { drawBackground, type Env } from './background';
 import { mix, poly as fillPoly, smooth, use } from './draw';
 import { drawProp, setLand, setTod } from './props';
 import { getLand } from './land';
+import { leanSeason, seasonFor, setSeason, type Dressed, type Season } from './season';
 import { xpExtras } from './meadow';
 import { puddleAt, puddleHalf } from './puddles';
 import { setStirSeg } from './stir';
@@ -134,6 +135,19 @@ function groundCols(i: number, xp = false) {
   return { grass: [dust0, dust1] as [string, string], shoulder: [sh0, sh1] as [string, string] };
 }
 
+/** The ground for a stretch in its season: autumn pulls the colours toward ochre, winter toward snow, and in the last stretch of a lap one eases into the other. */
+function dressGround(c: { grass: [string, string]; shoulder: [string, string] }, s: Partial<Dressed>, xp: boolean) {
+  const lean = (cols: [string, string], season: Season, ochre: string, snow: string, a = 1): [string, string] => [leanSeason(mix, cols[0], season, ochre, snow, a), leanSeason(mix, cols[1], season, ochre, snow, a)];
+  const at = (season: Season) => ({
+    grass: lean(c.grass, season, xp ? '#b9a238' : '#c8923f', '#e8eef1', xp ? 1.3 : 1),
+    shoulder: lean(c.shoulder, season, xp ? '#c2ae62' : '#b07a38', '#d2dadf', 0.8),
+  });
+  const here = at(s.season ?? 'green');
+  if (!s.blend || !s.nextSeason) return here;
+  const next = at(s.nextSeason);
+  return { grass: [mix(here.grass[0], next.grass[0], s.blend), mix(here.grass[1], next.grass[1], s.blend)] as [string, string], shoulder: [mix(here.shoulder[0], next.shoulder[0], s.blend), mix(here.shoulder[1], next.shoulder[1], s.blend)] as [string, string] };
+}
+
 /** Three wires hanging between two poles: the nearer at (x1, y1), the farther at (x2, y2). */
 function wires(g: CanvasRenderingContext2D, x1: number, y1: number, s1: number, x2: number, y2: number, s2: number) {
   const sag = Math.max(1, (s1 + s2) * 0.5 * 9);
@@ -168,7 +182,7 @@ export function renderRoad(g: CanvasRenderingContext2D, segs: (Seg | undefined)[
     s.camX1 = v.px * ROAD_W - cx; s.camX2 = s.camX1 - dx;
     cx += dx; dx += s.curve; s.p1 = p1; s.clip = maxy;
     if (p1.cz <= CAM_DEPTH || p2.y >= p1.y || p2.y >= maxy) continue;
-    const alt = Math.floor(i / 3) % 2, c = groundCols(si, xp);
+    const alt = Math.floor(i / 3) % 2, c = dressGround(groundCols(si, xp), s as Partial<Dressed>, xp);
     const a = altitude(si);
     const road0 = mix('#5a5854', '#6a6864', a * 0.3);
     const road1 = mix('#54524e', '#646260', a * 0.3);
@@ -289,6 +303,7 @@ export function renderRoad(g: CanvasRenderingContext2D, segs: (Seg | undefined)[
         if (i - baseI < 6 && NEAR_HIDE.has(p.type)) continue;                       // small roadside things vanish just before they'd swallow the screen
         const ks = k * PROP_K * propSize(p.type), px = s.p1!.x + k * (p.o * ROAD_W + shift);
         if (px < -ks * 190 || px > W + ks * 190) continue;                          // wholly off the side of the screen: nothing to draw
+        setSeason(seasonFor(s as Partial<Dressed>, p.o * 97 + i * 1.7 + (p.v ?? 0) * 0.31));
         drawProp(p.type, px, s.p1!.y, ks, p);
         if (p.type === 'pole') {                                                     // wires sag from this pole back to the last (farther) one
           if (lastPole && ks < 0.9) wires(g, px, s.p1!.y - 121 * ks, ks, lastPole.x, lastPole.y, lastPole.s);

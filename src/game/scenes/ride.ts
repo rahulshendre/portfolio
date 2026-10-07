@@ -3,7 +3,8 @@ import { box, circle, label, mix, rrect, smooth, use } from '../hd/draw';
 import { CAM_HEIGHT, CAM_NAMES, CAMS, drawPOV, drawTop, RIDER_SCALE, type Cam } from '../hd/cameras';
 import { drawRider } from '../hd/rider';
 import { drawSpeedLines } from '../hd/speed';
-import { finish, grade } from '../hd/finish';
+import { finish, grade, seasonGrade } from '../hd/finish';
+import { SEASON_NAMES } from '../hd/season';
 import { LowRes } from '../hd/pixel';
 import { setGarageBike } from '../hd/garage';
 import type { Look } from '../rail';
@@ -65,7 +66,8 @@ function hourAt(i: number) {
 /** One world per ride: replayable with `?seed=`, and dealt in the original order for share cards and `?at=` jumps. */
 function makeWorld() {
   const q = new URLSearchParams(location.search), at = Number(q.get('at'));
-  return new World(milestones, q.has('seed') ? dice(Number(q.get('seed'))) : OG || at > 0 ? dice(1) : Math.random, OG || at > 0);
+  const forced = q.get('season');                                                              // ?season=gold|frost|green dresses the first lap, for pictures
+  return new World(milestones, q.has('seed') ? dice(Number(q.get('seed'))) : OG || at > 0 ? dice(1) : Math.random, OG || at > 0, forced === 'gold' || forced === 'frost' || forced === 'green' ? { season: forced } : {});
 }
 const CHAPTER = (i: number) => townAt(i) ??
   (i >= FINISH - 90 && i <= FINISH + 30 ? 'SHENDRE GARAGE'
@@ -86,6 +88,8 @@ export class RideScene implements Scene {
   /** The road: built a little ahead of the bike and dropped behind it. */
   private get segs() { return this.world.segs; }
   private cars: Car[] = []; private nextCarZ = 70 * SEG_L;
+  /** Whether the weather follows the laps (nobody picked one, in the address or at the door); the T key takes it by hand. `lap` is the lap the bike is in. */
+  private skyAuto = true; private lap = 0;
   private lastSeg = -1; private elevK = 3500; private altE = 0; private lakeE = 0; private knocked = false; private fork: number | undefined = undefined; private told = new Set<number>();
   private pos = 0; private px = LEFT; private speed = 0; private lean = 0; private braking = false; private lastSpeed = 0; private avgDt = 1 / 60; private lite = false; private honkT = 0; private gearNow = 0; private birdT = 2; private rung = new Set<number>();
   private photo = false; private photoT = 0; private paused = false; private lights: 'auto' | 'on' | 'off' = 'auto'; private gas = false; private brake = false; private trip = 0; private vx = 0; private bolt: Bolt | null = null; private boltIn = 6; private rideTime: RideTime = 'auto'; private land: Theme = 'himalaya'; private nightK = 0; private todK = -1; private callT = 4; private called = new Set<number>(); private owlT = 12; private gasWas = false; private rough = 0; private bumpT = 0; private nearT = 0; private rideT = 0; private topKmh = 0; private passed = 0; private honks = 0; private stopT = 0; private sky: Sky = 'clear'; private inPud: object | null = null; private spray: Drop[] = [];
@@ -106,12 +110,14 @@ export class RideScene implements Scene {
     calmDown();                                                         // no honk lingers from an earlier ride
     input.endFrame();
     const at = Number(new URLSearchParams(location.search).get('at'));
+    this.skyAuto = world.weather == null;
     this.sky = world.weather ?? 'clear'; this.land = world.theme ?? 'himalaya'; this.rideTime = rideTimeFrom(world.time);   // the sky the visitor already picked (in the address, at the door or in the garage), else a clear afternoon
     if (this.night) this.nightK = 1;
     if (OG) this.pos = 400 * SEG_L;
     else if (at > 0) { this.startSound(); this.phase = 'ride'; this.pos = at * SEG_L; this.speed = V_CRUISE * K; }
     const i0 = Math.floor(this.pos / SEG_L);
     this.world.ensure(i0 + DRAW_DIST + 30);
+    this.lap = this.segs[i0]!.round;
     this.lastSeg = i0 - 1; this.nextCarZ = this.pos + 70 * SEG_L;
     const e = envAt(this.segs[i0]!.src, FINISH, zoneAt(this.segs[i0]!.src)); this.altE = e.alt; this.lakeE = e.lake; this.elevK = elevation(this.segs[i0]!.src);
     this.feedTraffic(this.pos);
@@ -305,7 +311,7 @@ export class RideScene implements Scene {
       if (input.pressed('KeyL')) { this.lights = this.lights === 'on' ? 'off' : 'on'; this.show(this.lights === 'on' ? 'HEADLIGHT ON' : 'HEADLIGHT OFF', false, 1.2); }
       if (input.pressed('KeyN')) { this.rideTime = RIDE_TIMES[(RIDE_TIMES.indexOf(this.rideTime) + 1) % RIDE_TIMES.length]; this.show({ auto: 'DAY INTO NIGHT, ROUND AND ROUND', night: 'NIGHT RIDE|LIGHTS ON', day: 'DAYLIGHT' }[this.rideTime], false, 1.6); }
       if (input.pressed('KeyB')) { this.land = this.land === 'xp' ? 'himalaya' : 'xp'; this.show(this.land === 'xp' ? 'BLISS|THE OLD WALLPAPER HILLS' : 'HIMALAYA|LADAKH AGAIN', false, 1.8); }
-      if (input.pressed('KeyT')) { this.sky = SKIES[(SKIES.indexOf(this.sky) + 1) % SKIES.length]; engine.setRain(this.sky === 'rain' ? 1 : 0); this.show(`WEATHER|${this.sky.toUpperCase()}`, false, 1.6); }
+      if (input.pressed('KeyT')) { this.skyAuto = false; this.sky = SKIES[(SKIES.indexOf(this.sky) + 1) % SKIES.length]; engine.setRain(this.sky === 'rain' ? 1 : 0); this.show(`WEATHER|${this.sky.toUpperCase()}`, false, 1.6); }
       if (input.pressed('KeyG')) { this.pixel = !this.pixel; this.show(this.pixel ? 'PIXEL LOOK|G FOR SMOOTH' : 'SMOOTH LOOK|G FOR PIXEL', false, 1.6); }
       if (input.pressed('KeyR')) this.show(radio.toggle() ? 'RADIO ON' : 'RADIO OFF', false, 1.2);
       if (input.pressed('KeyK')) this.show('W GAS · S BRAKE · A D STEER|H HONK · L LIGHT · P PAUSE|V OR 1-4 CAMERA · F PHOTO · R RADIO|T WEATHER · N TIME · B LAND · G PIXEL · M SOUND · ESC EXIT', false, 4.5);
@@ -331,6 +337,11 @@ export class RideScene implements Scene {
     const segI = Math.floor(this.pos / SEG_L);
     this.world.ensure(segI + DRAW_DIST + 12);
     const seg = this.segs[segI]!, src = seg.src;
+    if (seg.round !== this.lap) {                                                                  // a new lap: its season and, if nobody chose the weather, its weather
+      this.lap = seg.round;
+      if (this.skyAuto) { this.sky = seg.weather; engine.setRain(this.sky === 'rain' ? 1 : 0); }
+      this.show(`${SEASON_NAMES[seg.season]}|${this.skyAuto ? seg.weather.toUpperCase() : `LAP ${seg.round + 1}`}`, false, 2.6);
+    }
     const playerZ = this.pos + CAM_HEIGHT[this.cam] * CAM_DEPTH;
     const sp = this.speed / MAX_S;
 
@@ -474,7 +485,7 @@ export class RideScene implements Scene {
       if (!this.lite && this.sky === 'rain') drawRain(g, W, H, this.t, sp);
       if (this.spray.length) this.drawSpray(g, W, H);
       if (this.bolt) drawLightning(g, W, H, HZ, this.bolt);
-      if (!this.lite) { grade(g, W, H, this.land); finish(g, W, H, HZ, env.tod, this.nightK > 0.5, !small); }
+      if (!this.lite) { const sg = this.segs[Math.floor(this.pos / SEG_L)]; grade(g, W, H, this.land); if (sg) seasonGrade(g, W, H, HZ, sg.season, sg.nextSeason, sg.blend ?? 0); finish(g, W, H, HZ, env.tod, this.nightK > 0.5, !small); }
       const dim = this.turnK();
       if (dim > 0) { g.fillStyle = `rgba(0,0,0,${(dim * dim * 0.85).toFixed(3)})`; g.fillRect(0, 0, W, H); }   // the light goes as the turn completes   // grade, vignette and grain over the world, under the rider and the HUD
       const beam = this.lights === 'off' ? 0 : Math.max(this.lights === 'on' ? 0.5 : 0, env.tod > 0.55 ? (env.tod - 0.55) / 0.45 : 0, this.nightK * 1.4);

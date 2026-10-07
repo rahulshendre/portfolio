@@ -3,6 +3,7 @@
 // drawImage and a breath of sway. Painting a tree once also makes it cheaper than the ovals it replaces.
 import { at, circle, g, mix, oval, poly, rnd, stroke, use } from './draw';
 import { BARK, BLOOM, RAMPS, type RampName } from './palette';
+import { getSeason } from './season';
 
 /** Added to a tree's `v` to make it a tall one: the lone big tree where a grove peaks. */
 export const HERO = 1000;
@@ -141,28 +142,37 @@ export function drawFoliage(species: Species, sx: number, sy: number, k: number,
   });
 }
 
+/** The leaf ramp of variety `n` (0 to 3) in the season being drawn: summer greens, autumn reds and ochres, or winter's snow-laden grey-green. */
+const leafRamp = (n: number): RampName => `${getSeason() === 'gold' ? 'autumn' : getSeason() === 'frost' ? 'frost' : 'leaf'}${n % 4}` as RampName;
+
 /** A round-headed tree: an oak, a beech, a birch or a poplar by `v`. */
 export function drawTree(sx: number, sy: number, k: number, v = 0) {
   const sp = pickSpecies(v), base = v % HERO;
-  drawFoliage(sp, sx, sy, k * 0.85, v, sp === 'birch' ? 'birch' : sp === 'poplar' ? 'poplarGreen' : (`leaf${(base % VARIANTS) % 4}` as RampName));   // the leaf colour follows the variant, so there are ten of each kind to keep, not forty
+  drawFoliage(sp, sx, sy, k * 0.85, v, sp === 'birch' ? (getSeason() === 'green' ? 'birch' : leafRamp(getSeason() === 'gold' ? 3 : 2)) : sp === 'poplar' ? poplarRamp(false) : leafRamp((base % VARIANTS) % 4));   // the leaf colour follows the variant, so there are ten of each kind to keep, not forty
 }
 
 /** A low bush; some carry flowers. */
 export function drawBush(sx: number, sy: number, k: number, v = 0) {
-  drawFoliage('bush', sx, sy, k * 0.9, v, `leaf${(v % VARIANTS) % 4}` as RampName, (v % VARIANTS) % 3 === 0);
+  drawFoliage('bush', sx, sy, k * 0.9, v, leafRamp((v % VARIANTS) % 4), getSeason() === 'green' && (v % VARIANTS) % 3 === 0);
 }
 
 /** A low tuft of dry highland scrub: grey-olive or dust, painted like the bushes but never green. */
 export function drawDryScrub(sx: number, sy: number, k: number, v = 0) {
-  drawFoliage('scrub', sx, sy, k * 0.9, v, v % 2 ? 'scrubDust' : 'scrubOlive');
+  drawFoliage('scrub', sx, sy, k * 0.9, v, getSeason() === 'frost' ? 'scrubFrost' : v % 2 ? 'scrubDust' : 'scrubOlive');
 }
 
 /** A tall narrow poplar, golden or green. `seed` picks which one. */
+/** The poplar's ramp: gold in autumn, frosted in winter, and in summer as the prop was rolled (green, or the odd gold one). */
+function poplarRamp(gold: boolean): RampName {
+  const s = getSeason();
+  return s === 'gold' ? 'poplarGold' : s === 'frost' ? 'poplarFrost' : gold ? 'poplarGold' : 'poplarGreen';
+}
 export function drawPoplarTree(sx: number, sy: number, k: number, gold: boolean, seed = 0) {
-  drawFoliage('poplar', sx, sy, k * 0.95, seed, gold ? 'poplarGold' : 'poplarGreen');
+  drawFoliage('poplar', sx, sy, k * 0.95, seed, poplarRamp(gold));
 }
 
 /** A cherry tree in full blossom. */
 export function drawBlossomTree(sx: number, sy: number, k: number, seed = 0) {
-  drawFoliage('blossom', sx, sy, k, seed, 'blossom');
+  const s = getSeason();                                                                                    // blossom in summer, a scarlet maple in autumn, a frosted tree in winter
+  drawFoliage('blossom', sx, sy, k, seed, s === 'gold' ? 'autumn2' : s === 'frost' ? 'frost1' : 'blossom');
 }
