@@ -1,5 +1,6 @@
 // The rider seen from behind on the white Scrambler 400 X: shaded vector art with lean, tread motion and a brake light.
 // Units: 1 unit = one wheel-hand-span; the whole rider is about 3.2 units tall. (0, 0) is where the rear tyre meets the road.
+import { GEAR } from '../art/gear';
 import { at, box, circle, g, hgrad, oval, poly, rrect, stroke, use, vgrad } from './draw';
 
 const C = {
@@ -11,20 +12,27 @@ const C = {
   tank: '#f3f1ea', tankShade: '#c9c6bc', stripe2: '#17181c', fork: '#d9a233',
 };
 
-export interface Look { colors?: Partial<typeof C>; bag?: boolean; plate?: string; }
+/** The hero's colours, read from the current outfit each frame. */
+const outfitColors = () => ({
+  helmet: GEAR.helmet[3], helmetShade: GEAR.helmet[1], visor: GEAR.visor[1], stripe: GEAR.accent[2],
+  jacket: GEAR.jacket[2], jacketLit: GEAR.jacket[3], jacketDark: GEAR.jacket[1], band: GEAR.band,
+  pants: GEAR.jeans[2], pantsLit: GEAR.jeans[3], boot: GEAR.leather[1], bootLit: GEAR.leather[2], glove: GEAR.leather[1],
+});
+
+export interface Look { colors?: Partial<typeof C>; bag?: boolean; plate?: string; /** the hero rider: dressed in the current outfit (art/gear.ts), the others carry their own colours */ hero?: boolean; }
 /** Your registration: Pune, Maharashtra. Other riders on the road carry a Ladakh plate unless they say otherwise. */
 export const MY_PLATE = 'MH12';
 
 /** Rear view of the hero rider. `lean` runs -1 (left) to 1 (right); `braking` lights the tail lamp. */
 export function drawRider(ctx: CanvasRenderingContext2D, W: number, H: number, lean: number, t: number, speedFrac: number, braking = false, scale = 1) {
   const sc = Math.min(H * 0.074, W * 0.1) * scale;          // pixels per unit
-  drawRiderAt(ctx, W / 2 + lean * sc * 0.25, H - Math.max(14, H * 0.03), sc, lean, t, speedFrac, braking, { plate: MY_PLATE, bag: true });
+  drawRiderAt(ctx, W / 2 + lean * sc * 0.25, H - Math.max(14, H * 0.03), sc, lean, t, speedFrac, braking, { plate: MY_PLATE, bag: true, hero: true });
 }
 
 /** The same rider anywhere on screen, at any size, with their own gear: used for the other riders on the road. */
 export function drawRiderAt(ctx: CanvasRenderingContext2D, cx: number, gy: number, sc: number, lean: number, t: number, speedFrac: number, braking = false, look: Look = {}) {
   use(ctx);
-  const K = { ...C, ...look.colors };
+  const K = { ...C, ...(look.hero ? outfitColors() : {}), ...look.colors };
   const moving = speedFrac > 0.04;
   const bob = moving ? Math.sin(t * 26) * 0.012 * sc + Math.sin(t * 9) * 0.008 * sc : 0;
   const a = lean * 0.34;                             // roll angle in radians, about 19 degrees at full lean
