@@ -3,9 +3,9 @@
 import { at, box, circle, g, hgrad, oval, poly, rrect, stroke, use, vgrad } from './draw';
 
 const C = {
-  helmet: '#f4f2ea', helmetShade: '#c9c5b8', visor: '#1c1f26', stripe: '#d8342b',
-  jacket: '#2f3747', jacketLit: '#465066', jacketDark: '#1d222d', band: '#d5d9df',
-  pants: '#232a38', pantsLit: '#333c50', boot: '#17181c', bootLit: '#34363e', glove: '#141518',
+  helmet: '#f1ece0', helmetShade: '#a4a6bb', visor: '#1a1d27', stripe: '#d9a233',
+  jacket: '#a98254', jacketLit: '#d2ad6d', jacketDark: '#6f5442', band: '#ece6d6',
+  pants: '#2f4170', pantsLit: '#4a6094', boot: '#33211a', bootLit: '#5a3d2b', glove: '#33211a',
   seat: '#5a3d2b', seatLit: '#7a5640', metal: '#b9bec6', metalDark: '#6b7079', black: '#121316', tyre: '#141416',
   red: '#d8342b', amber: '#f0a020', plate: '#f2eee2',
   tank: '#f3f1ea', tankShade: '#c9c6bc', stripe2: '#17181c', fork: '#d9a233',
@@ -79,9 +79,9 @@ export function drawRiderAt(ctx: CanvasRenderingContext2D, cx: number, gy: numbe
     poly([-0.4, -1.52, 0.4, -1.52, 0.5, -1.4, -0.5, -1.4], hgrad(-0.5, 0.5, [[0, K.seat], [0.35, K.seatLit], [1, K.seat]]));
 
     if (look.bag) {
-      rrect(-0.62, -2.02, 1.24, 0.62, 0.18, hgrad(-0.62, 0.62, [[0, '#4a3220'], [0.35, '#7a5634'], [0.7, '#6b4a2a'], [1, '#43301f']]));               // a rolled tail bag strapped over the pillion seat
-      rrect(-0.62, -2.02, 1.24, 0.14, 0.07, '#9a7040'); stroke([-0.24, -2.02, -0.24, -1.4], '#241810', 0.045); stroke([0.24, -2.02, 0.24, -1.4], '#241810', 0.045);
-      rrect(-0.29, -1.78, 0.1, 0.07, 0.02, '#c9a15a'); rrect(0.19, -1.78, 0.1, 0.07, 0.02, '#c9a15a');                                                 // the buckles
+      rrect(-0.62, -2.02, 1.24, 0.62, 0.18, hgrad(-0.62, 0.62, [[0, '#3d3d29'], [0.35, '#807b55'], [0.7, '#5d5a3c'], [1, '#2f2f20']]));               // a rolled tail bag strapped over the pillion seat
+      rrect(-0.62, -2.02, 1.24, 0.14, 0.07, '#a8a279'); stroke([-0.24, -2.02, -0.24, -1.4], '#33211a', 0.05); stroke([0.24, -2.02, 0.24, -1.4], '#33211a', 0.05);
+      rrect(-0.29, -1.78, 0.1, 0.07, 0.02, '#d9a233'); rrect(0.19, -1.78, 0.1, 0.07, 0.02, '#d9a233');                                                 // the buckles
     }
     // the rider is drawn a touch smaller than life, so the bike carries the picture
     g.save(); g.translate(0, -1.5); g.scale(0.92, 0.92); g.translate(0, 1.5);
@@ -137,7 +137,7 @@ export function drawRiderAt(ctx: CanvasRenderingContext2D, cx: number, gy: numbe
     oval(0, -3.0, 0.335, 0.36, vgrad(-3.36, -2.64, [[0, '#ffffff'], [0.5, K.helmet], [1, K.helmetShade]]));
     oval(0, -2.83, 0.3, 0.1, 'rgba(60,56,50,0.35)');                                                     // the shell's lower rim, in shadow
     rrect(-0.04, -3.34, 0.08, 0.6, 0.03, K.stripe);                                                      // the racing stripe
-    rrect(-0.015, -3.34, 0.02, 0.6, 0.01, '#ff8a7a');
+    rrect(-0.015, -3.34, 0.02, 0.6, 0.01, '#fbe39a');
     rrect(-0.14, -2.76, 0.28, 0.06, 0.03, '#2a2c33');                                                    // neck roll
     oval(-0.13, -3.13, 0.07, 0.11, '#ffffff66');                                                       // gloss, lit from the left
     g.restore();

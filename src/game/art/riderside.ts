@@ -4,8 +4,8 @@
 // is about 49 px and the seat top sits 41 px above the ground. A 1.72 m rider is then 85 px tall standing: head 0.23 m (a full-face helmet 0.30), hip to shoulder 0.50 m, thigh and shin
 // 0.44 m each, upper arm 0.32 m, elbow to grip 0.40 m. The seating is the standard upright one (about 15 degrees of forward lean, a knee bent near 70 degrees, hands a little below the elbows).
 // Limbs are solved with two-bone IK from where the hip, grip and peg are, so every bone keeps its length whatever the bike's numbers are.
-import { C } from './palette';
-import { disc, poly, rect } from '../engine/pixel';
+import { bayer, rect } from '../engine/pixel';
+import { dim, GEAR, type Ramp } from './gear';
 
 export type P = [number, number];
 
@@ -45,86 +45,125 @@ export function pose(): Pose {
   return { hip, shoulder, head, hand, ankle, elbow: bend(shoulder, hand, BONE.upper, BONE.fore, -1), knee: bend(hip, ankle, BONE.thigh, BONE.shin, 1) };
 }
 
-const INK = '#14161c';
-const K = {
-  jacket: '#46557c', jacketLit: '#6a80ac', jacketDark: '#2c3753', band: '#cfd6df', zip: '#1a2132',
-  pants: '#2b3446', pantsLit: '#46526f', pantsDark: '#1b212e',
-  boot: '#1b1c21', bootLit: '#3a3d46', glove: '#17181c', gloveLit: '#33363f',
-  helmet: C.white, helmetShade: '#b9b7b0', helmetDark: '#8e8c86', stripe: C.red, visor: '#1a1d25', visorLit: '#6f8fa8', skin: '#b87a52',
-};
-const shadeFar = (c: string) => c;                   // placeholder so the far side can be darkened in one place below
-void shadeFar;
+const INK = GEAR.ink;
+/** Light from the upper left and in front, like the bike sprite's own lighting. */
+const LIGHT = ((v) => { const n = Math.hypot(v[0], v[1], v[2]); return [v[0] / n, v[1] / n, v[2] / n]; })([-0.52, -0.62, 0.58]);
 
-/** A round-ended limb from a to b, radius from `ra` to `rb`, with a one-pixel ink edge. */
-function limb(a: P, b: P, ra: number, rb: number, fill: string, edge = INK, lit?: string) {
-  const n = Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]) * 1.5) + 1;
-  const stamp = (rr: number, col: string, dx = 0, dy = 0) => { for (let i = 0; i <= n; i++) { const t = i / n, p = mid(a, b, t); disc(p[0] + dx, p[1] + dy, Math.max(1, Math.round(ra + (rb - ra) * t) + rr), col); } };
-  stamp(1, edge);
-  stamp(0, fill);
-  if (lit) stamp(-1, lit, -1, -1);                       // the edge facing the light, up and to the left
-  if (lit) stamp(-1, fill, 0, 0);
+/** The ramp step a surface turned to (nx, ny, and so a depth) shows at pixel (x, y): ordered dither blends neighbouring steps, so a curve reads as a curve and not a banded cut-out. */
+function tone(nx: number, ny: number, x: number, y: number, ramp: Ramp, soft = 0.5): string {
+  const z = Math.sqrt(Math.max(0, 1 - nx * nx - ny * ny));
+  const lam = nx * LIGHT[0] + ny * LIGHT[1] + z * LIGHT[2], t = Math.min(1, Math.max(0, 0.5 + (lam - LIGHT[2]) * 0.95));   // a face turned straight at you sits on the body tone; toward the light climbs the ramp, away from it falls
+  const i = Math.floor(t * 4 + (bayer(x, y) - 0.5) * soft + 0.5);
+  return ramp[Math.max(0, Math.min(4, i))];
+}
+const px = (x: number, y: number, col: string) => rect(x, y, 1, 1, col);
+
+/** A shaded round bar from a to b (radius ra to rb): lit like a cylinder, with an ink edge that turns to the ramp's own shadow where it faces the light. */
+function bar(a: P, b: P, ra: number, rb: number, ramp: Ramp, only?: (x: number, y: number) => boolean) {
+  const dx = b[0] - a[0], dy = b[1] - a[1], len2 = dx * dx + dy * dy || 1;
+  const R = Math.max(ra, rb) + 1.5, x0 = Math.floor(Math.min(a[0], b[0]) - R), x1 = Math.ceil(Math.max(a[0], b[0]) + R), y0 = Math.floor(Math.min(a[1], b[1]) - R), y1 = Math.ceil(Math.max(a[1], b[1]) + R);
+  for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+    const cx = x + 0.5, cy = y + 0.5, t = Math.min(1, Math.max(0, ((cx - a[0]) * dx + (cy - a[1]) * dy) / len2)), qx = a[0] + dx * t, qy = a[1] + dy * t, r = ra + (rb - ra) * t;
+    const d = Math.hypot(cx - qx, cy - qy);
+    if (d > r + 1) continue;
+    if (only && !only(x, y)) continue;
+    const nx = (cx - qx) / (d || 1), ny = (cy - qy) / (d || 1);
+    if (d > r) px(x, y, nx * LIGHT[0] + ny * LIGHT[1] > 0.25 ? ramp[0] : INK);
+    else px(x, y, tone((cx - qx) / r, (cy - qy) / r, x, y, ramp));
+  }
 }
 
-/** A polygon with a one-pixel ink edge. */
-function shape(pts: P[], fill: string, edge = INK) {
-  for (const [dx, dy] of [[-1, 0], [1, 0], [0, -1], [0, 1], [-1, -1], [1, 1], [1, -1], [-1, 1]] as const) poly(pts.map((p) => [p[0] + dx, p[1] + dy] as P), edge);
-  poly(pts, fill);
+/** A shaded ellipsoid, for the helmet. */
+function ball(c: P, rx: number, ry: number, ramp: Ramp) {
+  for (let y = Math.floor(c[1] - ry - 2); y <= Math.ceil(c[1] + ry + 2); y++) for (let x = Math.floor(c[0] - rx - 2); x <= Math.ceil(c[0] + rx + 2); x++) {
+    const ux = (x + 0.5 - c[0]) / rx, uy = (y + 0.5 - c[1]) / ry, d = Math.hypot(ux, uy);
+    if (d > 1 + 1 / Math.min(rx, ry)) continue;
+    if (d > 1) px(x, y, (ux * LIGHT[0] + uy * LIGHT[1]) / (d || 1) > 0.25 ? ramp[0] : INK);
+    else px(x, y, tone(ux, uy, x, y, ramp, 0.4));
+  }
+}
+const inBall = (c: P, rx: number, ry: number) => (x: number, y: number) => Math.hypot((x + 0.5 - c[0]) / rx, (y + 0.5 - c[1]) / ry) <= 0.97;
+
+/** A one-pixel stripe across a bar at fraction t, `half` either side of its axis: tape, piping and cuffs. */
+function across(a: P, b: P, t: number, half: number, col: string, gap = 0) {
+  const dx = b[0] - a[0], dy = b[1] - a[1], len = Math.hypot(dx, dy) || 1, nx = -dy / len, ny = dx / len, qx = a[0] + dx * t, qy = a[1] + dy * t;
+  for (let s = -half; s <= half; s++) if (!gap || (s + half) % gap !== gap - 1) px(Math.floor(qx + nx * s), Math.floor(qy + ny * s), col);
 }
 
 /** Draw the rider with the sprite's top-left at (x, y). */
 export function drawRiderSide(x: number, y: number) {
   const J = pose(), o = (p: P): P => [p[0] + x, p[1] + y];
   const hip = o(J.hip), sh = o(J.shoulder), head = o(J.head), elbow = o(J.elbow), hand = o(J.hand), knee = o(J.knee), ankle = o(J.ankle);
-  const up: P = [Math.sin(LEAN), -Math.cos(LEAN)], fwd: P = [Math.cos(LEAN), Math.sin(LEAN)];
+  const jacket = GEAR.jacket, jeans = GEAR.jeans, leather = GEAR.leather, helmet = GEAR.helmet, mustard = GEAR.mustard;
+  const farJeans = dim(jeans, INK, 0.5), farLeather = dim(leather, INK, 0.5), farJacket = dim(jacket, INK, 0.5);
 
-  // ---- the far side, a shade darker and nudged forward so it reads as behind
+  // ---- the far side: a shade darker, nudged forward, so it sits behind the bike's near side
   const farKnee: P = [knee[0] + 2, knee[1] - 1], farAnkle: P = [ankle[0] + 3, ankle[1] - 1];
-  limb(add(hip, [1, 0]), farKnee, 3.4, 3, K.pantsDark);
-  limb(farKnee, farAnkle, 3, 2, K.pantsDark);
-  shape([[farAnkle[0] - 3, farAnkle[1] - 3], [farAnkle[0] + 2, farAnkle[1] - 3], [farAnkle[0] + 10, farAnkle[1] + 2], [farAnkle[0] + 10, farAnkle[1] + 5], [farAnkle[0] - 3, farAnkle[1] + 5]], '#101115');
-  limb(add(sh, [2, 1]), add(hand, [2, -1]), 2, 2, K.jacketDark);
-  rect(hand[0] + 1, hand[1] - 3, 5, 4, '#0d0e11');
+  bar(add(hip, [1, 0]), farKnee, 3.4, 3, farJeans);
+  bar(farKnee, farAnkle, 2.9, 2.1, farJeans);
+  bar([farAnkle[0] - 1, farAnkle[1] - 5], farAnkle, 2.6, 2.6, farLeather);
+  bar([farAnkle[0] - 1, farAnkle[1] + 2], [farAnkle[0] + 8, farAnkle[1] + 3], 2.2, 2.2, farLeather);
+  bar(add(sh, [2, 1]), add(elbow, [2, -1]), 2.4, 2.1, farJacket);
+  bar(add(elbow, [2, -1]), add(hand, [2, -1]), 2.1, 1.9, farJacket);
+  bar(add(hand, [0, -1]), add(hand, [4, 0]), 2.2, 2.2, farLeather);
 
-  // ---- the torso: back, belly and chest as one jacket shape, leaning forward from the hip
-  const at = (t: number, back: number, front: number): [P, P] => { const c = mid(hip, sh, t); return [sub(c, mul(fwd, back)), add(c, mul(fwd, front))]; };
-  const [b0, f0] = at(0, 6.5, 5), [b1, f1] = at(0.45, 6.5, 6.5), [b2, f2] = at(0.85, 7, 7.5), [b3, f3] = at(1, 5, 5.5);
-  shape([add(b0, [-1, 3]), b1, b2, b3, f3, f2, f1, f0, add(f0, [0, 2])], K.jacket);
-  // light from the upper left: the back and shoulder blade catch it, the belly and under the arm fall into shadow
-  poly([b1, b2, b3, add(b3, mul(fwd, 3.5)), add(b2, mul(fwd, 3.5)), add(b1, mul(fwd, 3))], K.jacketLit);
-  poly([f0, f1, mid(f1, b1, 0.35), mid(f0, b0, 0.3), add(f0, [0, 2])], K.jacketDark);
-  poly([add(b0, [-1, 3]), b0, mid(b0, b1, 0.5), add(mid(b0, b1, 0.5), mul(fwd, 2.5)), add(b0, [3, 3])], K.jacketDark);   // the hem hangs over the seat
-  const collar = (t: number): P => mid(sh, add(sh, mul(up, 4)), t);
-  poly([sub(collar(0), mul(fwd, 5.5)), add(collar(0), mul(fwd, 5)), add(collar(1), mul(fwd, 3.5)), sub(collar(1), mul(fwd, 4))], K.jacketLit);
-  const zipTop = add(f3, mul(fwd, -2)), zipBot = add(f0, mul(fwd, -2));                                            // the zip down the front, a shade darker
-  for (let i = 0; i <= 12; i++) { const p = mid(zipTop, zipBot, i / 12); rect(p[0] - 1, p[1], 1, 1, K.zip); }
-  { const a = mid(b1, b0, 0.15), c = mid(f1, f0, 0.15); for (let i = 0; i <= 10; i++) { const p = mid(a, c, i / 10); rect(p[0], p[1], 1, 1, K.band); } }   // a reflective band across the kidneys
-  disc(sh[0] - 1, sh[1] + 1, 4, K.jacketLit);                                                                       // the shoulder, rounded
+  // ---- the rolled tail bag strapped over the pillion seat, the same one the rider carries in the ride's rear view
+  { const t0: P = [44 + x, 23.5 + y], t1: P = [56 + x, 24 + y];
+    bar(t0, t1, 3.4, 3.4, GEAR.canvas);
+    across(t0, t1, 0.28, 3, leather[2]); across(t0, t1, 0.78, 3, leather[2]);                                       // two leather straps
+    px(Math.floor(t0[0] + 1), Math.floor(t0[1] - 3), mustard[3]); px(Math.floor(t0[0] + 7), Math.floor(t0[1] - 2), mustard[3]); }          // a catch of light on the buckles
 
-  // ---- the near leg: thigh over the tank, shin back to the peg, boot flat on it
-  limb(hip, knee, 3.4, 3, K.pants, INK, K.pantsLit);
-  disc(knee[0] - 1, knee[1] - 1, 2, K.pantsLit);                                               // the knee pad catches the light
-  limb(knee, ankle, 2.7, 2, K.pants, INK, K.pantsLit);
-  shape([[ankle[0] - 3, ankle[1] - 4], [ankle[0] + 2, ankle[1] - 4], [ankle[0] + 10, ankle[1] + 1], [ankle[0] + 11, ankle[1] + 4], [ankle[0] - 3, ankle[1] + 4]], K.boot);
-  rect(ankle[0] - 2, ankle[1] - 3, 3, 4, K.bootLit);                                           // the shaft of the boot
-  rect(ankle[0] + 3, ankle[1] + 1, 7, 1, K.bootLit);                                           // the toe cap
+  // ---- the torso, a leaning capsule from hip to shoulder (a little deeper at the chest), with the jacket's hem hanging over the seat behind
+  bar(add(hip, [-5, 0]), add(hip, [-1, 3]), 3, 3, jacket);
+  bar(hip, sh, 6.3, 7.2, jacket);
+  bar(add(sh, [-2, 1]), add(sh, [1, -1]), 5.2, 5.2, jacket);                                                     // the shoulder, rounded
+  // the hem band, the zip down the front, the reflective tape across the kidneys, the piping at the yoke
+  const fwd: P = [Math.cos(LEAN), Math.sin(LEAN)], rear: P = [-fwd[0], -fwd[1]];
+  across(hip, sh, 0.08, 6, jacket[1]);
+  for (let i = 0; i <= 14; i++) { const t = 0.1 + (i / 14) * 0.82, q = mid(hip, sh, t); px(Math.floor(q[0] + fwd[0] * 5), Math.floor(q[1] + fwd[1] * 5), '#2b1f19'); }
+  across(hip, sh, 0.38, 6, GEAR.band, 3);
+  across(hip, sh, 0.86, 6, mustard[2]);
+  void rear;
 
-  // ---- the near arm: upper arm from the shoulder, forearm to the grip, a glove round it
-  limb(sh, elbow, 2.6, 2, K.jacket, INK, K.jacketLit);
-  limb(elbow, hand, 2, 2, K.jacket, INK, K.jacketLit);
-  const bandAt = mid(elbow, hand, 0.42);
-  rect(bandAt[0] - 1, bandAt[1] - 1, 2, 3, K.band);                                            // a reflective band on the sleeve
-  rect(hand[0] - 2, hand[1] - 3, 6, 5, INK); rect(hand[0] - 1, hand[1] - 2, 5, 3, K.glove); rect(hand[0] - 1, hand[1] - 2, 3, 1, K.gloveLit);
+  // ---- neck and collar, under the helmet
+  bar(add(sh, [2.5, -3]), add(head, [-1, 6]), 2.4, 2.4, GEAR.skin);
+  bar(add(sh, [-1, -1]), add(sh, [3.5, -3.5]), 3, 2.6, jacket);
+  across(add(sh, [-1, -1]), add(sh, [3.5, -3.5]), 0.95, 3, mustard[2]);
 
-  // ---- the head: a full-face helmet, white with a red stripe, the visor to the front
-  const hx = head[0], hy = head[1];
-  disc(hx, hy, 8, INK);
-  poly([[hx - 1, hy + 5], [hx + 8, hy + 3], [hx + 9, hy + 8], [hx + 4, hy + 10], [hx - 2, hy + 8]], INK);        // the chin bar
-  disc(hx, hy, 7, K.helmet);
-  poly([[hx, hy + 5], [hx + 7, hy + 3], [hx + 8, hy + 7], [hx + 4, hy + 9], [hx - 1, hy + 7]], K.helmet);
-  poly([[hx - 7, hy + 1], [hx - 3, hy + 6], [hx + 3, hy + 9], [hx + 4, hy + 7], [hx - 5, hy + 3]], K.helmetShade);   // the underside, in shade
-  poly([[hx + 2, hy - 5], [hx + 9, hy - 3], [hx + 9, hy + 3], [hx + 3, hy + 4]], INK);                               // the visor opening
-  poly([[hx + 3, hy - 4], [hx + 8, hy - 2], [hx + 8, hy + 2], [hx + 4, hy + 3]], K.visor);
-  rect(hx + 4, hy - 3, 3, 1, K.visorLit);
-  poly([[hx - 6, hy - 5], [hx - 1, hy - 8], [hx + 5, hy - 7], [hx + 5, hy - 5], [hx - 1, hy - 6], [hx - 6, hy - 3]], K.stripe);   // the racing stripe over the crown
-  rect(hx - 4, hy - 7, 3, 1, '#ffffff');                                                       // a highlight on the dome
+  // ---- the near leg: thigh across the tank, shin back to the peg, the boot on it
+  bar(hip, knee, 3.6, 3.1, jeans);
+  bar(knee, ankle, 3.0, 2.2, jeans);
+  bar(add(knee, [-1, -1]), add(knee, [1, 0]), 2.2, 2.2, jeans, undefined);                                        // the knee, a touch fuller
+  bar([ankle[0] - 1, ankle[1] - 6], ankle, 2.7, 2.7, leather);
+  bar([ankle[0] - 2, ankle[1] + 1.5], [ankle[0] + 8, ankle[1] + 2.5], 2.4, 2.1, leather);
+  across([ankle[0] - 1, ankle[1] - 6], ankle, 0.1, 3, mustard[1]);                                                // the boot's top strap
+  rect(ankle[0] - 4, ankle[1] + 4, 14, 1, '#0e0a08');                                                              // the sole
+
+  // ---- the near arm: upper arm from the shoulder, the forearm to the grip, the glove around it
+  bar(sh, elbow, 2.9, 2.4, jacket);
+  bar(elbow, hand, 2.4, 2.0, jacket);
+  across(sh, elbow, 0.72, 3, mustard[2]);                                                                          // piping above the elbow
+  across(elbow, hand, 0.45, 3, GEAR.band, 2);
+  bar(add(hand, [-2, -0.5]), add(hand, [2.5, 1]), 2.5, 2.3, leather);
+  across(add(hand, [-2, -0.5]), add(hand, [2.5, 1]), 0.05, 3, mustard[2]);                                         // a mustard cuff
+
+  // ---- the head: a full-face helmet in the tank's cream, smoked visor, a mustard stripe over the crown
+  const rx = 7.3, ry = 7.6, hx = head[0], hy = head[1];
+  bar([hx + 0.5, hy + 4.6], [hx + 6, hy + 5.4], 2.6, 2.2, helmet);                                                 // the chin bar
+  ball(head, rx, ry, helmet);
+  const inShell = inBall(head, rx, ry), vc: P = [hx + 4.4, hy - 0.8];                                              // the visor opening
+  for (let yy = Math.floor(vc[1] - 5); yy <= Math.ceil(vc[1] + 5); yy++) for (let xx = Math.floor(vc[0] - 6); xx <= Math.ceil(vc[0] + 6); xx++) {
+    const ux = (xx + 0.5 - vc[0]) / 4.7, uy = (yy + 0.5 - vc[1]) / 3.6, d = Math.hypot(ux, uy);
+    if (d > 1.18 || !inShell(xx, yy)) continue;
+    if (d > 1) { px(xx, yy, helmet[1]); continue; }                                                                // the seal around it, in shadow
+    const g = Math.min(4, Math.max(0, Math.floor(1.2 + uy * 1.3 + (bayer(xx, yy) - 0.5) * 0.7)));
+    px(xx, yy, GEAR.visor[g]);
+    if (Math.abs(ux * 0.7 + uy * 0.9 + 0.35) < 0.14) px(xx, yy, GEAR.visor[4]);                                    // a glint across it
+  }
+  for (let k = 0; k <= 26; k++) {                                                                                  // the stripe, riding the curve of the dome
+    const th = Math.PI * (0.86 + (k / 26) * 0.9), sx = Math.floor(hx + Math.cos(th) * (rx - 0.6)), sy = Math.floor(hy + Math.sin(th) * (ry - 0.6));
+    if (!inShell(sx, sy)) continue;
+    px(sx, sy - 1, mustard[3]); px(sx, sy, mustard[2]); px(sx, sy + 1, mustard[1]);
+  }
+  px(Math.floor(hx - 4), Math.floor(hy - 5), helmet[4]); px(Math.floor(hx - 3), Math.floor(hy - 6), helmet[4]); px(Math.floor(hx - 3), Math.floor(hy - 5), helmet[4]);   // a bright spot on the dome
 }
