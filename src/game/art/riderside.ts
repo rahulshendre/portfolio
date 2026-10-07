@@ -172,10 +172,11 @@ export function drawRiderSide(x: number, y: number) {
     px(xx, yy, GEAR.visor[Math.min(4, Math.max(0, Math.floor(1.1 + uy * 1.4 + (bayer(xx, yy) - 0.5) * 0.7)))]);
     if (Math.abs(ux * 0.8 + uy * 0.9 + 0.4) < 0.13) px(xx, yy, GEAR.visor[4]);                                     // a glint across it
   }
-  for (let k = 0; k <= 28; k++) {                                                                                  // the stripe, riding the curve of the dome
+  const stripe = GEAR.stripe;
+  for (let k = 0; stripe && k <= 28; k++) {                                                                                  // the stripe, riding the curve of the dome
     const th = Math.PI * (0.84 + (k / 28) * 0.86), sx = Math.floor(hx + Math.cos(th) * (rx - 0.6)), sy = Math.floor(hy + Math.sin(th) * (ry - 0.6));
     if (!shell(sx, sy)) continue;
-    px(sx, sy - 1, accent[3]); px(sx, sy, accent[2]); px(sx, sy + 1, accent[1]);
+    px(sx, sy - 1, stripe[3]); px(sx, sy, stripe[2]); px(sx, sy + 1, stripe[1]);
   }
   px(Math.floor(hx + 2), Math.floor(hy + 7), helmet[0]); px(Math.floor(hx + 3), Math.floor(hy + 7), helmet[0]); px(Math.floor(hx + 4), Math.floor(hy + 7), helmet[0]);          // a vent in the chin bar
   px(Math.floor(hx - 4), Math.floor(hy - 5), helmet[4]); px(Math.floor(hx - 3), Math.floor(hy - 6), helmet[4]); px(Math.floor(hx - 3), Math.floor(hy - 5), helmet[4]);          // a bright spot on the dome

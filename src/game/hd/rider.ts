@@ -4,9 +4,9 @@ import { GEAR } from '../art/gear';
 import { at, box, circle, g, hgrad, oval, poly, rrect, stroke, use, vgrad } from './draw';
 
 const C = {
-  helmet: '#f1ece0', helmetShade: '#a4a6bb', visor: '#1a1d27', stripe: '#d9a233',
-  jacket: '#a98254', jacketLit: '#d2ad6d', jacketDark: '#6f5442', band: '#ece6d6',
-  pants: '#2f4170', pantsLit: '#4a6094', boot: '#33211a', bootLit: '#5a3d2b', glove: '#33211a',
+  helmet: '#f6f7fb', helmetShade: '#aeb5c6', visor: '#0a0c11', stripe: '#f6f7fb',
+  jacket: '#22252e', jacketLit: '#383d4a', jacketDark: '#13151b', band: '#dfe3ea',
+  pants: '#1c212e', pantsLit: '#2d3547', boot: '#101015', bootLit: '#1b1b22', glove: '#101015',
   seat: '#5a3d2b', seatLit: '#7a5640', metal: '#b9bec6', metalDark: '#6b7079', black: '#121316', tyre: '#141416',
   red: '#d8342b', amber: '#f0a020', plate: '#f2eee2',
   tank: '#f3f1ea', tankShade: '#c9c6bc', stripe2: '#17181c', fork: '#d9a233',
@@ -14,7 +14,7 @@ const C = {
 
 /** The hero's colours, read from the current outfit each frame. */
 const outfitColors = () => ({
-  helmet: GEAR.helmet[3], helmetShade: GEAR.helmet[1], visor: GEAR.visor[1], stripe: GEAR.accent[2],
+  helmet: GEAR.helmet[3], helmetShade: GEAR.helmet[1], visor: GEAR.visor[1], stripe: GEAR.stripe?.[2] ?? GEAR.helmet[3],
   jacket: GEAR.jacket[2], jacketLit: GEAR.jacket[3], jacketDark: GEAR.jacket[1], band: GEAR.band,
   pants: GEAR.jeans[2], pantsLit: GEAR.jeans[3], boot: GEAR.leather[1], bootLit: GEAR.leather[2], glove: GEAR.leather[1],
 });
@@ -87,9 +87,9 @@ export function drawRiderAt(ctx: CanvasRenderingContext2D, cx: number, gy: numbe
     poly([-0.4, -1.52, 0.4, -1.52, 0.5, -1.4, -0.5, -1.4], hgrad(-0.5, 0.5, [[0, K.seat], [0.35, K.seatLit], [1, K.seat]]));
 
     if (look.bag) {
-      rrect(-0.62, -2.02, 1.24, 0.62, 0.18, hgrad(-0.62, 0.62, [[0, '#3d3d29'], [0.35, '#807b55'], [0.7, '#5d5a3c'], [1, '#2f2f20']]));               // a rolled tail bag strapped over the pillion seat
-      rrect(-0.62, -2.02, 1.24, 0.14, 0.07, '#a8a279'); stroke([-0.24, -2.02, -0.24, -1.4], '#33211a', 0.05); stroke([0.24, -2.02, 0.24, -1.4], '#33211a', 0.05);
-      rrect(-0.29, -1.78, 0.1, 0.07, 0.02, '#d9a233'); rrect(0.19, -1.78, 0.1, 0.07, 0.02, '#d9a233');                                                 // the buckles
+      rrect(-0.62, -2.02, 1.24, 0.62, 0.18, hgrad(-0.62, 0.62, [[0, GEAR.canvas[1]], [0.35, GEAR.canvas[3]], [0.7, GEAR.canvas[2]], [1, GEAR.canvas[0]]]));               // a rolled tail bag strapped over the pillion seat
+      rrect(-0.62, -2.02, 1.24, 0.14, 0.07, GEAR.canvas[4]); stroke([-0.24, -2.02, -0.24, -1.4], GEAR.leather[1], 0.05); stroke([0.24, -2.02, 0.24, -1.4], GEAR.leather[1], 0.05);
+      rrect(-0.29, -1.78, 0.1, 0.07, 0.02, GEAR.accent[3]); rrect(0.19, -1.78, 0.1, 0.07, 0.02, GEAR.accent[3]);                                                 // the buckles
     }
     // the rider is drawn a touch smaller than life, so the bike carries the picture
     g.save(); g.translate(0, -1.5); g.scale(0.92, 0.92); g.translate(0, 1.5);
@@ -144,8 +144,7 @@ export function drawRiderAt(ctx: CanvasRenderingContext2D, cx: number, gy: numbe
     poly([-0.26, -2.72, -0.16, -2.9, 0.16, -2.9, 0.26, -2.72, 0.2, -2.64, -0.2, -2.64], K.jacketLit);   // the stand-up collar
     oval(0, -3.0, 0.335, 0.36, vgrad(-3.36, -2.64, [[0, '#ffffff'], [0.5, K.helmet], [1, K.helmetShade]]));
     oval(0, -2.83, 0.3, 0.1, 'rgba(60,56,50,0.35)');                                                     // the shell's lower rim, in shadow
-    rrect(-0.04, -3.34, 0.08, 0.6, 0.03, K.stripe);                                                      // the racing stripe
-    rrect(-0.015, -3.34, 0.02, 0.6, 0.01, '#fbe39a');
+    if (GEAR.stripe) { rrect(-0.04, -3.34, 0.08, 0.6, 0.03, K.stripe); rrect(-0.015, -3.34, 0.02, 0.6, 0.01, GEAR.stripe[4]); }   // the racing stripe, if the helmet has one
     rrect(-0.14, -2.76, 0.28, 0.06, 0.03, '#2a2c33');                                                    // neck roll
     oval(-0.13, -3.13, 0.07, 0.11, '#ffffff66');                                                       // gloss, lit from the left
     g.restore();

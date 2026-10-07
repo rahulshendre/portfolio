@@ -11,7 +11,7 @@
 export type Ramp = readonly [string, string, string, string, string];
 
 export interface Outfit {
-  jacket: Ramp; jeans: Ramp; leather: Ramp; helmet: Ramp; accent: Ramp; visor: Ramp; canvas: Ramp; skin: Ramp;
+  jacket: Ramp; jeans: Ramp; leather: Ramp; helmet: Ramp; accent: Ramp; stripe: Ramp | null; visor: Ramp; canvas: Ramp; skin: Ramp;
   band: string;           // the reflective tape
   ink: string;            // the garage's own ink
 }
@@ -19,6 +19,7 @@ export interface Outfit {
 const SHARED = {
   helmet: ['#6f7189', '#a4a6bb', '#d6d4dc', '#f1ece0', '#fffcf3'] as Ramp,          // cream with a cool shadow
   accent: ['#6d4a10', '#a2741c', '#d9a233', '#efc562', '#fbe39a'] as Ramp,          // the fork gold
+  stripe: ['#6d4a10', '#a2741c', '#d9a233', '#efc562', '#fbe39a'] as Ramp,          // the helmet's racing stripe: the same gold
   visor: ['#0f1117', '#1a1d27', '#2b3140', '#46506a', '#8aa6bd'] as Ramp,           // smoked, with a sky-coloured glint
   canvas: ['#25241a', '#3d3d29', '#5d5a3c', '#807b55', '#a8a279'] as Ramp,          // the tail roll, a muted khaki so it never shouts
   skin: ['#4a2c22', '#7a4a36', '#a9704c', '#c98f68', '#e2b08a'] as Ramp,
@@ -26,7 +27,7 @@ const SHARED = {
   ink: '#1b1712',
 };
 
-/** Three outfits for the same bike. `rust` is the default: the one warm saturated mass, the complement of the blue dusk, and it stands off grey tarmac, green hills and tan desert alike. */
+/** Three outfits for the same bike. `black` is the default (white helmet, black visor, all black); `rust` and `olive` are the colourful alternatives. */
 export const OUTFITS = {
   // burnt orange waxed jacket, near-black indigo jeans, espresso leather: a hero colour, with the bike's own warm neutrals behind it
   rust: {
@@ -42,18 +43,24 @@ export const OUTFITS = {
     jeans: ['#151d36', '#22305a', '#324877', '#4c66a0', '#7792c8'] as Ramp,
     leather: ['#1d110b', '#3a2012', '#63391d', '#8a5a35', '#b5835a'] as Ramp,
   },
-  // all black and gold: charcoal jacket, slate jeans, black boots, cream and gold trim
+  // all black, a white helmet and a black visor: the sharpest look for the bike, and the first one he liked. Silver trim (tape, piping, cuffs) lifts the black into form; blue-black shadows keep it from going flat
   black: {
     ...SHARED,
-    jacket: ['#0a0b0e', '#16181d', '#262a32', '#3d434f', '#6a7384'] as Ramp,
-    jeans: ['#0e1015', '#191d26', '#2a303d', '#434c61', '#6d7a96'] as Ramp,
-    leather: ['#08070a', '#141217', '#241f26', '#3b343d', '#5a525f'] as Ramp,
+    jacket: ['#08090d', '#13151b', '#22252e', '#383d4a', '#646c7e'] as Ramp,
+    jeans: ['#07090e', '#10131b', '#1c212e', '#2d3547', '#4a556d'] as Ramp,
+    leather: ['#06060a', '#101015', '#1b1b22', '#2c2c36', '#4b4b59'] as Ramp,
+    helmet: ['#737a90', '#aeb5c6', '#dde1ea', '#f6f7fb', '#ffffff'] as Ramp,            // white, with a cool shadow
+    accent: ['#3a3d44', '#686c76', '#a0a5b0', '#d0d4dc', '#f2f4f8'] as Ramp,           // silver
+    stripe: null,                                                                       // no stripe: a clean white shell
+    visor: ['#04050a', '#0a0c11', '#12151c', '#222733', '#5d6a82'] as Ramp,            // black, with a cold glint
+    canvas: ['#0e0f12', '#1a1c21', '#2a2d34', '#3f434d', '#5d626e'] as Ramp,           // a black roll
+    band: '#dfe3ea',
   },
 } satisfies Record<string, Outfit>;
 export type OutfitName = keyof typeof OUTFITS;
 
 /** The outfit being drawn. Both riders read it when they draw, so a change shows on the next frame (and in the door scene's next sprite). */
-export let GEAR: Outfit = OUTFITS.rust;
+export let GEAR: Outfit = OUTFITS.black;
 export const setOutfit = (name: OutfitName) => { GEAR = OUTFITS[name]; };
 if (typeof location !== 'undefined') {                                                                       // ?outfit=olive or ?outfit=black, to try the others
   const q = new URLSearchParams(location.search).get('outfit');
