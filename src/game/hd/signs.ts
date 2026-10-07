@@ -68,6 +68,9 @@ function lamps(xs: number[], y: number, faceW: number, faceH: number) {
 // ---------------------------------------------------------------------------------------------------------------------------------------
 // the social hoardings
 
+/** The PipeCD logo, loaded once (the same file the garage poster uses). Absent in tests, where there is no `Image`. */
+const PIPECD = typeof Image !== 'undefined' ? Object.assign(new Image(), { src: '/sprites/pipecd-hd.png' }) : ({ complete: false, naturalWidth: 0, naturalHeight: 1 } as HTMLImageElement);
+
 interface Brand { top: string; bot: string; face: string; verb: string; strip: string; text: string }
 const BRANDS: Record<string, Brand> = {
   youtube: { top: '#ee2a1f', bot: '#b3140c', face: '#ffffff', verb: 'WATCH', strip: 'YOUTUBE', text: '#ffffff' },
@@ -81,7 +84,7 @@ const HANDLE: Record<string, string> = {
   x: site.links.xHandle,
   linkedin: 'Rahul Shendre',
   github: 'rahulshendre',
-  pipecd: 'PipeCD',
+  pipecd: 'pipecd.dev',
 };
 
 export function drawBoard(sx: number, sy: number, k: number, id = 'github') {
@@ -99,10 +102,16 @@ export function drawBoard(sx: number, sy: number, k: number, id = 'github') {
     rrect(-74, -162, 148, 80, 3, face);
     box(-74, -96, 148, 14, 'rgba(0,0,0,0.3)');                                                     // the bottom strip, a shade darker
     // the logo: big, white, on the left
-    if (id === 'pipecd') {
-      g.globalAlpha = 0.95; stroke([-58, -124, -42, -124, -42, -140], '#24b5d9', 3); stroke([-42, -124, -26, -124], '#24b5d9', 3);
-      for (const [cx, cy] of [[-58, -124], [-42, -140], [-26, -124]] as const) { circle(cx, cy, 6.5, '#24b5d9'); circle(cx, cy, 3, B.top); }
-      g.globalAlpha = 1;
+    if (id === 'pipecd') {                                                                            // the real PipeCD mark and wordmark, on a white card the way it is printed
+      rrect(-70, -158, 50, 60, 4, '#f4f7fb');
+      if (PIPECD.complete && PIPECD.naturalWidth) {
+        const h = 52, w = h * PIPECD.naturalWidth / PIPECD.naturalHeight;
+        g.save(); g.imageSmoothingEnabled = true; g.drawImage(PIPECD, -45 - w / 2, -154, w, h); g.restore();
+      } else {                                                                                       // before the image has loaded: the three-node icon
+        g.globalAlpha = 0.95; stroke([-58, -124, -42, -124, -42, -140], '#24b5d9', 3); stroke([-42, -124, -26, -124], '#24b5d9', 3);
+        for (const [cx, cy] of [[-58, -124], [-42, -140], [-26, -124]] as const) { circle(cx, cy, 6.5, '#24b5d9'); circle(cx, cy, 3, B.top); }
+        g.globalAlpha = 1;
+      }
     } else if (id in LOGOS) {
       g.save(); g.translate(-69, -150); g.scale(2.3, 2.3); g.fillStyle = B.face; g.fill(new Path2D(LOGOS[id as LogoId])); g.restore();
     }
@@ -110,7 +119,6 @@ export function drawBoard(sx: number, sy: number, k: number, id = 'github') {
     g.save(); g.beginPath(); g.rect(-74, -162, 148, 80); g.clip();                                      // text never spills past the panel
     fit(B.verb, 34, -138, 66, 8, 'rgba(255,255,255,0.75)', 600);
     fit(HANDLE[id] ?? id, 34, -118, 62, 15, B.text, 700);
-    if (id === 'pipecd') fit('PipeCD', 34, -118, 62, 18, '#24b5d9', 700);
     g.restore();
     fit(B.strip, 0, -86, 140, 8, 'rgba(255,255,255,0.85)', 700);
     // gloss, dirt and rivets
