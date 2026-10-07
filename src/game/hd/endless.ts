@@ -2,8 +2,8 @@
 // so the ride never runs out and never repeats itself exactly. Stretches are built a little ahead of the bike and let go once it is well past.
 import type { Sky } from './air';
 import type { Extra } from './meadow';
-import { nextSeason, weatherFor, type Season } from './season';
-import { buildTrack, CHAPTERS, FINISH, type ChapterId, type Segment } from './track-ladakh';
+import { nextSeason, weatherFor, winterK, type Season } from './season';
+import { buildTrack, CHAPTERS, FINISH, LANE_FROM, LANE_G, type ChapterId, type Segment } from './track-ladakh';
 
 /** A segment of the endless road. `i` counts from the start of the ride; `src` is where the same stretch lies in the Ladakh track, for everything that depends on the place (towns, river, lake, altitude). */
 export interface VSeg extends Segment {
@@ -102,7 +102,10 @@ export class World {
       const props = s.props.some((q) => q.type === 'ms') ? s.props.map((q) => (q.type === 'ms' ? this.marker(q) : q)) : s.props;
       const into = idx % 3 === 2 ? (k - (c.to - 40)) / 40 : 0;                                  // the last 40 segments of a lap ease toward the next lap's season
       const blend = into > 0 ? into * into * (3 - 2 * Math.min(1, into)) : 0;
-      this.segs.push({ ...s, props, i: p.v0 + k - c.from, src: k, salt, round, season: this.rounds[round].season, weather: this.rounds[round].weather, ...(blend > 0 ? { nextSeason: this.rounds[round + 1].season, blend } : {}) });
+      const dressed = { season: this.rounds[round].season, ...(blend > 0 ? { nextSeason: this.rounds[round + 1].season, blend } : {}) };
+      const r = Math.abs(Math.sin((k * 4.17 + salt * 0.31) * 12.9898) * 43758.5453) % 1;           // in deep winter, drifts of snow settle along the verge (not by the exit lane)
+      const drifted = winterK(dressed) > 0.5 && r < 0.2 && !(k >= LANE_FROM - 2 && k <= LANE_G + 4) ? [...props, { o: (r > 0.1 ? 1 : -1) * (1.5 + ((r * 37) % 1) * 1.1), type: 'snow' as const, v: Math.floor((r * 53) % 3) }] : props;
+      this.segs.push({ ...s, props: drifted, i: p.v0 + k - c.from, src: k, salt, round, weather: this.rounds[round].weather, ...dressed });
     }
     p.built = true;
     this.planTo(2);

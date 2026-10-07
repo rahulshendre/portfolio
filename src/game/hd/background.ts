@@ -11,6 +11,7 @@ export interface Env {
   lite?: boolean; // slow device: skip the priciest shading
   night?: number; // 0 day .. 1 full night: a dark navy sky, a moon and cold mountains
   theme?: 'himalaya' | 'xp'; // the land: the Himalaya, or the green hills of the old Windows XP wallpaper
+  winter?: number; // 0 .. 1 how deep in winter the lap is: the lower hills go white and the snow line drops
 }
 
 const NIGHT_SKY = ['#040816', '#08113a', '#101c50', '#1c2c66', '#2c3c7c', '#425088'];
@@ -246,25 +247,28 @@ export function drawBackground(g: CanvasRenderingContext2D, W: number, H: number
     const c = mix(day, dk, env.tod);
     return night > 0 ? mix(c, moon ?? (lum(c) > 130 ? '#39457f' : '#141c42'), night * 0.86) : c;   // `moon` lets snow keep a pale glow in the moonlight
   };
+  const w = env.winter ?? 0;
+  /** A colour pulled toward its winter one (itself dressed for the hour) as the lap goes into winter. */
+  const win = (c: string, day: string, dk: string, moon?: string) => (w > 0.01 ? mix(c, dusk(day, dk, moon), w * 0.84) : c);
   if (xp) {                                                                             // Bliss: rolling green hills in place of the Himalaya
     const c = (day: string, dk: string, moon: string) => dusk(day, dk, moon);
     const climb = 1 + env.alt * 0.35;                                                  // the hills swell as the road climbs
-    hillLayer(g, W, hazeCol, { prof: HILL_A, base, amp: 92 * tall * climb, off: off * 0.015 + 300, lit: c('#9cd47e', '#c8b89a', '#46678a'), shade: c('#62ac5c', '#7a8668', '#263d5c'), haze: 0.4, trees: 0.5, seed: 1 }, !!env.lite);
-    hillLayer(g, W, hazeCol, { prof: HILL_B, base: base + 3, amp: 64 * tall * climb, off: off * 0.04 + 900, lit: c('#aadc5e', '#cdb868', '#3f6a58'), shade: c('#70b440', '#7e8a46', '#223f48'), haze: 0.34, trees: 0.45, seed: 2 }, !!env.lite);
-    hillLayer(g, W, hazeCol, { prof: HILL_C, base: base + 7, amp: 42 * tall * climb, off: off * 0.1 + 1500, lit: c('#b6e064', '#d0b86a', '#3a6a4c'), shade: c('#78bc3e', '#80904a', '#1f3f3c'), haze: 0.16, trees: 0.3, seed: 3 }, !!env.lite);
-    hillLayer(g, W, hazeCol, { prof: HILL_D, base: base + 12, amp: 22 * tall * climb, off: off * 0.34 + 200, lit: c('#a8d84e', '#c4b45c', '#34624a'), shade: c('#6cac34', '#76843e', '#1b3a38'), haze: 0.05 }, !!env.lite);
+    hillLayer(g, W, hazeCol, { prof: HILL_A, base, amp: 92 * tall * climb, off: off * 0.015 + 300, lit: win(c('#9cd47e', '#c8b89a', '#46678a'), '#eef4f4', '#f0e2e2', '#6f86b8'), shade: win(c('#62ac5c', '#7a8668', '#263d5c'), '#c3d3da', '#c7bccb', '#4a6290'), haze: 0.4, trees: 0.5, seed: 1 }, !!env.lite);
+    hillLayer(g, W, hazeCol, { prof: HILL_B, base: base + 3, amp: 64 * tall * climb, off: off * 0.04 + 900, lit: win(c('#aadc5e', '#cdb868', '#3f6a58'), '#eef4f4', '#f0e2e2', '#6f86b8'), shade: win(c('#70b440', '#7e8a46', '#223f48'), '#c3d3da', '#c7bccb', '#4a6290'), haze: 0.34, trees: 0.45, seed: 2 }, !!env.lite);
+    hillLayer(g, W, hazeCol, { prof: HILL_C, base: base + 7, amp: 42 * tall * climb, off: off * 0.1 + 1500, lit: win(c('#b6e064', '#d0b86a', '#3a6a4c'), '#eef4f4', '#f0e2e2', '#6f86b8'), shade: win(c('#78bc3e', '#80904a', '#1f3f3c'), '#c3d3da', '#c7bccb', '#4a6290'), haze: 0.16, trees: 0.3, seed: 3 }, !!env.lite);
+    hillLayer(g, W, hazeCol, { prof: HILL_D, base: base + 12, amp: 22 * tall * climb, off: off * 0.34 + 200, lit: win(c('#a8d84e', '#c4b45c', '#34624a'), '#eef4f4', '#f0e2e2', '#6f86b8'), shade: win(c('#6cac34', '#76843e', '#1b3a38'), '#c3d3da', '#c7bccb', '#4a6290'), haze: 0.05 }, !!env.lite);
     const grass = g.createLinearGradient(0, base + 10, 0, H);                          // the ground under the hills, so the road never shows through
-    grass.addColorStop(0, c('#82c040', '#8a9a48', '#27484a')); grass.addColorStop(1, c('#6aac30', '#68823a', '#1d3a3a'));
+    grass.addColorStop(0, win(c('#82c040', '#8a9a48', '#27484a'), '#e6eef0', '#e8dce0', '#5a7298')); grass.addColorStop(1, win(c('#6aac30', '#68823a', '#1d3a3a'), '#d6e2e6', '#d8ccd4', '#46608a'));
     g.fillStyle = grass; g.fillRect(0, base + 10, W, H - base);
     return;
   }
   const sn = 0.6 + 0.4 * snow;                                                          // the big peaks carry snow all year, more of it as you climb
-  drawRange(g, W, hazeCol, { prof: GIANTS, base, amp: (160 + env.alt * 50) * tall, off: off * 0.015 + 700, seed: 11, rockLit: dusk('#9aa6c6', '#a88cb8'), rockShade: dusk('#6a7aa8', '#66588c'), snowLit: dusk('#ffffff', '#ffd8c2', '#8d9cdc'), snowShade: dusk('#b2c0e6', '#a496c8', '#4a5896'), haze: 0.6, snowLine: 0.44 - 0.1 * env.alt, snow: sn, plume: true }, t, env.lite);
-  drawRange(g, W, hazeCol, { prof: HIGH, base, amp: (112 + env.alt * 52) * tall, off: off * 0.035 + 300, seed: 1, rockLit: dusk('#b49279', '#bb7f7b'), rockShade: dusk('#6f6680', '#604c72'), snowLit: dusk('#ffffff', '#ffdcc4', '#95a4e0'), snowShade: dusk('#aebde4', '#9c8cc0', '#4e5c9c'), haze: 0.42, snowLine: 0.5 - 0.14 * env.alt, snow: sn }, t, env.lite);
-  drawRange(g, W, hazeCol, { prof: MIDR, base: base + 3, amp: (70 + env.alt * 30) * tall, off: off * 0.08, seed: 2, rockLit: dusk('#c4926c', '#c8806a'), rockShade: dusk('#7c5e64', '#6a4858'), snowLit: dusk('#fbfcff', '#ffdcc8', '#8494d0'), snowShade: dusk('#b4c0e4', '#a494c4', '#444f8c'), haze: 0.26, snowLine: 0.74 - 0.3 * env.alt, snow: 0.2 + 0.7 * snow }, t, env.lite);
-  layer(g, W, hazeCol, { prof: FOOT, base: base + 6, amp: 40 * tall, off: off * 0.18 + 900, lit: dusk('#dca062', '#d88a68'), shade: dusk('#a86c3e', '#8a5058'), haze: 0.2, snow: 0 }, env.lite);
-  layer(g, W, hazeCol, { prof: NEAR, base: base + 10, amp: 26 * tall, off: off * 0.34 + 200, lit: dusk('#d08a48', '#c87050'), shade: dusk('#98582c', '#784048'), haze: 0.1, snow: 0 }, env.lite);
-  layer(g, W, hazeCol, { prof: CLOSE, base: base + 14, amp: 14 * tall, off: off * 0.6 + 1400, lit: dusk('#b87a40', '#a85e48'), shade: dusk('#83502a', '#66393e'), haze: 0.04, snow: 0 }, env.lite);
+  drawRange(g, W, hazeCol, { prof: GIANTS, base, amp: (160 + env.alt * 50) * tall, off: off * 0.015 + 700, seed: 11, rockLit: dusk('#9aa6c6', '#a88cb8'), rockShade: dusk('#6a7aa8', '#66588c'), snowLit: dusk('#ffffff', '#ffd8c2', '#8d9cdc'), snowShade: dusk('#b2c0e6', '#a496c8', '#4a5896'), haze: 0.6, snowLine: 0.44 - 0.1 * env.alt - 0.2 * w, snow: sn + (1 - sn) * w, plume: true }, t, env.lite);
+  drawRange(g, W, hazeCol, { prof: HIGH, base, amp: (112 + env.alt * 52) * tall, off: off * 0.035 + 300, seed: 1, rockLit: dusk('#b49279', '#bb7f7b'), rockShade: dusk('#6f6680', '#604c72'), snowLit: dusk('#ffffff', '#ffdcc4', '#95a4e0'), snowShade: dusk('#aebde4', '#9c8cc0', '#4e5c9c'), haze: 0.42, snowLine: 0.5 - 0.14 * env.alt - 0.3 * w, snow: sn + (1 - sn) * w }, t, env.lite);
+  drawRange(g, W, hazeCol, { prof: MIDR, base: base + 3, amp: (70 + env.alt * 30) * tall, off: off * 0.08, seed: 2, rockLit: win(dusk('#c4926c', '#c8806a'), '#e4ebf5', '#f0d8d4', '#7886c8'), rockShade: win(dusk('#7c5e64', '#6a4858'), '#aebbd4', '#a898b8', '#4a5896'), snowLit: dusk('#fbfcff', '#ffdcc8', '#8494d0'), snowShade: dusk('#b4c0e4', '#a494c4', '#444f8c'), haze: 0.26, snowLine: 0.74 - 0.3 * env.alt - 0.5 * w, snow: Math.min(1, 0.2 + 0.7 * snow + 0.8 * w) }, t, env.lite);
+  layer(g, W, hazeCol, { prof: FOOT, base: base + 6, amp: 40 * tall, off: off * 0.18 + 900, lit: win(dusk('#dca062', '#d88a68'), '#e8eef6', '#f2dcd8', '#7a88c0'), shade: win(dusk('#a86c3e', '#8a5058'), '#b4c2da', '#aa9cbc', '#4c5a98'), haze: 0.2, snow: 0.75 * w }, env.lite);
+  layer(g, W, hazeCol, { prof: NEAR, base: base + 10, amp: 26 * tall, off: off * 0.34 + 200, lit: win(dusk('#d08a48', '#c87050'), '#e4ebf3', '#eed8d4', '#7482b8'), shade: win(dusk('#98582c', '#784048'), '#aebcd2', '#a496b4', '#4a5894'), haze: 0.1, snow: 0.6 * w }, env.lite);
+  layer(g, W, hazeCol, { prof: CLOSE, base: base + 14, amp: 14 * tall, off: off * 0.6 + 1400, lit: win(dusk('#b87a40', '#a85e48'), '#dfe7f0', '#e8d2cf', '#6e7cb0'), shade: win(dusk('#83502a', '#66393e'), '#a6b4cc', '#9c8eac', '#46548c'), haze: 0.04, snow: 0.4 * w }, env.lite);
 
   // turquoise lake band when in the lake chapter
   if (env.lake > 0.05) {

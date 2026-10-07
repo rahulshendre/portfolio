@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { nextSeason, seasonFor, SEASONS, weatherFor, leanSeason, type Season } from './season';
+import { nextSeason, seasonFor, SEASONS, weatherFor, leanSeason, winterK, type Season } from './season';
 
 describe('nextSeason', () => {
   it('never repeats the season before', () => {
@@ -48,5 +48,15 @@ describe('leanSeason', () => {
     expect(leanSeason(mix, '#aaaaaa', 'green', '#c88f3c', '#e4eaee')).toBe('#aaaaaa');
     expect(leanSeason(mix, '#aaaaaa', 'gold', '#c88f3c', '#e4eaee')).toContain('#c88f3c');
     expect(leanSeason(mix, '#aaaaaa', 'frost', '#c88f3c', '#e4eaee')).toContain('#e4eaee');
+  });
+});
+
+describe('winterK', () => {
+  it('is 1 in a winter lap, 0 in the others, and eases across a change', () => {
+    expect(winterK({ season: 'frost' })).toBe(1);
+    expect(winterK({ season: 'green' })).toBe(0);
+    expect(winterK({ season: 'gold', nextSeason: 'frost', blend: 0.25 })).toBeCloseTo(0.25);
+    expect(winterK({ season: 'frost', nextSeason: 'green', blend: 0.25 })).toBeCloseTo(0.75);
+    expect(winterK({ season: 'green', nextSeason: 'gold', blend: 0.9 })).toBe(0);
   });
 });

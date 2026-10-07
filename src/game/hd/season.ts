@@ -45,3 +45,9 @@ export function seasonFor(s: Partial<Dressed>, key: number): Season {
 export function leanSeason(mixFn: (a: string, b: string, t: number) => string, col: string, season: Season, ochre: string, snow: string, a = 1): string {
   return season === 'gold' ? mixFn(col, ochre, 0.4 * a) : season === 'frost' ? mixFn(col, snow, 0.55 * a) : col;
 }
+
+/** How deep in winter a stretch of road is (0 to 1): all the way in a winter lap, and easing in or out across the change at a lap's end. */
+export function winterK(s: Partial<Dressed>): number {
+  const b = s.blend ?? 0;
+  return (s.season === 'frost' ? 1 - b : 0) + (s.nextSeason === 'frost' ? b : 0);
+}

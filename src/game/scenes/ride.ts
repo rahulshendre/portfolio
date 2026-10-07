@@ -4,7 +4,7 @@ import { CAM_HEIGHT, CAM_NAMES, CAMS, drawPOV, drawTop, RIDER_SCALE, type Cam } 
 import { drawRider } from '../hd/rider';
 import { drawSpeedLines } from '../hd/speed';
 import { finish, grade, seasonGrade } from '../hd/finish';
-import { SEASON_NAMES } from '../hd/season';
+import { SEASON_NAMES, winterK } from '../hd/season';
 import { LowRes } from '../hd/pixel';
 import { setGarageBike } from '../hd/garage';
 import type { Look } from '../rail';
@@ -94,7 +94,7 @@ export class RideScene implements Scene {
   private get segs() { return this.world.segs; }
   private cars: Car[] = []; private nextCarZ = 70 * SEG_L;
   /** Whether the weather follows the laps (nobody picked one, in the address or at the door); the T key takes it by hand. `lap` is the lap the bike is in. */
-  private skyAuto = true; private lap = 0;
+  private skyAuto = true; private lap = 0; private winterE = 0;
   /** The best ride time on this browser (0 for none yet) and whether this ride beat it; read once when the card comes up. */
   private best = 0; private newBest = false; private bestRead = false;
   private lastSeg = -1; private elevK = 3500; private altE = 0; private lakeE = 0; private knocked = false; private fork: number | undefined = undefined; private told = new Set<number>();
@@ -124,7 +124,7 @@ export class RideScene implements Scene {
     else if (at > 0) { this.startSound(); this.phase = 'ride'; this.pos = at * SEG_L; this.speed = V_CRUISE * K; }
     const i0 = Math.floor(this.pos / SEG_L);
     this.world.ensure(i0 + DRAW_DIST + 30);
-    this.lap = this.segs[i0]!.round;
+    this.lap = this.segs[i0]!.round; this.winterE = winterK(this.segs[i0]!);
     this.lastSeg = i0 - 1; this.nextCarZ = this.pos + 70 * SEG_L;
     const e = envAt(this.segs[i0]!.src, FINISH, zoneAt(this.segs[i0]!.src)); this.altE = e.alt; this.lakeE = e.lake; this.elevK = elevation(this.segs[i0]!.src);
     this.feedTraffic(this.pos);
@@ -430,6 +430,7 @@ export class RideScene implements Scene {
     this.world.trim(segI - 40);
     this.feedTraffic(playerZ);
     const e = envAt(src, FINISH, zoneAt(src)), ease = Math.min(1, dt * 1.4);           // the far hills and the water change gently where one stretch of road joins the next
+    this.winterE += (winterK(seg) - this.winterE) * Math.min(1, dt * 0.8);                                   // the hills whiten or thaw gently as winter comes or goes
     this.altE += (e.alt - this.altE) * ease; this.lakeE += (e.lake - this.lakeE) * ease; this.elevK += (elevation(src) - this.elevK) * Math.min(1, dt * 0.9);
     this.bgOff += seg.curve * sp * dt * 12;
     this.odo += (this.speed * dt) / 9000;
@@ -466,7 +467,7 @@ export class RideScene implements Scene {
     const g = small ? this.low.ctx : full, W = small ? small.W : FW, H = small ? small.H : FH;
     use(g);
     const sp = this.speed / MAX_S, segI = Math.floor(this.pos / SEG_L), src = this.segs[segI]!.src;
-    const env = { tod: this.todK < 0 ? this.tod(segI) : this.todK, alt: this.altE, lake: this.lakeE, lite: this.lite, night: this.nightK, theme: this.land };
+    const env = { tod: this.todK < 0 ? this.tod(segI) : this.todK, alt: this.altE, lake: this.lakeE, lite: this.lite, night: this.nightK, theme: this.land, winter: this.winterE };
     if (this.cam === 'top') {
       drawTop(g, this.segs, this.cars, W, H, this.pos, this.px, this.t);
       if (!this.lite) finish(g, W, H, HZ, env.tod, false, !small);

@@ -1,4 +1,5 @@
 // Small helpers for the smooth (vector) renderer. Everything draws to the context set with use().
+import { getSeason } from './season';
 export let g: CanvasRenderingContext2D;
 export const use = (ctx: CanvasRenderingContext2D) => { g = ctx; };
 
@@ -117,6 +118,7 @@ export function fit(str: string, x: number, y: number, maxW: number, px: number,
 
 /** A rocky hill in the light of the low sun: lit on the right, shaded on the left. */
 export function hill(w: number, h: number, col: string, lit: string, shade: string) {
+  if (getSeason() === 'frost') { col = mix(col, '#e9eff6', 0.78); lit = mix(lit, '#ffffff', 0.78); shade = mix(shade, '#b9c7dc', 0.78); }   // under snow
   poly([-w, 0, -w * 0.78, -h * 0.4, -w * 0.4, -h * 0.82, 0, -h, w * 0.42, -h * 0.84, w * 0.8, -h * 0.4, w, 0], col);
   poly([0, -h, w * 0.42, -h * 0.84, w * 0.8, -h * 0.4, w, 0, w * 0.3, -h * 0.12], lit);
   poly([-w, 0, -w * 0.78, -h * 0.4, -w * 0.4, -h * 0.82, -w * 0.2, -h * 0.4, -w * 0.45, 0], shade);
